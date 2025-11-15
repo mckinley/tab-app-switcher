@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TabsTooltip } from "@/components/TabsTooltip";
 import { Button } from "@/components/ui/button";
 
-import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
+import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import logo from "@/assets/logo.jpg";
 
@@ -337,13 +337,25 @@ const Index = () => {
 
           <div className="bg-card border border-border rounded-xl p-6 space-y-3">
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Command className="w-6 h-6 text-primary" />
+              <ArrowUpDown className="w-6 h-6 text-primary" />
             </div>
             <h3 className="text-xl font-semibold text-foreground">
               Arrow Navigation
             </h3>
             <p className="text-muted-foreground">
               Use arrow keys to move through tabs. Press Enter to select, Esc to close.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <X className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Close Tabs Fast
+            </h3>
+            <p className="text-muted-foreground">
+              Quickly close tabs with Alt+W while in the switcher, or click the X button on any tab.
             </p>
           </div>
 
