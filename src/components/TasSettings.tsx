@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings } from "lucide-react";
 import {
   Dialog,
@@ -9,7 +9,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -19,9 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from "next-themes";
+import { KeyButton } from "./KeyButton";
 
 interface KeyboardShortcuts {
-  openSwitcher: string;
+  modifier: string;
+  activateForward: string;
+  activateBackward: string;
   search: string;
   closeTab: string;
 }
@@ -37,6 +39,11 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
   const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
 
+  // Sync localShortcuts when shortcuts prop changes
+  useEffect(() => {
+    setLocalShortcuts(shortcuts);
+  }, [shortcuts]);
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     onOpenChange?.(newOpen);
@@ -49,9 +56,11 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
 
   const handleReset = () => {
     const defaultShortcuts = {
-      openSwitcher: "Alt+`",
+      modifier: "Alt",
+      activateForward: "Tab",
+      activateBackward: "`",
       search: "F",
-      closeTab: "Alt+W",
+      closeTab: "W",
     };
     setLocalShortcuts(defaultShortcuts);
     onShortcutsChange(defaultShortcuts);
@@ -95,48 +104,64 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
           </div>
 
           {/* Keyboard Shortcuts */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Keyboard Shortcuts</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="shortcut-open">Open Switcher</Label>
-              <Input
-                id="shortcut-open"
-                value={localShortcuts.openSwitcher}
-                onChange={(e) => setLocalShortcuts({ ...localShortcuts, openSwitcher: e.target.value })}
-                placeholder="Alt+`"
-                className="font-mono"
-              />
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-sm font-medium mb-1">Keyboard Shortcuts</h3>
+              <p className="text-xs text-muted-foreground">Click a key to customize it</p>
+            </div>
+
+            {/* Modifier Key */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Modifier Key</Label>
+              <div className="flex gap-3">
+                <KeyButton
+                  value={localShortcuts.modifier}
+                  onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, modifier: key })}
+                  label="Modifier"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Keyboard shortcut to open the tab switcher
+                Main modifier key for all shortcuts (e.g., Alt, Cmd, Ctrl)
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="shortcut-search">Search Tabs</Label>
-              <Input
-                id="shortcut-search"
-                value={localShortcuts.search}
-                onChange={(e) => setLocalShortcuts({ ...localShortcuts, search: e.target.value })}
-                placeholder="F"
-                className="font-mono"
-              />
+            {/* Navigation Shortcuts */}
+            <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+              <Label className="text-sm font-medium">TAS Navigation</Label>
+              <div className="flex gap-3">
+                <KeyButton
+                  value={localShortcuts.activateForward}
+                  onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, activateForward: key })}
+                  label="Forward"
+                />
+                <KeyButton
+                  value={localShortcuts.activateBackward}
+                  onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, activateBackward: key })}
+                  label="Backward"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Key to focus the search input
+                {localShortcuts.modifier}+{localShortcuts.activateForward} opens TAS and moves forward in MRU list. {localShortcuts.modifier}+{localShortcuts.activateBackward} moves backward.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="shortcut-close">Close Tab</Label>
-              <Input
-                id="shortcut-close"
-                value={localShortcuts.closeTab}
-                onChange={(e) => setLocalShortcuts({ ...localShortcuts, closeTab: e.target.value })}
-                placeholder="Alt+W"
-                className="font-mono"
-              />
+            {/* Action Shortcuts */}
+            <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+              <Label className="text-sm font-medium">Actions</Label>
+              <div className="flex gap-3 flex-wrap">
+                <KeyButton
+                  value={localShortcuts.search}
+                  onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, search: key })}
+                  label="Search"
+                />
+                <KeyButton
+                  value={localShortcuts.closeTab}
+                  onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, closeTab: key })}
+                  label="Close Tab"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Keyboard shortcut to close the selected tab
+                Press {localShortcuts.search} to search tabs. {localShortcuts.modifier}+{localShortcuts.closeTab} to close selected tab.
               </p>
             </div>
           </div>

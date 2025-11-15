@@ -11,6 +11,14 @@ export interface Tab {
   favicon: string;
 }
 
+interface KeyboardShortcuts {
+  modifier: string;
+  activateForward: string;
+  activateBackward: string;
+  search: string;
+  closeTab: string;
+}
+
 interface TabSwitcherProps {
   tabs: Tab[];
   isVisible: boolean;
@@ -21,16 +29,13 @@ interface TabSwitcherProps {
   onSearchFocusChange?: (isFocused: boolean) => void;
   onCloseTab: (tabId: string) => void;
   onSettingsOpenChange?: (isOpen: boolean) => void;
+  shortcuts: KeyboardShortcuts;
+  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onSettingsOpenChange }: TabSwitcherProps) => {
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onSettingsOpenChange, shortcuts, onShortcutsChange }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [shortcuts, setShortcuts] = useState({
-    openSwitcher: "Alt+`",
-    search: "F",
-    closeTab: "Alt+W",
-  });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
@@ -62,8 +67,8 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
-      // "f" or "F" key to focus search (works even with Alt held)
-      if ((e.key === "f" || e.key === "F") && !isSearchFocused) {
+      // Search key to focus search (works even with modifier held)
+      if (e.key.toUpperCase() === shortcuts.search.toUpperCase() && !isSearchFocused) {
         e.preventDefault();
         e.stopPropagation();
         setIsSearchFocused(true);
@@ -89,8 +94,14 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
         return;
       }
 
-      // Alt+W to close tab
-      if (e.altKey && (e.key === "w" || e.key === "W")) {
+      // Modifier+CloseTab to close tab
+      const isModifierPressed = 
+        (shortcuts.modifier === "Alt" && e.altKey) ||
+        (shortcuts.modifier === "Cmd" && e.metaKey) ||
+        (shortcuts.modifier === "Ctrl" && e.ctrlKey) ||
+        (shortcuts.modifier === "Shift" && e.shiftKey);
+
+      if (isModifierPressed && e.key.toUpperCase() === shortcuts.closeTab.toUpperCase()) {
         e.preventDefault();
         if (filteredTabs[selectedIndex]) {
           onCloseTab(filteredTabs[selectedIndex].id);
@@ -168,7 +179,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
                   setIsSearchFocused(false);
                   onSearchFocusChange?.(false);
                 }}
-                placeholder="Press 'f' to search tabs..."
+                placeholder={`Press '${shortcuts.search}' to search tabs...`}
                 className={cn(
                   "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
                   "bg-input text-foreground placeholder:text-muted-foreground",
@@ -189,7 +200,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               
               <TasSettings 
                 shortcuts={shortcuts}
-                onShortcutsChange={setShortcuts}
+                onShortcutsChange={onShortcutsChange}
                 onOpenChange={onSettingsOpenChange}
               />
             </div>
@@ -235,11 +246,11 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
         <div className="px-3 py-2 border-t border-border/50">
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">F</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.search}</kbd>
               <span>Search</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">W</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.closeTab}</kbd>
               <span>Close</span>
             </div>
             <div className="flex items-center gap-1.5">
