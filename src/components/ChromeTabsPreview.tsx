@@ -10,9 +10,9 @@ interface ChromeTabsPreviewProps {
 
 export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: ChromeTabsPreviewProps) => {
   return (
-    <div className="w-full border-b border-border bg-[hsl(var(--muted))]">
+    <div className="w-full border-b border-border bg-muted">
       <div className="max-w-7xl mx-auto px-4 pt-2 pb-[1px]">
-        <div className="flex gap-[1px] overflow-x-auto scrollbar-hide">
+        <div className="flex gap-0 overflow-x-auto scrollbar-hide">
           <style>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
@@ -28,7 +28,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
               left: -8px;
               width: 8px;
               height: 8px;
-              background: radial-gradient(circle at top right, transparent 8px, hsl(var(--background)) 8px);
+              background: radial-gradient(circle at top right, transparent 8px, hsl(var(--muted)) 8px);
             }
             .chrome-tab-active::after {
               content: '';
@@ -37,7 +37,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
               right: -8px;
               width: 8px;
               height: 8px;
-              background: radial-gradient(circle at top left, transparent 8px, hsl(var(--background)) 8px);
+              background: radial-gradient(circle at top left, transparent 8px, hsl(var(--muted)) 8px);
             }
           `}</style>
           {tabs.map((tab) => {
@@ -52,7 +52,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                   "transition-all duration-100 cursor-pointer",
                   isActive
                     ? "bg-background z-10 chrome-tab-active"
-                    : "bg-transparent hover:bg-background/50"
+                    : "bg-muted/30 hover:bg-muted/60 border-r border-border/30"
                 )}
                 style={{
                   borderTopLeftRadius: "8px",
@@ -74,7 +74,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
               <span
                 className={cn(
                   "flex-1 truncate text-sm transition-colors font-normal relative z-10",
-                  isActive ? "text-foreground" : "text-muted-foreground/50"
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
                 {tab.title}
