@@ -18,9 +18,12 @@ interface TabSwitcherProps {
   onClose: () => void;
   onNavigate: (direction: 'next' | 'prev') => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
+  onCloseTab: (tabId: string) => void;
+  onAddTab: () => void;
+  canAddTab: boolean;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange }: TabSwitcherProps) => {
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onAddTab, canAddTab }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +84,15 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
         return;
       }
 
+      // Alt+W to close tab
+      if (e.altKey && (e.key === "w" || e.key === "W")) {
+        e.preventDefault();
+        if (filteredTabs[selectedIndex]) {
+          onCloseTab(filteredTabs[selectedIndex].id);
+        }
+        return;
+      }
+
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
@@ -105,7 +117,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [isVisible, isSearchFocused, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate]);
+  }, [isVisible, isSearchFocused, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate, onCloseTab]);
 
   if (!isVisible) return null;
 
@@ -176,12 +188,29 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
                       tab={tab}
                       isSelected={index === selectedIndex}
                       onClick={() => onSelectTab(tab.id)}
+                      onClose={(e) => {
+                        e.stopPropagation();
+                        onCloseTab(tab.id);
+                      }}
                     />
                   </div>
                 ))}
               </div>
             )}
           </div>
+          
+          {/* Add Tab Button */}
+          {canAddTab && (
+            <div className="px-2 pb-2">
+              <button
+                onClick={onAddTab}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <span className="text-lg">+</span>
+                <span className="text-sm">Add Tab</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer with shortcuts */}
@@ -198,6 +227,10 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↵</kbd>
               <span>Select</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">W</kbd>
+              <span>Close Tab</span>
             </div>
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Esc</kbd>
