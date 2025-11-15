@@ -131,8 +131,11 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
       <div
         ref={containerRef}
         className={cn(
-          "fixed top-4 right-4 bottom-4 z-50",
-          "w-[360px]",
+          "fixed z-50",
+          "top-4 bottom-4",
+          "left-2 right-2 sm:left-auto sm:right-4",
+          "w-auto sm:w-[360px]",
+          "max-w-[360px]",
           "bg-[hsl(var(--switcher-bg))] rounded-xl",
           "shadow-[0_8px_32px_-8px_hsl(var(--switcher-shadow))]",
           "border border-border/50",
