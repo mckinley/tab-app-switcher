@@ -171,14 +171,14 @@ const Index = () => {
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
         <div className="max-w-4xl space-y-8">
           <div className="space-y-4">
-            <RGBSplitGlitch className="mb-12" fade={true}>
+            <RGBSplitGlitch className="mb-12" fade={true} initialDelay={2000} randomRepeat={true}>
               <img 
                 src={logo} 
                 alt="Tab Application Switcher Logo" 
                 className="h-20 w-auto mx-auto rounded-lg"
               />
             </RGBSplitGlitch>
-            <RGBSplitGlitch delay={200} fade={false}>
+            <RGBSplitGlitch initialDelay={2000} randomRepeat={true}>
               <h1 className="text-6xl font-bold text-foreground">
                 Tab Application Switcher
               </h1>
