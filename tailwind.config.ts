@@ -91,29 +91,21 @@ export default {
             height: "0",
           },
         },
-        "logo-entrance": {
+        "fade-in": {
           "0%": {
             opacity: "0",
-            filter: "blur(10px) drop-shadow(8px 0 0 rgba(255, 0, 0, 0.9)) drop-shadow(-8px 0 0 rgba(0, 255, 255, 0.9))",
-          },
-          "40%": {
-            opacity: "0.7",
-            filter: "blur(5px) drop-shadow(4px 0 0 rgba(255, 0, 0, 0.6)) drop-shadow(-4px 0 0 rgba(0, 255, 255, 0.6))",
-          },
-          "70%": {
-            opacity: "0.95",
-            filter: "blur(2px) drop-shadow(1px 0 0 rgba(255, 0, 0, 0.3)) drop-shadow(-1px 0 0 rgba(0, 255, 255, 0.3))",
+            filter: "blur(4px)",
           },
           "100%": {
             opacity: "1",
-            filter: "blur(0px) drop-shadow(0 0 0 transparent) drop-shadow(0 0 0 transparent)",
+            filter: "blur(0px)",
           },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "logo-entrance": "logo-entrance 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "fade-in": "fade-in 0.8s ease-out forwards",
       },
     },
   },
