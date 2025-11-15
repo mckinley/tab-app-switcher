@@ -19,11 +19,9 @@ interface TabSwitcherProps {
   onNavigate: (direction: 'next' | 'prev') => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
   onCloseTab: (tabId: string) => void;
-  onAddTab: () => void;
-  canAddTab: boolean;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onAddTab, canAddTab }: TabSwitcherProps) => {
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -198,43 +196,26 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               </div>
             )}
           </div>
-          
-          {/* Add Tab Button */}
-          {canAddTab && (
-            <div className="px-2 pb-2">
-              <button
-                onClick={onAddTab}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground"
-              >
-                <span className="text-lg">+</span>
-                <span className="text-sm">Add Tab</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Footer with shortcuts */}
         <div className="px-3 py-2 border-t border-border/50">
-          <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↑↓</kbd>
-              <span>Navigate</span>
-            </div>
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">F</kbd>
               <span>Search</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">W</kbd>
+              <span>Close</span>
             </div>
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↵</kbd>
               <span>Select</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">W</kbd>
-              <span>Close Tab</span>
-            </div>
-            <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Esc</kbd>
-              <span>Close</span>
+              <span>Exit</span>
             </div>
           </div>
         </div>

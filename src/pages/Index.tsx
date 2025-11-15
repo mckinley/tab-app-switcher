@@ -196,12 +196,15 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="relative">
         {/* Chrome Tabs Preview */}
-        <ChromeTabsPreview 
-          tabs={tabs} 
-          activeTabId={activeTabId}
-          isVisible={isSwitcherVisible}
-          onTabClick={handleTabClick}
-        />
+      <ChromeTabsPreview
+        tabs={tabs}
+        activeTabId={activeTabId}
+        isVisible={isSwitcherVisible}
+        onTabClick={handleTabClick}
+        onCloseTab={handleCloseTab}
+        onAddTab={handleAddTab}
+        canAddTab={tabs.length < 8}
+      />
 
         {/* Tooltip */}
         <TabsTooltip 
@@ -430,8 +433,6 @@ const Index = () => {
         onNavigate={handleNavigate}
         onSearchFocusChange={setIsSearchFocused}
         onCloseTab={handleCloseTab}
-        onAddTab={handleAddTab}
-        canAddTab={tabs.length < 8}
       />
     </div>
   );
