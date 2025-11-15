@@ -154,8 +154,8 @@ const Index = () => {
         onTabClick={handleTabClick}
       />
 
-      {/* Theme Toggle */}
-      <div className="fixed top-4 right-4 z-50">
+      {/* Theme Toggle - positioned below tabs */}
+      <div className="max-w-7xl mx-auto px-4 flex justify-end pt-4 pb-8">
         <ThemeToggle />
       </div>
 

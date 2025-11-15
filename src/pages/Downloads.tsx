@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Chrome, Apple, Monitor } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import { NavLink } from "@/components/NavLink";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Downloads = () => {
   const [platform, setPlatform] = useState(() => detectPlatform());
@@ -34,11 +35,14 @@ const Downloads = () => {
             <NavLink to="/">
               <h1 className="text-xl font-bold text-foreground">Tab Application Switcher</h1>
             </NavLink>
-            <Link to="/">
-              <Button variant="ghost">
-                Back to Home
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link to="/">
+                <Button variant="ghost">
+                  Back to Home
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
