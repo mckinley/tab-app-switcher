@@ -84,8 +84,10 @@ const Index = () => {
   const [showTooltip, setShowTooltip] = useState(true);
   const [hasUsedTAS, setHasUsedTAS] = useState(false);
 
-  // Get tabs in MRU order for the switcher
-  const mruTabs = mruOrder.map(id => tabs.find(t => t.id === id)!).filter(Boolean);
+  // Get tabs in MRU order for the switcher (filter out any invalid IDs)
+  const mruTabs = mruOrder
+    .map(id => tabs.find(t => t.id === id))
+    .filter((tab): tab is Tab => tab !== undefined);
 
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
@@ -103,17 +105,23 @@ const Index = () => {
   };
 
   const handleCloseTab = (tabId: string) => {
+    // Don't allow closing the last tab
+    if (tabs.length <= 1) {
+      return;
+    }
+    
+    // Calculate what the new active tab should be if we're closing the active one
+    if (activeTabId === tabId) {
+      const remainingInMru = mruOrder.filter(id => id !== tabId);
+      if (remainingInMru.length > 0) {
+        setActiveTabId(remainingInMru[0]);
+      }
+    }
+    
     // Remove tab from tabs array
     setTabs(prev => prev.filter(t => t.id !== tabId));
     // Remove from MRU order
     setMruOrder(prev => prev.filter(id => id !== tabId));
-    // If closing active tab, switch to most recent tab
-    if (activeTabId === tabId) {
-      const remainingTabs = mruOrder.filter(id => id !== tabId);
-      if (remainingTabs.length > 0) {
-        setActiveTabId(remainingTabs[0]);
-      }
-    }
   };
 
   const handleAddTab = () => {
