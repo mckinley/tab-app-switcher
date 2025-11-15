@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { TabSwitcher, Tab } from "@/components/TabSwitcher";
+import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { Button } from "@/components/ui/button";
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 
@@ -122,6 +123,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Chrome Tabs Preview */}
+      <ChromeTabsPreview tabs={mockTabs} selectedIndex={selectedIndex} />
+
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
         <div className="max-w-4xl space-y-8">
