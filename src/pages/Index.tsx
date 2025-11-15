@@ -155,8 +155,13 @@ const Index = () => {
         onTabClick={handleTabClick}
       />
 
-      {/* Theme Toggle - positioned below tabs */}
-      <div className="max-w-7xl mx-auto px-4 flex justify-end pt-4 pb-8">
+      {/* Header - positioned below tabs */}
+      <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-2 pt-4 pb-8">
+        <Link to="/downloads">
+          <Button variant="ghost" size="sm">
+            Downloads
+          </Button>
+        </Link>
         <ThemeToggle />
       </div>
 
@@ -167,7 +172,7 @@ const Index = () => {
             <img 
               src={logo} 
               alt="Tab Application Switcher Logo" 
-              className="h-16 w-auto mx-auto mb-4 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+              className="h-20 w-auto mx-auto mb-12 rounded-lg animate-fade-in"
             />
             <h1 className="text-6xl font-bold text-foreground">
               Tab Application Switcher
@@ -192,11 +197,6 @@ const Index = () => {
             </Button>
           </div>
 
-          <div className="pt-4">
-            <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
-              View all download options
-            </Link>
-          </div>
 
           <div className="pt-8">
             <Button
