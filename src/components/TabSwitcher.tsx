@@ -85,48 +85,49 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
       <div
         ref={containerRef}
         className={cn(
-          "fixed top-16 right-8 w-96 max-h-[80vh]",
-          "bg-[hsl(var(--switcher-bg))] rounded-xl shadow-2xl",
-          "border border-border/50",
-          "animate-in slide-in-from-right-4 fade-in duration-200",
-          "flex flex-col"
+          "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+          "w-[600px] max-w-[90vw] max-h-[70vh]",
+          "bg-[hsl(var(--switcher-bg))] rounded-2xl",
+          "shadow-[0_20px_60px_-15px_hsl(var(--switcher-shadow))]",
+          "border border-border/30",
+          "animate-in zoom-in-95 fade-in duration-200",
+          "flex flex-col overflow-hidden"
         )}
       >
         {/* Search Bar */}
-        <div className="p-4 border-b border-border/50">
+        <div className="p-5 border-b border-border/30">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tabs..."
+              placeholder="Search Tabs"
               className={cn(
-                "w-full pl-10 pr-4 py-2 rounded-lg",
+                "w-full pl-12 pr-4 py-3 rounded-xl",
                 "bg-input text-foreground placeholder:text-muted-foreground",
-                "border border-border/50 focus:border-ring",
-                "outline-none transition-colors duration-150",
-                "text-sm"
+                "border border-transparent focus:border-ring/30",
+                "outline-none transition-all duration-200",
+                "text-base"
               )}
             />
           </div>
         </div>
 
         {/* Tab List */}
-        <div className="overflow-y-auto flex-1 p-2">
+        <div className="overflow-y-auto flex-1 px-3 py-2">
           {filteredTabs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
+            <div className="text-center py-12 text-muted-foreground text-sm">
               No tabs found
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {filteredTabs.map((tab, index) => (
                 <TabItem
                   key={tab.id}
                   tab={tab}
                   isSelected={index === selectedIndex}
-                  shortcutNumber={index < 9 ? index + 1 : undefined}
                   onClick={() => onSelectTab(tab.id)}
                 />
               ))}
@@ -134,16 +135,22 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
           )}
         </div>
 
-        {/* Footer hint */}
-        <div className="p-3 border-t border-border/50 text-xs text-muted-foreground text-center">
-          <span className="inline-flex items-center gap-2">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">↑↓</kbd>
-            Navigate
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd>
-            Select
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Esc</kbd>
-            Close
-          </span>
+        {/* Footer with shortcuts */}
+        <div className="px-5 py-3 border-t border-border/20 bg-muted/10">
+          <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-background/30 rounded-md border border-border/30 font-medium">↑↓</kbd>
+              <span>Navigate</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-background/30 rounded-md border border-border/30 font-medium">↵</kbd>
+              <span>Select</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-background/30 rounded-md border border-border/30 font-medium">Esc</kbd>
+              <span>Close</span>
+            </div>
+          </div>
         </div>
       </div>
     </>
