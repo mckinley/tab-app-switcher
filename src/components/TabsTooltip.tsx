@@ -43,7 +43,7 @@ export const TabsTooltip = ({ isVisible, onDismiss, hasBeenUsed = false }: TabsT
   if (!show) return null;
 
   return (
-    <div className={`absolute top-2 left-1/2 -translate-x-1/2 z-50 ${fadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
+    <div className={`absolute top-2 left-1/2 -translate-x-1/2 z-50 w-[85vw] sm:w-auto ${fadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
       <div className="relative bg-primary text-primary-foreground rounded-lg shadow-xl max-w-md animate-bounce-gentle">
         {/* Arrow pointing up */}
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45" />
