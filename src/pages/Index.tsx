@@ -14,45 +14,51 @@ import logo from "@/assets/logo.jpg";
 const allTabs: Tab[] = [
   {
     id: "1",
-    title: "NOAA - National Oceanic and Atmospheric Administration",
-    url: "https://www.noaa.gov/",
-    favicon: "https://www.noaa.gov/sites/all/themes/noaa/favicon.ico"
+    title: "NRDC",
+    url: "https://www.nrdc.org/",
+    favicon: "/favicons/nrdc.ico"
   },
   {
     id: "2",
-    title: "Google",
-    url: "https://www.google.com/",
-    favicon: "https://www.google.com/favicon.ico"
+    title: "Sierra Club",
+    url: "https://www.sierraclub.org/",
+    favicon: "/favicons/sierraclub.png"
   },
   {
     id: "3",
-    title: "NASA",
-    url: "https://www.nasa.gov/",
-    favicon: "https://www.nasa.gov/favicon.ico"
+    title: "Greenpeace",
+    url: "https://www.greenpeace.org/",
+    favicon: "/favicons/greenpeace.ico"
   },
   {
     id: "4",
-    title: "GitHub",
-    url: "https://github.com/",
-    favicon: "https://github.githubassets.com/favicons/favicon.svg"
+    title: "WWF (World Wildlife Fund)",
+    url: "https://www.worldwildlife.org/",
+    favicon: "/favicons/wwf.ico"
   },
   {
     id: "5",
-    title: "Wikipedia",
-    url: "https://www.wikipedia.org/",
-    favicon: "https://www.wikipedia.org/favicon.ico"
+    title: "Amnesty International",
+    url: "https://www.amnesty.org/",
+    favicon: "/favicons/amnesty.ico"
   },
   {
     id: "6",
-    title: "Apple",
-    url: "https://www.apple.com/",
-    favicon: "https://www.apple.com/favicon.ico"
+    title: "Human Rights Watch",
+    url: "https://www.hrw.org/",
+    favicon: "/favicons/hrw.ico"
   },
   {
     id: "7",
-    title: "NRDC - Natural Resources Defense Council",
-    url: "https://www.nrdc.org/",
-    favicon: "https://www.nrdc.org/sites/default/files/favicon.ico"
+    title: "International Rescue Committee",
+    url: "https://www.rescue.org/",
+    favicon: "/favicons/irc.ico"
+  },
+  {
+    id: "8",
+    title: "Doctors Without Borders",
+    url: "https://www.doctorswithoutborders.org/",
+    favicon: "/favicons/msf.ico"
   }
 ];
 
