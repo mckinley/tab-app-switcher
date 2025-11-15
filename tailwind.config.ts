@@ -101,6 +101,16 @@ export default {
             filter: "blur(0px)",
           },
         },
+        "fade-out": {
+          "0%": {
+            opacity: "1",
+            filter: "blur(0px)",
+          },
+          "100%": {
+            opacity: "0",
+            filter: "blur(4px)",
+          },
+        },
         "bounce-gentle": {
           "0%, 100%": {
             transform: "translateY(0)",
@@ -114,6 +124,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.8s ease-out forwards",
+        "fade-out": "fade-out 0.3s ease-out forwards",
         "bounce-gentle": "bounce-gentle 2s ease-in-out infinite",
       },
     },

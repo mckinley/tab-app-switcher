@@ -9,6 +9,7 @@ interface TabsTooltipProps {
 
 export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
   const [show, setShow] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
     // Delay showing to allow page to load
@@ -19,10 +20,18 @@ export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
     return () => clearTimeout(timer);
   }, [isVisible]);
 
+  const handleDismiss = () => {
+    setFadingOut(true);
+    setTimeout(() => {
+      setShow(false);
+      onDismiss();
+    }, 300); // Match animation duration
+  };
+
   if (!show) return null;
 
   return (
-    <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+    <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 ${fadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
       <div className="relative bg-primary text-primary-foreground rounded-lg px-6 py-4 shadow-xl max-w-md animate-bounce-gentle">
         {/* Arrow pointing up */}
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45" />
@@ -35,7 +44,7 @@ export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0 hover:bg-primary-foreground/20 shrink-0"
-            onClick={onDismiss}
+            onClick={handleDismiss}
           >
             <X className="h-4 w-4" />
           </Button>
