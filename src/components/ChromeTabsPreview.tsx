@@ -10,9 +10,9 @@ interface ChromeTabsPreviewProps {
 
 export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: ChromeTabsPreviewProps) => {
   return (
-    <div className="w-full border-b border-border bg-muted/40">
-      <div className="max-w-7xl mx-auto px-4 pt-2">
-        <div className="flex gap-0.5 overflow-x-auto scrollbar-hide">
+    <div className="w-full border-b border-border bg-[hsl(var(--muted))]">
+      <div className="max-w-7xl mx-auto px-4 pt-2 pb-[1px]">
+        <div className="flex gap-[1px] overflow-x-auto scrollbar-hide">
           <style>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
@@ -31,31 +31,44 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                 className={cn(
                   "relative flex items-center gap-2.5 px-4 py-2.5 flex-shrink-0",
                   "min-w-[160px] w-[220px] max-w-[240px]",
-                  "transition-all duration-150 cursor-pointer",
-                  "before:absolute before:bottom-0 before:left-[-8px] before:w-2 before:h-2",
-                  "after:absolute after:bottom-0 after:right-[-8px] after:w-2 after:h-2",
+                  "transition-all duration-100 cursor-pointer",
                   isActive
-                    ? "bg-background shadow-sm z-10 before:bg-background after:bg-background before:rounded-br-lg after:rounded-bl-lg"
-                    : "bg-transparent hover:bg-muted/30"
+                    ? "bg-background z-10"
+                    : "bg-transparent hover:bg-background/50"
                 )}
                 style={{
                   borderTopLeftRadius: "8px",
                   borderTopRightRadius: "8px",
-                  clipPath: isActive 
-                    ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
-                    : undefined
                 }}
               >
-              {/* Corner curves for active tab */}
+              {/* Left bottom curve cutout */}
               {isActive && (
-                <>
-                  <div className="absolute bottom-0 left-[-8px] w-2 h-2">
-                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-muted/40 rounded-br-lg" />
-                  </div>
-                  <div className="absolute bottom-0 right-[-8px] w-2 h-2">
-                    <div className="absolute bottom-0 left-0 w-2 h-2 bg-muted/40 rounded-bl-lg" />
-                  </div>
-                </>
+                <svg
+                  className="absolute bottom-[-1px] left-[-8px] w-2 h-2"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M 0 8 L 0 0 Q 0 8 8 8 Z"
+                    fill="hsl(var(--background))"
+                  />
+                </svg>
+              )}
+              
+              {/* Right bottom curve cutout */}
+              {isActive && (
+                <svg
+                  className="absolute bottom-[-1px] right-[-8px] w-2 h-2"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M 8 8 L 8 0 Q 8 8 0 8 Z"
+                    fill="hsl(var(--background))"
+                  />
+                </svg>
               )}
               
               {/* Favicon */}
@@ -72,15 +85,15 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
               <span
                 className={cn(
                   "flex-1 truncate text-sm transition-colors font-normal relative z-10",
-                  isActive ? "text-foreground" : "text-muted-foreground/70"
+                  isActive ? "text-foreground" : "text-muted-foreground/50"
                 )}
               >
                 {tab.title}
               </span>
 
-              {/* Active tab bottom border */}
+              {/* Active tab bottom border to hide the main border */}
               {isActive && (
-                <div className="absolute bottom-[-1px] left-0 right-0 h-[1px] bg-background z-20" />
+                <div className="absolute bottom-[-2px] left-0 right-0 h-[2px] bg-background z-20" />
               )}
             </div>
             );
