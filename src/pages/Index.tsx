@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { TabSwitcher, Tab } from "@/components/TabSwitcher";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
@@ -153,6 +154,11 @@ const Index = () => {
         onTabClick={handleTabClick}
       />
 
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
         <div className="max-w-4xl space-y-8">
@@ -180,9 +186,11 @@ const Index = () => {
             </Button>
           </div>
 
-          <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
-            View all download options
-          </Link>
+          <div className="pt-4">
+            <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
+              View all download options
+            </Link>
+          </div>
 
           <div className="pt-8">
             <Button
