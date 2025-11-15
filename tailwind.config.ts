@@ -57,6 +57,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        switcher: {
+          bg: "hsl(var(--switcher-bg))",
+          item: "hsl(var(--switcher-item))",
+          "item-hover": "hsl(var(--switcher-item-hover))",
+          "item-selected": "hsl(var(--switcher-item-selected))",
+          shadow: "hsl(var(--switcher-shadow))",
+        },
+      },
+      transitionDuration: {
+        fast: "var(--transition-fast)",
+        smooth: "var(--transition-smooth)",
       },
       borderRadius: {
         lg: "var(--radius)",
