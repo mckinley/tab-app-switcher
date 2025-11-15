@@ -94,11 +94,11 @@ export default {
         "logo-entrance": {
           "0%": {
             opacity: "0",
-            filter: "blur(8px) drop-shadow(3px 0 0 rgba(255, 0, 0, 0.7)) drop-shadow(-3px 0 0 rgba(0, 255, 255, 0.7))",
+            filter: "blur(3px) drop-shadow(1px 0 0 rgba(255, 0, 0, 0.3)) drop-shadow(-1px 0 0 rgba(0, 255, 255, 0.3))",
           },
-          "50%": {
-            opacity: "0.8",
-            filter: "blur(3px) drop-shadow(1.5px 0 0 rgba(255, 0, 0, 0.4)) drop-shadow(-1.5px 0 0 rgba(0, 255, 255, 0.4))",
+          "60%": {
+            opacity: "0.9",
+            filter: "blur(1px) drop-shadow(0.5px 0 0 rgba(255, 0, 0, 0.15)) drop-shadow(-0.5px 0 0 rgba(0, 255, 255, 0.15))",
           },
           "100%": {
             opacity: "1",
