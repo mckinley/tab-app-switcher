@@ -45,8 +45,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                 <div
                   key={tab.id}
                   className={cn(
-                    "group relative flex items-center gap-3 px-4 flex-shrink-0",
-                    "min-w-[120px] w-auto max-w-[240px]",
+                    "group relative flex items-center gap-3 px-4",
+                    "flex-1 min-w-[120px] max-w-[240px]",
                     "h-12", // Fixed height
                     "transition-all duration-150",
                     "border-b-2 border-r border-border/10",
