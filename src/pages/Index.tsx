@@ -75,7 +75,7 @@ const Index = () => {
     return shuffled;
   });
 
-  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "");
   const [mruOrder, setMruOrder] = useState(tabs.map(t => t.id));
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
@@ -105,16 +105,13 @@ const Index = () => {
   };
 
   const handleCloseTab = (tabId: string) => {
-    // Don't allow closing the last tab
-    if (tabs.length <= 1) {
-      return;
-    }
-    
     // Calculate what the new active tab should be if we're closing the active one
     if (activeTabId === tabId) {
       const remainingInMru = mruOrder.filter(id => id !== tabId);
       if (remainingInMru.length > 0) {
         setActiveTabId(remainingInMru[0]);
+      } else {
+        setActiveTabId(""); // No tabs left
       }
     }
     
