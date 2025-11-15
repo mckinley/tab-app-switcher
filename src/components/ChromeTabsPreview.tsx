@@ -88,7 +88,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                       e.stopPropagation();
                       onCloseTab(tab.id);
                     }}
-                    className="absolute right-3 flex-shrink-0 w-4 h-4 rounded-sm flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all z-20"
+                    className="absolute right-1 flex-shrink-0 w-4 h-4 rounded-sm flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all z-20"
                     aria-label="Close tab"
                   >
                     <span className="text-xs text-muted-foreground hover:text-foreground">×</span>
