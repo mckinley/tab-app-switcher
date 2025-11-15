@@ -54,8 +54,8 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
-      // "f" or "F" key to focus search (works even with Alt held)
-      if ((e.key === "f" || e.key === "F") && !isSearchFocused) {
+      // "s" or "S" key to focus search (works even with Alt held)
+      if ((e.key === "s" || e.key === "S") && !isSearchFocused) {
         e.preventDefault();
         e.stopPropagation();
         setIsSearchFocused(true);
@@ -147,7 +147,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
                 setIsSearchFocused(false);
                 onSearchFocusChange?.(false);
               }}
-              placeholder="Press 'f' to search tabs..."
+              placeholder="Press 's' to search tabs..."
               className={cn(
                 "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
                 "bg-input text-foreground placeholder:text-muted-foreground",
@@ -192,7 +192,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">F</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">S</kbd>
               <span>Search</span>
             </div>
             <div className="flex items-center gap-1.5">
