@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TabSwitcher, Tab } from "@/components/TabSwitcher";
 import { Button } from "@/components/ui/button";
-import { Command } from "lucide-react";
+import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 
 // Mock data - in your actual extension, this will come from Chrome API
 const mockTabs: Tab[] = [
@@ -61,65 +61,203 @@ const Index = () => {
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
     setIsSwitcherVisible(false);
-    // In your actual implementation, this will communicate with the Chrome extension
   };
 
+  // Global keyboard shortcut handler (Alt+Tab)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt+Tab to open switcher
+      if (e.altKey && e.key === "Tab") {
+        e.preventDefault();
+        setIsSwitcherVisible(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
-      <div className="max-w-3xl text-center space-y-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground">
-            Chrome Tab Switcher
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Mac-like application switcher for your Chrome tabs
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
+        <div className="max-w-4xl space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-6xl font-bold text-foreground">
+              Tab Application Switcher
+            </h1>
+            <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
+              Like your system's Application Switcher, but for your Chrome tabs
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button size="lg" className="gap-2 text-lg px-8 py-6">
+              <Download className="w-5 h-5" />
+              Install Chrome Extension
+            </Button>
+            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+              <Download className="w-5 h-5" />
+              Download Electron App
+            </Button>
+          </div>
+
+          <div className="pt-8">
+            <Button
+              onClick={() => setIsSwitcherVisible(true)}
+              variant="secondary"
+              size="lg"
+              className="gap-2"
+            >
+              <Command className="w-4 h-4" />
+              Try Live Demo (Alt+Tab)
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Alt</kbd> + <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Tab</kbd> to activate
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-6xl mx-auto px-8 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
+          Features
+        </h2>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Keyboard className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Keyboard Shortcuts
+            </h3>
+            <p className="text-muted-foreground">
+              Intelligent and configurable keyboard shortcuts, very similar to your operating system's application switcher.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              MRU Ordering
+            </h3>
+            <p className="text-muted-foreground">
+              Tabs are ordered by their last use. The last tab you used is always the first tab to select.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Search className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Quick Search
+            </h3>
+            <p className="text-muted-foreground">
+              Search tabs by URL and page title. Also accessible in Chrome omnibox by typing 'tas' then tab.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Lightning Fast
+            </h3>
+            <p className="text-muted-foreground">
+              Instant response with smooth, native-feeling animations. No lag, no delays.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Command className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Arrow Navigation
+            </h3>
+            <p className="text-muted-foreground">
+              Use arrow keys to move through tabs. Press Enter to select, Esc to close.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <div className="text-2xl font-bold text-primary">1-9</div>
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Number Shortcuts
+            </h3>
+            <p className="text-muted-foreground">
+              Jump directly to tabs 1-9 using number keys for even faster navigation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* How to Use Section */}
+      <div className="max-w-4xl mx-auto px-8 py-16">
+        <div className="bg-card border border-border rounded-xl p-8 space-y-6">
+          <h2 className="text-3xl font-bold text-foreground">
+            Default Keyboard Shortcuts
+          </h2>
+          
+          <div className="space-y-4 text-left">
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + Tab</kbd>
+              <span className="text-muted-foreground pt-1.5">Activate TAS and move forward through tabs</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + `</kbd>
+              <span className="text-muted-foreground pt-1.5">Move backward through the list of tabs</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">↑ ↓</kbd>
+              <span className="text-muted-foreground pt-1.5">Navigate through the list of tabs</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Enter</kbd>
+              <span className="text-muted-foreground pt-1.5">Select the highlighted tab</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Esc</kbd>
+              <span className="text-muted-foreground pt-1.5">Close TAS without making a selection</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Release Alt</kbd>
+              <span className="text-muted-foreground pt-1.5">Select the highlighted tab</span>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground pt-4 border-t border-border">
+            Shortcuts are configurable through the Options panel. The current window must have focus to use keyboard shortcuts.
           </p>
         </div>
+      </div>
 
-        <div className="bg-card border border-border rounded-xl p-8 space-y-6">
-          <div className="space-y-3">
-            <h2 className="text-2xl font-semibold text-foreground">
-              Demo Interface
-            </h2>
-            <p className="text-muted-foreground">
-              This is a visual demo of the tab switcher interface. In your actual Chrome extension + Electron app, this will be triggered by a keyboard shortcut.
-            </p>
-          </div>
-
-          <Button
-            onClick={() => setIsSwitcherVisible(true)}
-            size="lg"
-            className="gap-2"
-          >
-            <Command className="w-4 h-4" />
-            Open Tab Switcher (Cmd+Tab)
-          </Button>
-
-          <div className="pt-4 border-t border-border space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">Features:</h3>
-            <ul className="text-sm text-muted-foreground space-y-1 text-left">
-              <li>• Keyboard navigation (↑↓ arrows)</li>
-              <li>• Quick search/filter</li>
-              <li>• Number shortcuts (1-9)</li>
-              <li>• Favicon + title display</li>
-              <li>• Fast, snappy animations</li>
-              <li>• Native OS-like appearance</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="bg-muted/30 border border-border/50 rounded-xl p-6 text-sm text-muted-foreground space-y-3">
-          <h3 className="text-foreground font-semibold">Implementation Notes:</h3>
-          <div className="text-left space-y-2">
-            <p>
-              <strong>Components:</strong> The TabSwitcher and TabItem components are designed to be framework-agnostic. You can easily port them to your Chrome extension.
-            </p>
-            <p>
-              <strong>Styling:</strong> All colors use CSS custom properties from the design system, making it easy to adapt the theme.
-            </p>
-            <p>
-              <strong>Performance:</strong> Uses CSS transitions instead of heavy animations. Keyboard navigation is instant with no debouncing.
-            </p>
+      {/* Footer CTA */}
+      <div className="max-w-4xl mx-auto px-8 py-16 text-center">
+        <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-border rounded-xl p-12 space-y-6">
+          <h2 className="text-3xl font-bold text-foreground">
+            Ready to switch tabs like a pro?
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Install the Chrome extension and Electron app to get started
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button size="lg" className="gap-2 text-lg px-8 py-6">
+              <Download className="w-5 h-5" />
+              Install Chrome Extension
+            </Button>
+            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+              <Download className="w-5 h-5" />
+              Download Electron App
+            </Button>
           </div>
         </div>
       </div>
