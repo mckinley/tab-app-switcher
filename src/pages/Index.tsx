@@ -166,19 +166,23 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/downloads">
-              <Button size="lg" className="gap-2 text-lg px-8 py-6">
+            <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
+              <a href="#chrome-store" target="_blank" rel="noopener noreferrer">
                 <Download className="w-5 h-5" />
                 Install {getBrowserDisplayName(platform.browser)} Extension
-              </Button>
-            </Link>
-            <Link to="/downloads">
-              <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6" asChild>
+              <a href="#download-native" download>
                 <Download className="w-5 h-5" />
                 Download for {getOSDisplayName(platform.os)}
-              </Button>
-            </Link>
+              </a>
+            </Button>
           </div>
+
+          <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
+            View all download options
+          </Link>
 
           <div className="pt-8">
             <Button
@@ -328,19 +332,23 @@ const Index = () => {
             Install the Chrome extension and Electron app to get started
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/downloads">
-              <Button size="lg" className="gap-2 text-lg px-8 py-6">
+            <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
+              <a href="#chrome-store" target="_blank" rel="noopener noreferrer">
                 <Download className="w-5 h-5" />
                 Install {getBrowserDisplayName(platform.browser)} Extension
-              </Button>
-            </Link>
-            <Link to="/downloads">
-              <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6" asChild>
+              <a href="#download-native" download>
                 <Download className="w-5 h-5" />
                 Download for {getOSDisplayName(platform.os)}
-              </Button>
-            </Link>
+              </a>
+            </Button>
           </div>
+          
+          <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
+            View all download options
+          </Link>
         </div>
       </div>
 
