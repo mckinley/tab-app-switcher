@@ -13,12 +13,13 @@ export interface Tab {
 interface TabSwitcherProps {
   tabs: Tab[];
   isVisible: boolean;
+  selectedIndex: number;
   onSelectTab: (tabId: string) => void;
   onClose: () => void;
+  onNavigate: (direction: 'next' | 'prev') => void;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, onSelectTab, onClose }: TabSwitcherProps) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +32,6 @@ export const TabSwitcher = ({ tabs, isVisible, onSelectTab, onClose }: TabSwitch
   useEffect(() => {
     if (isVisible && searchInputRef.current) {
       searchInputRef.current.focus();
-      setSelectedIndex(0);
     }
   }, [isVisible]);
 
@@ -42,11 +42,11 @@ export const TabSwitcher = ({ tabs, isVisible, onSelectTab, onClose }: TabSwitch
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex(prev => Math.min(prev + 1, filteredTabs.length - 1));
+          onNavigate('next');
           break;
         case "ArrowUp":
           e.preventDefault();
-          setSelectedIndex(prev => Math.max(prev - 1, 0));
+          onNavigate('prev');
           break;
         case "Enter":
           e.preventDefault();
@@ -63,7 +63,7 @@ export const TabSwitcher = ({ tabs, isVisible, onSelectTab, onClose }: TabSwitch
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible, selectedIndex, filteredTabs, onSelectTab, onClose]);
+  }, [isVisible, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate]);
 
   if (!isVisible) return null;
 
@@ -94,10 +94,7 @@ export const TabSwitcher = ({ tabs, isVisible, onSelectTab, onClose }: TabSwitch
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSelectedIndex(0);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tabs..."
               className={cn(
                 "w-full pl-10 pr-4 py-2 rounded-lg",
