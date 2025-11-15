@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { TabItem } from "./TabItem";
-import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -127,7 +126,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
         </div>
 
         {/* Tab List */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="px-2 py-2">
             {filteredTabs.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
@@ -150,7 +149,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer with shortcuts */}
         <div className="px-3 py-2 border-t border-border/50">
