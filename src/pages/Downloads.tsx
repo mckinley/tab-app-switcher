@@ -142,7 +142,7 @@ const Downloads = () => {
               <strong className="text-foreground">Browser Extension:</strong> Works entirely within your browser. Use keyboard shortcuts to switch between tabs in any browser window. Perfect for getting started quickly.
             </p>
             <p>
-              <strong className="text-foreground">Native UI App:</strong> Enhances your experience with OS-level keyboard registration and a system-wide overlay. The switcher appears above all applications, just like Alt+Tab on Windows or Cmd+Tab on macOS. Recommended for power users.
+              <strong className="text-foreground">Native UI App:</strong> Enhances your experience with OS-level keyboard registration and a system-wide overlay. The switcher appears above all applications, just like Alt+Tab on Windows or Cmd+Tab on macOS.
             </p>
             <p className="pt-4 border-t border-border text-sm">
               You can use the browser extension alone, or combine it with the Native UI for the best experience.
