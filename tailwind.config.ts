@@ -91,10 +91,25 @@ export default {
             height: "0",
           },
         },
+        "logo-entrance": {
+          "0%": {
+            opacity: "0",
+            filter: "blur(8px) drop-shadow(3px 0 0 rgba(255, 0, 0, 0.7)) drop-shadow(-3px 0 0 rgba(0, 255, 255, 0.7))",
+          },
+          "50%": {
+            opacity: "0.8",
+            filter: "blur(3px) drop-shadow(1.5px 0 0 rgba(255, 0, 0, 0.4)) drop-shadow(-1.5px 0 0 rgba(0, 255, 255, 0.4))",
+          },
+          "100%": {
+            opacity: "1",
+            filter: "blur(0px) drop-shadow(0 0 0 transparent) drop-shadow(0 0 0 transparent)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "logo-entrance": "logo-entrance 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
       },
     },
   },

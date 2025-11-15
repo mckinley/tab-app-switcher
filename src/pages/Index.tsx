@@ -173,7 +173,7 @@ const Index = () => {
             <img 
               src={logo} 
               alt="Tab Application Switcher Logo" 
-              className="h-20 w-auto mx-auto mb-12 rounded-lg animate-fade-in"
+              className="h-20 w-auto mx-auto mb-12 rounded-lg animate-logo-entrance"
             />
             <h1 className="text-6xl font-bold text-foreground">
               Tab Application Switcher
