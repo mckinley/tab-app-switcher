@@ -42,12 +42,12 @@ const Downloads = () => {
               <h1 className="text-xl font-bold text-foreground">Tab Application Switcher</h1>
             </NavLink>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <Link to="/">
                 <Button variant="ghost">
                   Back to Home
                 </Button>
               </Link>
+              <ThemeToggle />
             </div>
           </div>
         </div>
