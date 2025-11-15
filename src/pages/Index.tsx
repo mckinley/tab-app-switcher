@@ -4,7 +4,7 @@ import { TabSwitcher, Tab } from "@/components/TabSwitcher";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { RGBSplitGlitch } from "@/components/RGBSplitGlitch";
+
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import logo from "@/assets/logo.png";
@@ -171,18 +171,15 @@ const Index = () => {
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
         <div className="max-w-4xl space-y-8">
           <div className="space-y-4">
-            <RGBSplitGlitch className="mb-12" fade={true} initialDelay={2000} randomRepeat={true}>
-              <img 
-                src={logo} 
-                alt="Tab Application Switcher Logo" 
-                className="h-20 w-auto mx-auto rounded-lg"
-              />
-            </RGBSplitGlitch>
-            <RGBSplitGlitch initialDelay={2000} randomRepeat={true}>
-              <h1 className="text-6xl font-bold text-foreground">
-                Tab Application Switcher
-              </h1>
-            </RGBSplitGlitch>
+            <img 
+              src={logo} 
+              alt="Tab Application Switcher Logo" 
+              className="h-20 w-auto mx-auto rounded-lg mb-12 animate-fade-in"
+              style={{ animationDuration: '800ms' }}
+            />
+            <h1 className="text-6xl font-bold text-foreground">
+              Tab Application Switcher
+            </h1>
             <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
               Like your system's Application Switcher, but for your Chrome tabs
             </p>
