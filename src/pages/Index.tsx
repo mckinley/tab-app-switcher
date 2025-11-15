@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.jpg";
 
 // Mock data - in your actual extension, this will come from Chrome API
 const allTabs: Tab[] = [
