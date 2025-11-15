@@ -5,6 +5,7 @@ import { Download, Chrome, Apple, Monitor } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import { NavLink } from "@/components/NavLink";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const Downloads = () => {
   const [platform, setPlatform] = useState(() => detectPlatform());
@@ -32,7 +33,12 @@ const Downloads = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
-            <NavLink to="/">
+            <NavLink to="/" className="flex items-center gap-3">
+              <img 
+                src={logo} 
+                alt="Tab Application Switcher Logo" 
+                className="h-8 w-auto rounded opacity-80 hover:opacity-100 transition-opacity"
+              />
               <h1 className="text-xl font-bold text-foreground">Tab Application Switcher</h1>
             </NavLink>
             <div className="flex items-center gap-2">
