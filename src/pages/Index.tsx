@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
+import logo from "@/assets/logo.png";
 
 // Mock data - in your actual extension, this will come from Chrome API
 const allTabs: Tab[] = [
@@ -163,6 +164,11 @@ const Index = () => {
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
         <div className="max-w-4xl space-y-8">
           <div className="space-y-4">
+            <img 
+              src={logo} 
+              alt="Tab Application Switcher Logo" 
+              className="w-16 h-16 mx-auto mb-4 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+            />
             <h1 className="text-6xl font-bold text-foreground">
               Tab Application Switcher
             </h1>
