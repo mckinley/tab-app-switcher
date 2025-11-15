@@ -151,19 +151,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Chrome Tabs Preview */}
-      <ChromeTabsPreview 
-        tabs={tabs} 
-        activeTabId={activeTabId}
-        isVisible={isSwitcherVisible}
-        onTabClick={handleTabClick}
-      />
+      <div className="relative">
+        {/* Chrome Tabs Preview */}
+        <ChromeTabsPreview 
+          tabs={tabs} 
+          activeTabId={activeTabId}
+          isVisible={isSwitcherVisible}
+          onTabClick={handleTabClick}
+        />
 
-      {/* Tooltip */}
-      <TabsTooltip 
-        isVisible={showTooltip && !isSwitcherVisible}
-        onDismiss={() => setShowTooltip(false)}
-      />
+        {/* Tooltip */}
+        <TabsTooltip 
+          isVisible={showTooltip && !isSwitcherVisible}
+          onDismiss={() => setShowTooltip(false)}
+        />
+      </div>
 
       {/* Header - positioned below tabs */}
       <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-2 pt-4 pb-8">
