@@ -29,16 +29,22 @@ interface KeyboardShortcuts {
 interface TasSettingsProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const TasSettings = ({ shortcuts, onShortcutsChange }: TasSettingsProps) => {
+export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasSettingsProps) => {
   const { theme, setTheme } = useTheme();
   const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
+
   const handleSave = () => {
     onShortcutsChange(localShortcuts);
-    setOpen(false);
+    handleOpenChange(false);
   };
 
   const handleReset = () => {
@@ -52,7 +58,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange }: TasSettingsProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button
           className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
@@ -141,7 +147,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange }: TasSettingsProps) 
             Reset to Defaults
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setOpen(false)}>
+            <Button variant="ghost" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button onClick={handleSave}>

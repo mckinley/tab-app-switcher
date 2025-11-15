@@ -20,9 +20,10 @@ interface TabSwitcherProps {
   onNavigate: (direction: 'next' | 'prev') => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
   onCloseTab: (tabId: string) => void;
+  onSettingsOpenChange?: (isOpen: boolean) => void;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab }: TabSwitcherProps) => {
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onSettingsOpenChange }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [shortcuts, setShortcuts] = useState({
@@ -189,6 +190,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               <TasSettings 
                 shortcuts={shortcuts}
                 onShortcutsChange={setShortcuts}
+                onOpenChange={onSettingsOpenChange}
               />
             </div>
           </div>

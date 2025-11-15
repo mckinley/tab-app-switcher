@@ -81,6 +81,7 @@ const Index = () => {
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isAltHeld, setIsAltHeld] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const [hasUsedTAS, setHasUsedTAS] = useState(false);
 
@@ -182,8 +183,8 @@ const Index = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      // When Alt is released, activate the selected tab (unless search is focused)
-      if (e.key === "Alt" && isAltHeld && isSwitcherVisible && !isSearchFocused) {
+      // When Alt is released, activate the selected tab (unless search is focused or settings is open)
+      if (e.key === "Alt" && isAltHeld && isSwitcherVisible && !isSearchFocused && !isSettingsOpen) {
         setIsAltHeld(false);
         handleSelectTab(mruTabs[selectedIndex].id);
       }
@@ -195,7 +196,7 @@ const Index = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused]);
+  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused, isSettingsOpen]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -449,6 +450,7 @@ const Index = () => {
         onNavigate={handleNavigate}
         onSearchFocusChange={setIsSearchFocused}
         onCloseTab={handleCloseTab}
+        onSettingsOpenChange={setIsSettingsOpen}
       />
     </div>
   );
