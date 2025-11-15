@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { TabSwitcher, Tab } from "@/components/TabSwitcher";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { Button } from "@/components/ui/button";
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
+import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 
 // Mock data - in your actual extension, this will come from Chrome API
 const allTabs: Tab[] = [
@@ -51,6 +53,8 @@ const allTabs: Tab[] = [
 ];
 
 const Index = () => {
+  const [platform] = useState(() => detectPlatform());
+  
   // Randomize tab order on mount
   const [tabs] = useState(() => {
     const shuffled = [...allTabs];
@@ -162,14 +166,18 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="gap-2 text-lg px-8 py-6">
-              <Download className="w-5 h-5" />
-              Install Chrome Extension
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
-              <Download className="w-5 h-5" />
-              Download Electron App
-            </Button>
+            <Link to="/downloads">
+              <Button size="lg" className="gap-2 text-lg px-8 py-6">
+                <Download className="w-5 h-5" />
+                Install {getBrowserDisplayName(platform.browser)} Extension
+              </Button>
+            </Link>
+            <Link to="/downloads">
+              <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+                <Download className="w-5 h-5" />
+                Download for {getOSDisplayName(platform.os)}
+              </Button>
+            </Link>
           </div>
 
           <div className="pt-8">
@@ -320,14 +328,18 @@ const Index = () => {
             Install the Chrome extension and Electron app to get started
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="gap-2 text-lg px-8 py-6">
-              <Download className="w-5 h-5" />
-              Install Chrome Extension
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
-              <Download className="w-5 h-5" />
-              Download Electron App
-            </Button>
+            <Link to="/downloads">
+              <Button size="lg" className="gap-2 text-lg px-8 py-6">
+                <Download className="w-5 h-5" />
+                Install {getBrowserDisplayName(platform.browser)} Extension
+              </Button>
+            </Link>
+            <Link to="/downloads">
+              <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6">
+                <Download className="w-5 h-5" />
+                Download for {getOSDisplayName(platform.os)}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
