@@ -39,6 +39,12 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
+      // Prevent backtick from being typed in search
+      if (e.key === "`") {
+        e.preventDefault();
+        return;
+      }
+
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
