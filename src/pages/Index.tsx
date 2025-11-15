@@ -65,6 +65,30 @@ const allTabs: Tab[] = [
 const Index = () => {
   const [platform] = useState(() => detectPlatform());
   
+  // Load shortcuts from localStorage or use defaults
+  const [shortcuts, setShortcuts] = useState(() => {
+    const saved = localStorage.getItem('tas-shortcuts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse shortcuts from localStorage', e);
+      }
+    }
+    return {
+      modifier: "Alt",
+      activateForward: "Tab",
+      activateBackward: "`",
+      search: "F",
+      closeTab: "W",
+    };
+  });
+
+  // Save shortcuts to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('tas-shortcuts', JSON.stringify(shortcuts));
+  }, [shortcuts]);
+  
   // Randomize tab order on mount and make tabs dynamic
   const [tabs, setTabs] = useState(() => {
     const shuffled = [...allTabs];
@@ -153,16 +177,25 @@ const Index = () => {
     });
   };
 
-  // Mac-like Application Switcher behavior with Alt key
+  // Mac-like Application Switcher behavior with configurable modifier key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Track Alt key press
-      if (e.key === "Alt") {
+      // Check if modifier key is pressed
+      const isModifierPressed = 
+        (shortcuts.modifier === "Alt" && e.altKey) ||
+        (shortcuts.modifier === "Cmd" && e.metaKey) ||
+        (shortcuts.modifier === "Ctrl" && e.ctrlKey) ||
+        (shortcuts.modifier === "Shift" && e.shiftKey);
+
+      // Track modifier key press
+      if (e.key === shortcuts.modifier || 
+          (shortcuts.modifier === "Cmd" && e.key === "Meta") ||
+          (shortcuts.modifier === "Ctrl" && e.key === "Control")) {
         setIsAltHeld(true);
       }
 
-      // Alt+Tab to cycle forward
-      if (e.altKey && e.key === "Tab") {
+      // Modifier+ActivateForward to cycle forward
+      if (isModifierPressed && e.key === shortcuts.activateForward) {
         e.preventDefault();
         if (!isSwitcherVisible) {
           setIsSwitcherVisible(true);
@@ -173,8 +206,8 @@ const Index = () => {
         }
       }
 
-      // Alt+` to cycle backward
-      if (e.altKey && e.key === "`") {
+      // Modifier+ActivateBackward to cycle backward
+      if (isModifierPressed && e.key === shortcuts.activateBackward) {
         e.preventDefault();
         if (isSwitcherVisible) {
           handleNavigate('prev');
@@ -183,8 +216,14 @@ const Index = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      // When Alt is released, activate the selected tab (unless search is focused or settings is open)
-      if (e.key === "Alt" && isAltHeld && isSwitcherVisible && !isSearchFocused && !isSettingsOpen) {
+      // When modifier is released, activate the selected tab (unless search is focused or settings is open)
+      const isModifierRelease = 
+        e.key === shortcuts.modifier ||
+        (shortcuts.modifier === "Cmd" && e.key === "Meta") ||
+        (shortcuts.modifier === "Ctrl" && e.key === "Control") ||
+        (shortcuts.modifier === "Alt" && e.key === "Alt");
+
+      if (isModifierRelease && isAltHeld && isSwitcherVisible && !isSearchFocused && !isSettingsOpen) {
         setIsAltHeld(false);
         handleSelectTab(mruTabs[selectedIndex].id);
       }
@@ -196,7 +235,7 @@ const Index = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused, isSettingsOpen]);
+  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused, isSettingsOpen, shortcuts]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -271,10 +310,10 @@ const Index = () => {
               className="gap-2"
             >
               <Command className="w-4 h-4" />
-              Try Live Demo (Alt+Tab)
+              Try Live Demo ({shortcuts.modifier}+{shortcuts.activateForward})
             </Button>
             <p className="text-sm text-muted-foreground mt-3">
-              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Alt</kbd> + <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Tab</kbd> to activate
+              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{shortcuts.modifier}</kbd> + <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{shortcuts.activateForward}</kbd> to activate
             </p>
           </div>
         </div>
@@ -371,11 +410,11 @@ const Index = () => {
           
           <div className="space-y-4 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + Tab</kbd>
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">{shortcuts.modifier} + {shortcuts.activateForward}</kbd>
               <span className="text-muted-foreground">Activate TAS and move forward through tabs</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + `</kbd>
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">{shortcuts.modifier} + {shortcuts.activateBackward}</kbd>
               <span className="text-muted-foreground">Move backward through the list of tabs</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -391,11 +430,11 @@ const Index = () => {
               <span className="text-muted-foreground">Close TAS without making a selection</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Release Alt</kbd>
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Release {shortcuts.modifier}</kbd>
               <span className="text-muted-foreground">Select the highlighted tab</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + W</kbd>
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">{shortcuts.modifier} + {shortcuts.closeTab}</kbd>
               <span className="text-muted-foreground">Close the highlighted tab</span>
             </div>
           </div>
@@ -451,6 +490,8 @@ const Index = () => {
         onSearchFocusChange={setIsSearchFocused}
         onCloseTab={handleCloseTab}
         onSettingsOpenChange={setIsSettingsOpen}
+        shortcuts={shortcuts}
+        onShortcutsChange={setShortcuts}
       />
     </div>
   );
