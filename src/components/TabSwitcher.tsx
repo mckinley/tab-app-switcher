@@ -54,9 +54,10 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
-      // "f" key to focus search
-      if (e.key === "f" && !isSearchFocused) {
+      // "f" or "F" key to focus search (works even with Alt held)
+      if ((e.key === "f" || e.key === "F") && !isSearchFocused) {
         e.preventDefault();
+        e.stopPropagation();
         setIsSearchFocused(true);
         onSearchFocusChange?.(true);
         searchInputRef.current?.focus();
