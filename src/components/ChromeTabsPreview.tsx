@@ -30,7 +30,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
           </div>
         ) : (
           <div className="relative">
-            <div className="flex gap-0 overflow-x-auto scrollbar-hide pr-12">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
               <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
                   display: none;
@@ -103,7 +103,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
             {canAddTab && (
               <button
                 onClick={onAddTab}
-                className="absolute right-0 top-0 flex items-center justify-center w-12 h-12 border-b-2 border-l border-border/10 border-b-transparent hover:border-b-muted-foreground/30 hover:bg-background/95 transition-all text-muted-foreground hover:text-foreground bg-background shadow-[-8px_0_8px_0_hsl(var(--background))]"
+                className="absolute right-0 top-0 flex items-center justify-center w-12 h-12 border-b-2 border-l border-border/10 border-b-transparent hover:border-b-muted-foreground/30 hover:bg-background/95 transition-all text-muted-foreground hover:text-foreground bg-background z-30"
                 aria-label="Add new tab"
               >
                 <span className="text-lg font-light">+</span>
