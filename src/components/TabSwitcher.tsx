@@ -89,7 +89,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[hsl(var(--switcher-backdrop))]/20 backdrop-blur-sm"
+        className="fixed inset-0 bg-[hsl(var(--switcher-backdrop))]/20 backdrop-blur-sm z-50"
         onClick={onClose}
       />
 
@@ -97,13 +97,14 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
       <div
         ref={containerRef}
         className={cn(
-          "fixed top-4 right-4 bottom-4",
+          "fixed top-4 right-4 bottom-4 z-50",
           "w-[360px]",
           "bg-[hsl(var(--switcher-bg))] rounded-xl",
           "shadow-[0_8px_32px_-8px_hsl(var(--switcher-shadow))]",
           "border border-border/50",
           "flex flex-col overflow-hidden"
         )}
+        style={{ isolation: 'isolate' }}
       >
         {/* Search Bar */}
         <div className="p-3 border-b border-border/50">
