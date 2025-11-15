@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { TabSwitcher, Tab } from "@/components/TabSwitcher";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TabsTooltip } from "@/components/TabsTooltip";
 import { Button } from "@/components/ui/button";
 
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
@@ -74,6 +75,7 @@ const Index = () => {
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isAltHeld, setIsAltHeld] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(true);
 
   // Get tabs in MRU order for the switcher
   const mruTabs = mruOrder.map(id => tabs.find(t => t.id === id)!).filter(Boolean);
@@ -155,6 +157,12 @@ const Index = () => {
         activeTabId={activeTabId}
         isVisible={isSwitcherVisible}
         onTabClick={handleTabClick}
+      />
+
+      {/* Tooltip */}
+      <TabsTooltip 
+        isVisible={showTooltip && !isSwitcherVisible}
+        onDismiss={() => setShowTooltip(false)}
       />
 
       {/* Header - positioned below tabs */}
