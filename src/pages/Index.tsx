@@ -241,7 +241,7 @@ const Index = () => {
             <h1 className="text-6xl font-bold text-foreground">
               Tab Application Switcher
             </h1>
-            <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-2xl text-muted-foreground max-w-3xl mx-auto">
               Like your system's Application Switcher, but for your browser tabs
             </p>
           </div>
