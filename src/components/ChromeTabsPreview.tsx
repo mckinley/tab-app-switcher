@@ -66,7 +66,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                     }}
                   />
                   
-                  {/* Title with left fade */}
+                  {/* Title with right fade */}
                   <div className="flex-1 min-w-0 relative">
                     <span 
                       className={cn(
@@ -74,8 +74,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                         isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                       )}
                       style={{
-                        maskImage: 'linear-gradient(to right, transparent 0%, black 12px, black 100%)',
-                        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12px, black 100%)'
+                        maskImage: 'linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)'
                       }}
                     >
                       {tab.title}
