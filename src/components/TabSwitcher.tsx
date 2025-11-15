@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+import { Search, LayoutGrid } from "lucide-react";
 import { TabItem } from "./TabItem";
+import { TasSettings } from "./TasSettings";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -24,6 +25,11 @@ interface TabSwitcherProps {
 export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [shortcuts, setShortcuts] = useState({
+    openSwitcher: "Alt+`",
+    search: "F",
+    closeTab: "Alt+W",
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
@@ -145,29 +151,46 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
       >
         {/* Search Bar */}
         <div className="p-3 border-b border-border/50">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => {
-                setIsSearchFocused(true);
-                onSearchFocusChange?.(true);
-              }}
-              onBlur={() => {
-                setIsSearchFocused(false);
-                onSearchFocusChange?.(false);
-              }}
-              placeholder="Press 'f' to search tabs..."
-              className={cn(
-                "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
-                "bg-input text-foreground placeholder:text-muted-foreground",
-                "border border-transparent focus:border-ring/30",
-                "outline-none transition-colors"
-              )}
-            />
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  setIsSearchFocused(true);
+                  onSearchFocusChange?.(true);
+                }}
+                onBlur={() => {
+                  setIsSearchFocused(false);
+                  onSearchFocusChange?.(false);
+                }}
+                placeholder="Press 'f' to search tabs..."
+                className={cn(
+                  "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
+                  "bg-input text-foreground placeholder:text-muted-foreground",
+                  "border border-transparent focus:border-ring/30",
+                  "outline-none transition-colors"
+                )}
+              />
+            </div>
+            
+            {/* Action Icons */}
+            <div className="flex flex-col gap-1">
+              <button
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Advanced tab management"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              
+              <TasSettings 
+                shortcuts={shortcuts}
+                onShortcutsChange={setShortcuts}
+              />
+            </div>
           </div>
         </div>
 
