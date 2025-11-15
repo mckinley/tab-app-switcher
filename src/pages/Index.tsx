@@ -65,8 +65,8 @@ const allTabs: Tab[] = [
 const Index = () => {
   const [platform] = useState(() => detectPlatform());
   
-  // Randomize tab order on mount
-  const [tabs] = useState(() => {
+  // Randomize tab order on mount and make tabs dynamic
+  const [tabs, setTabs] = useState(() => {
     const shuffled = [...allTabs];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -100,6 +100,41 @@ const Index = () => {
     setActiveTabId(tabId);
     // Move clicked tab to front of MRU order
     setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
+  };
+
+  const handleCloseTab = (tabId: string) => {
+    // Remove tab from tabs array
+    setTabs(prev => prev.filter(t => t.id !== tabId));
+    // Remove from MRU order
+    setMruOrder(prev => prev.filter(id => id !== tabId));
+    // If closing active tab, switch to most recent tab
+    if (activeTabId === tabId) {
+      const remainingTabs = mruOrder.filter(id => id !== tabId);
+      if (remainingTabs.length > 0) {
+        setActiveTabId(remainingTabs[0]);
+      }
+    }
+  };
+
+  const handleAddTab = () => {
+    if (tabs.length >= 8) return;
+    
+    // Pick a random tab from allTabs that's not currently in tabs
+    const availableTabs = allTabs.filter(t => !tabs.find(tab => tab.id === t.id));
+    if (availableTabs.length === 0) {
+      // If all tabs are used, pick any random tab and give it a new ID
+      const randomTab = allTabs[Math.floor(Math.random() * allTabs.length)];
+      const newTab = {
+        ...randomTab,
+        id: `${randomTab.id}-${Date.now()}`
+      };
+      setTabs(prev => [...prev, newTab]);
+      setMruOrder(prev => [...prev, newTab.id]);
+    } else {
+      const randomTab = availableTabs[Math.floor(Math.random() * availableTabs.length)];
+      setTabs(prev => [...prev, randomTab]);
+      setMruOrder(prev => [...prev, randomTab.id]);
+    }
   };
 
   const handleNavigate = (direction: 'next' | 'prev') => {
@@ -200,7 +235,7 @@ const Index = () => {
               Tab Application Switcher
             </h1>
             <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
-              Like your system's Application Switcher, but for your Chrome tabs
+              Like your system's Application Switcher, but for your browser tabs
             </p>
           </div>
 
@@ -304,17 +339,6 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <div className="text-2xl font-bold text-primary">1-9</div>
-            </div>
-            <h3 className="text-xl font-semibold text-foreground">
-              Number Shortcuts
-            </h3>
-            <p className="text-muted-foreground">
-              Jump directly to tabs 1-9 using number keys for even faster navigation.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -350,6 +374,10 @@ const Index = () => {
               <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Release Alt</kbd>
               <span className="text-muted-foreground pt-1.5">Select the highlighted tab</span>
             </div>
+            <div className="flex items-start gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + W</kbd>
+              <span className="text-muted-foreground pt-1.5">Close the highlighted tab</span>
+            </div>
           </div>
 
           <p className="text-sm text-muted-foreground pt-4 border-t border-border">
@@ -365,7 +393,7 @@ const Index = () => {
             Ready to switch tabs like a pro?
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Install the Chrome extension and Electron app to get started
+            Install the browser extension and native UI to get started
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
@@ -401,6 +429,9 @@ const Index = () => {
         }}
         onNavigate={handleNavigate}
         onSearchFocusChange={setIsSearchFocused}
+        onCloseTab={handleCloseTab}
+        onAddTab={handleAddTab}
+        canAddTab={tabs.length < 8}
       />
     </div>
   );
