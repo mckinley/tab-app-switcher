@@ -361,9 +361,11 @@ const Index = () => {
             </Button>
           </div>
           
-          <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
-            View all download options
-          </Link>
+          <div className="pt-6">
+            <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
+              View all download options
+            </Link>
+          </div>
         </div>
       </div>
 
