@@ -12,7 +12,16 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
   return (
     <div className="w-full bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          <style>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+            .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `}</style>
           {tabs.map((tab) => {
             const isActive = !isVisible && tab.id === activeTabId;
             return (
@@ -20,7 +29,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                 key={tab.id}
                 onClick={() => onTabClick(tab.id)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2 rounded-t-lg min-w-[180px] max-w-[240px]",
+                  "relative flex items-center gap-2 px-3 py-2 rounded-t-lg flex-shrink-0",
+                  "min-w-[140px] w-[200px] max-w-[240px]",
                   "border border-b-0 transition-all duration-200 cursor-pointer",
                   isActive
                     ? "bg-background border-border z-10 shadow-lg scale-105"
