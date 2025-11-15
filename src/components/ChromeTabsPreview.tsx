@@ -30,7 +30,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                 onClick={() => onTabClick(tab.id)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 flex-shrink-0",
-                  "min-w-[180px] w-[240px] max-w-[280px]",
+                  "min-w-[120px] w-auto max-w-[240px] flex-1",
                   "transition-all duration-150",
                   "border-b-2 border-r border-border/10",
                   isActive
