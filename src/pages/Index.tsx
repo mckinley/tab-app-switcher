@@ -72,6 +72,7 @@ const Index = () => {
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isAltHeld, setIsAltHeld] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Get tabs in MRU order for the switcher
   const mruTabs = mruOrder.map(id => tabs.find(t => t.id === id)!).filter(Boolean);
@@ -130,8 +131,8 @@ const Index = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      // When Alt is released, activate the selected tab
-      if (e.key === "Alt" && isAltHeld && isSwitcherVisible) {
+      // When Alt is released, activate the selected tab (unless search is focused)
+      if (e.key === "Alt" && isAltHeld && isSwitcherVisible && !isSearchFocused) {
         setIsAltHeld(false);
         handleSelectTab(mruTabs[selectedIndex].id);
       }
@@ -143,7 +144,7 @@ const Index = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isSwitcherVisible, isAltHeld, selectedIndex]);
+  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -376,6 +377,7 @@ const Index = () => {
           setIsAltHeld(false);
         }}
         onNavigate={handleNavigate}
+        onSearchFocusChange={setIsSearchFocused}
       />
     </div>
   );

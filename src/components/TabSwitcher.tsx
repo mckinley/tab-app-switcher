@@ -17,10 +17,12 @@ interface TabSwitcherProps {
   onSelectTab: (tabId: string) => void;
   onClose: () => void;
   onNavigate: (direction: 'next' | 'prev') => void;
+  onSearchFocusChange?: (isFocused: boolean) => void;
 }
 
-export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate }: TabSwitcherProps) => {
+export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
@@ -30,9 +32,11 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     tab.url.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Reset search when switcher opens
   useEffect(() => {
-    if (isVisible && searchInputRef.current) {
-      searchInputRef.current.focus();
+    if (isVisible) {
+      setSearchQuery("");
+      setIsSearchFocused(false);
     }
   }, [isVisible]);
 
@@ -50,7 +54,27 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
-      // Prevent backtick from being typed in search
+      // "f" key to focus search
+      if (e.key === "f" && !isSearchFocused) {
+        e.preventDefault();
+        setIsSearchFocused(true);
+        onSearchFocusChange?.(true);
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      // If search is focused, allow normal typing except for Escape
+      if (isSearchFocused) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setIsSearchFocused(false);
+          onSearchFocusChange?.(false);
+          searchInputRef.current?.blur();
+        }
+        return;
+      }
+
+      // When search is NOT focused, prevent backtick from being typed
       if (e.key === "`") {
         e.preventDefault();
         return;
@@ -80,7 +104,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate]);
+  }, [isVisible, isSearchFocused, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate]);
 
   if (!isVisible) return null;
 
@@ -114,7 +138,15 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tabs..."
+              onFocus={() => {
+                setIsSearchFocused(true);
+                onSearchFocusChange?.(true);
+              }}
+              onBlur={() => {
+                setIsSearchFocused(false);
+                onSearchFocusChange?.(false);
+              }}
+              placeholder="Press 'f' to search tabs..."
               className={cn(
                 "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
                 "bg-input text-foreground placeholder:text-muted-foreground",
@@ -153,10 +185,14 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
 
         {/* Footer with shortcuts */}
         <div className="px-3 py-2 border-t border-border/50">
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↑↓</kbd>
               <span>Navigate</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">F</kbd>
+              <span>Search</span>
             </div>
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↵</kbd>
