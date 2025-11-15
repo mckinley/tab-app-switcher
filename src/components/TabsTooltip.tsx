@@ -13,12 +13,21 @@ export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
 
   useEffect(() => {
     // Delay showing to allow page to load
-    const timer = setTimeout(() => {
-      setShow(isVisible);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [isVisible]);
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        setShow(true);
+        setFadingOut(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (show) {
+      // Trigger fade out when isVisible becomes false
+      setFadingOut(true);
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, 300); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, show]);
 
   const handleDismiss = () => {
     setFadingOut(true);
@@ -31,7 +40,7 @@ export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
   if (!show) return null;
 
   return (
-    <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 ${fadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
+    <div className={`absolute top-16 left-1/2 -translate-x-1/2 z-50 ${fadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
       <div className="relative bg-primary text-primary-foreground rounded-lg px-6 py-4 shadow-xl max-w-md animate-bounce-gentle">
         {/* Arrow pointing up */}
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45" />
