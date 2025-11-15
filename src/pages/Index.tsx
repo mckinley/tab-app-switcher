@@ -40,7 +40,7 @@ const allTabs: Tab[] = [
     id: "5",
     title: "Amnesty International",
     url: "https://www.amnesty.org/",
-    favicon: "/favicons/amnesty.ico"
+    favicon: "/favicons/amnesty.png"
   },
   {
     id: "6",
