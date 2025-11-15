@@ -7,6 +7,7 @@ import { TabsTooltip } from "@/components/TabsTooltip";
 import { Button } from "@/components/ui/button";
 
 import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react";
+import { NavLink } from "@/components/NavLink";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import logo from "@/assets/logo.jpg";
 
@@ -199,6 +200,30 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 py-4">
+          <div className="flex items-center justify-between">
+            <NavLink to="/" className="flex items-center gap-3">
+              <img 
+                src={logo} 
+                alt="Tab Application Switcher Logo" 
+                className="h-8 w-auto rounded opacity-80 hover:opacity-100 transition-opacity"
+              />
+              <h1 className="text-xl font-bold text-foreground">Tab Application Switcher</h1>
+            </NavLink>
+            <div className="flex items-center gap-2">
+              <Link to="/downloads">
+                <Button variant="ghost">
+                  Downloads
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      </header>
+
       <div className="relative">
         {/* Chrome Tabs Preview */}
       <ChromeTabsPreview
@@ -217,16 +242,6 @@ const Index = () => {
           onDismiss={() => setShowTooltip(false)}
           hasBeenUsed={hasUsedTAS}
         />
-      </div>
-
-      {/* Header - positioned below tabs */}
-      <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-2 pt-4 pb-8">
-        <Link to="/downloads">
-          <Button variant="ghost" size="sm">
-            Downloads
-          </Button>
-        </Link>
-        <ThemeToggle />
       </div>
 
       {/* Hero Section */}
