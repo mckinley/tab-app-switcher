@@ -369,32 +369,32 @@ const Index = () => {
           </h2>
           
           <div className="space-y-4 text-left">
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + Tab</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + Tab</kbd>
               <span className="text-muted-foreground">Activate TAS and move forward through tabs</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + `</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + `</kbd>
               <span className="text-muted-foreground">Move backward through the list of tabs</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">↑ ↓</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">↑ ↓</kbd>
               <span className="text-muted-foreground">Navigate through the list of tabs</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Enter</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Enter</kbd>
               <span className="text-muted-foreground">Select the highlighted tab</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Esc</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Esc</kbd>
               <span className="text-muted-foreground">Close TAS without making a selection</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Release Alt</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Release Alt</kbd>
               <span className="text-muted-foreground">Select the highlighted tab</span>
             </div>
-            <div className="flex items-center gap-3">
-              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0">Alt + W</kbd>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Alt + W</kbd>
               <span className="text-muted-foreground">Close the highlighted tab</span>
             </div>
           </div>
