@@ -76,6 +76,7 @@ const Index = () => {
   const [isAltHeld, setIsAltHeld] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
+  const [hasUsedTAS, setHasUsedTAS] = useState(false);
 
   // Get tabs in MRU order for the switcher
   const mruTabs = mruOrder.map(id => tabs.find(t => t.id === id)!).filter(Boolean);
@@ -119,6 +120,7 @@ const Index = () => {
         if (!isSwitcherVisible) {
           setIsSwitcherVisible(true);
           setSelectedIndex(1); // Start with second tab selected
+          setHasUsedTAS(true); // Mark that TAS has been used
         } else {
           handleNavigate('next');
         }
@@ -164,6 +166,7 @@ const Index = () => {
         <TabsTooltip 
           isVisible={showTooltip && !isSwitcherVisible}
           onDismiss={() => setShowTooltip(false)}
+          hasBeenUsed={hasUsedTAS}
         />
       </div>
 

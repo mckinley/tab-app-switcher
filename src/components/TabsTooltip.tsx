@@ -5,19 +5,22 @@ import { Button } from "@/components/ui/button";
 interface TabsTooltipProps {
   isVisible: boolean;
   onDismiss: () => void;
+  hasBeenUsed?: boolean;
 }
 
-export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
+export const TabsTooltip = ({ isVisible, onDismiss, hasBeenUsed = false }: TabsTooltipProps) => {
   const [show, setShow] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
     // Delay showing to allow page to load
     if (isVisible) {
+      // Longer delay if TAS has been used before (3 seconds), shorter for first appearance (2 seconds)
+      const delay = hasBeenUsed ? 3000 : 2000;
       const timer = setTimeout(() => {
         setShow(true);
         setFadingOut(false);
-      }, 1000);
+      }, delay);
       return () => clearTimeout(timer);
     } else if (show) {
       // Trigger fade out when isVisible becomes false
@@ -27,7 +30,7 @@ export const TabsTooltip = ({ isVisible, onDismiss }: TabsTooltipProps) => {
       }, 300); // Match animation duration
       return () => clearTimeout(timer);
     }
-  }, [isVisible, show]);
+  }, [isVisible, show, hasBeenUsed]);
 
   const handleDismiss = () => {
     setFadingOut(true);
