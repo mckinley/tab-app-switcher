@@ -38,6 +38,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
   const { theme, setTheme } = useTheme();
   const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
+  const [capturingKey, setCapturingKey] = useState<string | null>(null);
 
   // Sync localShortcuts when shortcuts prop changes
   useEffect(() => {
@@ -113,11 +114,14 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             {/* Modifier Key */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Modifier Key</Label>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <KeyButton
                   value={localShortcuts.modifier}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, modifier: key })}
                   label="Modifier"
+                  isCapturing={capturingKey === 'modifier'}
+                  onCaptureStart={() => setCapturingKey('modifier')}
+                  onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -126,18 +130,24 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Navigation Shortcuts */}
-            <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+            <div className="space-y-3 p-3 bg-muted/70 dark:bg-muted/50 rounded-lg">
               <Label className="text-sm font-medium">TAS Navigation</Label>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <KeyButton
                   value={localShortcuts.activateForward}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, activateForward: key })}
                   label="Forward"
+                  isCapturing={capturingKey === 'activateForward'}
+                  onCaptureStart={() => setCapturingKey('activateForward')}
+                  onCaptureEnd={() => setCapturingKey(null)}
                 />
                 <KeyButton
                   value={localShortcuts.activateBackward}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, activateBackward: key })}
                   label="Backward"
+                  isCapturing={capturingKey === 'activateBackward'}
+                  onCaptureStart={() => setCapturingKey('activateBackward')}
+                  onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -146,18 +156,24 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Action Shortcuts */}
-            <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+            <div className="space-y-3 p-3 bg-muted/70 dark:bg-muted/50 rounded-lg">
               <Label className="text-sm font-medium">Actions</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton
                   value={localShortcuts.search}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, search: key })}
                   label="Search"
+                  isCapturing={capturingKey === 'search'}
+                  onCaptureStart={() => setCapturingKey('search')}
+                  onCaptureEnd={() => setCapturingKey(null)}
                 />
                 <KeyButton
                   value={localShortcuts.closeTab}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, closeTab: key })}
                   label="Close Tab"
+                  isCapturing={capturingKey === 'closeTab'}
+                  onCaptureStart={() => setCapturingKey('closeTab')}
+                  onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
               <p className="text-xs text-muted-foreground">

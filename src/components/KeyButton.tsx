@@ -6,10 +6,22 @@ interface KeyButtonProps {
   onKeyCapture: (key: string) => void;
   label: string;
   disabled?: boolean;
+  isCapturing?: boolean;
+  onCaptureStart?: () => void;
+  onCaptureEnd?: () => void;
 }
 
-export const KeyButton = ({ value, onKeyCapture, label, disabled = false }: KeyButtonProps) => {
-  const [isCapturing, setIsCapturing] = useState(false);
+export const KeyButton = ({ 
+  value, 
+  onKeyCapture, 
+  label, 
+  disabled = false,
+  isCapturing: externalIsCapturing = false,
+  onCaptureStart,
+  onCaptureEnd
+}: KeyButtonProps) => {
+  const [localCapturing, setLocalCapturing] = useState(false);
+  const isCapturing = externalIsCapturing || localCapturing;
 
   useEffect(() => {
     if (!isCapturing) return;
@@ -26,7 +38,8 @@ export const KeyButton = ({ value, onKeyCapture, label, disabled = false }: KeyB
       if (key === "Alt") key = "Alt";
       if (key === " ") key = "Space";
       if (key === "Escape") {
-        setIsCapturing(false);
+        setLocalCapturing(false);
+        onCaptureEnd?.();
         return;
       }
       
@@ -36,12 +49,19 @@ export const KeyButton = ({ value, onKeyCapture, label, disabled = false }: KeyB
       }
       
       onKeyCapture(key);
-      setIsCapturing(false);
+      setLocalCapturing(false);
+      onCaptureEnd?.();
     };
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [isCapturing, onKeyCapture]);
+  }, [isCapturing, onKeyCapture, onCaptureEnd]);
+
+  const handleClick = () => {
+    if (disabled) return;
+    setLocalCapturing(true);
+    onCaptureStart?.();
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -49,9 +69,9 @@ export const KeyButton = ({ value, onKeyCapture, label, disabled = false }: KeyB
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setIsCapturing(true)}
+        onClick={handleClick}
         className={cn(
-          "min-w-[60px] px-3 py-2 rounded-md text-sm font-medium transition-all",
+          "min-w-[60px] px-3 py-2 rounded-md font-medium transition-all",
           "border-2 shadow-sm",
           isCapturing 
             ? "border-primary bg-primary/10 text-primary animate-pulse" 
@@ -61,7 +81,13 @@ export const KeyButton = ({ value, onKeyCapture, label, disabled = false }: KeyB
           "font-mono tracking-wide"
         )}
       >
-        {isCapturing ? "Press key..." : value}
+        <span className={cn("block", isCapturing ? "text-[10px] leading-tight" : "text-sm")}>
+          {isCapturing ? (
+            <>Press<br />key...</>
+          ) : (
+            value
+          )}
+        </span>
       </button>
       {isCapturing && (
         <span className="text-[10px] text-muted-foreground">Press Esc to cancel</span>
