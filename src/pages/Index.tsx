@@ -5,74 +5,92 @@ import { Button } from "@/components/ui/button";
 import { Command, Download, Zap, Search, Keyboard, Clock } from "lucide-react";
 
 // Mock data - in your actual extension, this will come from Chrome API
-const mockTabs: Tab[] = [
+const allTabs: Tab[] = [
   {
     id: "1",
-    title: "GitHub - Chrome Tab Switcher",
-    url: "https://github.com/user/chrome-tab-switcher",
-    favicon: "https://github.githubassets.com/favicons/favicon.svg"
+    title: "NOAA - National Oceanic and Atmospheric Administration",
+    url: "https://www.noaa.gov/",
+    favicon: "https://www.noaa.gov/sites/all/themes/noaa/favicon.ico"
   },
   {
     id: "2",
-    title: "React Documentation - Getting Started",
-    url: "https://react.dev/learn",
-    favicon: "https://react.dev/favicon.ico"
+    title: "Google",
+    url: "https://www.google.com/",
+    favicon: "https://www.google.com/favicon.ico"
   },
   {
     id: "3",
-    title: "Stack Overflow - How to build Chrome extension",
-    url: "https://stackoverflow.com/questions/12345",
-    favicon: "https://cdn.sstatic.net/Sites/stackoverflow/Img/favicon.ico"
+    title: "NASA",
+    url: "https://www.nasa.gov/",
+    favicon: "https://www.nasa.gov/favicon.ico"
   },
   {
     id: "4",
-    title: "MDN Web Docs - Chrome Extension APIs",
-    url: "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions",
-    favicon: "https://developer.mozilla.org/favicon-48x48.png"
+    title: "GitHub",
+    url: "https://github.com/",
+    favicon: "https://github.githubassets.com/favicons/favicon.svg"
   },
   {
     id: "5",
-    title: "Electron Documentation - Quick Start",
-    url: "https://www.electronjs.org/docs/latest/",
-    favicon: "https://www.electronjs.org/assets/img/favicon.ico"
+    title: "Wikipedia",
+    url: "https://www.wikipedia.org/",
+    favicon: "https://www.wikipedia.org/favicon.ico"
   },
   {
     id: "6",
-    title: "TypeScript Handbook - Advanced Types",
-    url: "https://www.typescriptlang.org/docs/handbook/2/types-from-types.html",
-    favicon: "https://www.typescriptlang.org/favicon-32x32.png"
+    title: "Apple",
+    url: "https://www.apple.com/",
+    favicon: "https://www.apple.com/favicon.ico"
   },
   {
     id: "7",
-    title: "Tailwind CSS - Utility-First CSS Framework",
-    url: "https://tailwindcss.com/docs",
-    favicon: "https://tailwindcss.com/favicons/favicon-32x32.png"
-  },
-  {
-    id: "8",
-    title: "YouTube - Building Chrome Extensions Tutorial",
-    url: "https://www.youtube.com/watch?v=example",
-    favicon: "https://www.youtube.com/s/desktop/favicon.ico"
+    title: "NRDC - Natural Resources Defense Council",
+    url: "https://www.nrdc.org/",
+    favicon: "https://www.nrdc.org/sites/default/files/favicon.ico"
   }
 ];
 
 const Index = () => {
+  // Randomize tab order on mount
+  const [tabs] = useState(() => {
+    const shuffled = [...allTabs];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
+
+  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [mruOrder, setMruOrder] = useState(tabs.map(t => t.id));
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isAltHeld, setIsAltHeld] = useState(false);
 
+  // Get tabs in MRU order for the switcher
+  const mruTabs = mruOrder.map(id => tabs.find(t => t.id === id)!).filter(Boolean);
+
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
+    setActiveTabId(tabId);
+    // Move selected tab to front of MRU order
+    setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
     setIsSwitcherVisible(false);
     setIsAltHeld(false);
+  };
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTabId(tabId);
+    // Move clicked tab to front of MRU order
+    setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
   };
 
   const handleNavigate = (direction: 'next' | 'prev') => {
     setSelectedIndex(prev => {
       if (direction === 'next') {
-        return (prev + 1) % mockTabs.length;
+        return (prev + 1) % mruTabs.length;
       } else {
-        return prev === 0 ? mockTabs.length - 1 : prev - 1;
+        return prev === 0 ? mruTabs.length - 1 : prev - 1;
       }
     });
   };
@@ -109,7 +127,7 @@ const Index = () => {
       // When Alt is released, activate the selected tab
       if (e.key === "Alt" && isAltHeld && isSwitcherVisible) {
         setIsAltHeld(false);
-        handleSelectTab(mockTabs[selectedIndex].id);
+        handleSelectTab(mruTabs[selectedIndex].id);
       }
     };
 
@@ -124,7 +142,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Chrome Tabs Preview */}
-      <ChromeTabsPreview tabs={mockTabs} selectedIndex={selectedIndex} />
+      <ChromeTabsPreview 
+        tabs={tabs} 
+        activeTabId={activeTabId}
+        isVisible={isSwitcherVisible}
+        onTabClick={handleTabClick}
+      />
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
@@ -310,7 +333,7 @@ const Index = () => {
       </div>
 
       <TabSwitcher
-        tabs={mockTabs}
+        tabs={mruTabs}
         isVisible={isSwitcherVisible}
         selectedIndex={selectedIndex}
         onSelectTab={handleSelectTab}

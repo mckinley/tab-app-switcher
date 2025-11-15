@@ -3,25 +3,30 @@ import { cn } from "@/lib/utils";
 
 interface ChromeTabsPreviewProps {
   tabs: Tab[];
-  selectedIndex: number;
+  activeTabId: string;
+  isVisible: boolean;
+  onTabClick: (tabId: string) => void;
 }
 
-export const ChromeTabsPreview = ({ tabs, selectedIndex }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex gap-1 overflow-x-auto">
-          {tabs.map((tab, index) => (
-            <div
-              key={tab.id}
-              className={cn(
-                "relative flex items-center gap-2 px-4 py-2 rounded-t-lg min-w-[180px] max-w-[240px]",
-                "border border-b-0 transition-all duration-200",
-                selectedIndex === index
-                  ? "bg-background border-border z-10 shadow-lg scale-105"
-                  : "bg-muted/50 border-border/50 hover:bg-muted"
-              )}
-            >
+          {tabs.map((tab) => {
+            const isActive = !isVisible && tab.id === activeTabId;
+            return (
+              <div
+                key={tab.id}
+                onClick={() => onTabClick(tab.id)}
+                className={cn(
+                  "relative flex items-center gap-2 px-4 py-2 rounded-t-lg min-w-[180px] max-w-[240px]",
+                  "border border-b-0 transition-all duration-200 cursor-pointer",
+                  isActive
+                    ? "bg-background border-border z-10 shadow-lg scale-105"
+                    : "bg-muted/50 border-border/50 hover:bg-muted"
+                )}
+              >
               {/* Favicon */}
               <img
                 src={tab.favicon}
@@ -36,18 +41,19 @@ export const ChromeTabsPreview = ({ tabs, selectedIndex }: ChromeTabsPreviewProp
               <span
                 className={cn(
                   "flex-1 truncate text-sm transition-colors",
-                  selectedIndex === index ? "text-foreground font-medium" : "text-muted-foreground"
+                  isActive ? "text-foreground font-medium" : "text-muted-foreground"
                 )}
               >
                 {tab.title}
               </span>
 
               {/* Selected indicator */}
-              {selectedIndex === index && (
+              {isActive && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
