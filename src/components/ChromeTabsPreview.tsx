@@ -21,6 +21,24 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
               -ms-overflow-style: none;
               scrollbar-width: none;
             }
+            .chrome-tab-active::before {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: -8px;
+              width: 8px;
+              height: 8px;
+              background: radial-gradient(circle at top right, transparent 8px, hsl(var(--background)) 8px);
+            }
+            .chrome-tab-active::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              right: -8px;
+              width: 8px;
+              height: 8px;
+              background: radial-gradient(circle at top left, transparent 8px, hsl(var(--background)) 8px);
+            }
           `}</style>
           {tabs.map((tab) => {
             const isActive = !isVisible && tab.id === activeTabId;
@@ -33,7 +51,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                   "min-w-[160px] w-[220px] max-w-[240px]",
                   "transition-all duration-100 cursor-pointer",
                   isActive
-                    ? "bg-background z-10"
+                    ? "bg-background z-10 chrome-tab-active"
                     : "bg-transparent hover:bg-background/50"
                 )}
                 style={{
@@ -41,35 +59,6 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick }: 
                   borderTopRightRadius: "8px",
                 }}
               >
-              {/* Left bottom curve cutout */}
-              {isActive && (
-                <svg
-                  className="absolute bottom-[-1px] left-[-8px] w-2 h-2"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M 0 8 L 0 0 Q 0 8 8 8 Z"
-                    fill="hsl(var(--background))"
-                  />
-                </svg>
-              )}
-              
-              {/* Right bottom curve cutout */}
-              {isActive && (
-                <svg
-                  className="absolute bottom-[-1px] right-[-8px] w-2 h-2"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M 8 8 L 8 0 Q 8 8 0 8 Z"
-                    fill="hsl(var(--background))"
-                  />
-                </svg>
-              )}
               
               {/* Favicon */}
               <img
