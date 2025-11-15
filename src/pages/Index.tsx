@@ -57,25 +57,68 @@ const mockTabs: Tab[] = [
 
 const Index = () => {
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(1);
+  const [isAltHeld, setIsAltHeld] = useState(false);
 
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
     setIsSwitcherVisible(false);
+    setIsAltHeld(false);
   };
 
-  // Global keyboard shortcut handler (Alt+Tab)
+  const handleNavigate = (direction: 'next' | 'prev') => {
+    setSelectedIndex(prev => {
+      if (direction === 'next') {
+        return (prev + 1) % mockTabs.length;
+      } else {
+        return prev === 0 ? mockTabs.length - 1 : prev - 1;
+      }
+    });
+  };
+
+  // Mac-like Application Switcher behavior with Alt key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt+Tab to open switcher
+      // Track Alt key press
+      if (e.key === "Alt") {
+        setIsAltHeld(true);
+      }
+
+      // Alt+Tab to cycle forward
       if (e.altKey && e.key === "Tab") {
         e.preventDefault();
-        setIsSwitcherVisible(true);
+        if (!isSwitcherVisible) {
+          setIsSwitcherVisible(true);
+          setSelectedIndex(1); // Start with second tab selected
+        } else {
+          handleNavigate('next');
+        }
+      }
+
+      // Alt+` to cycle backward
+      if (e.altKey && e.key === "`") {
+        e.preventDefault();
+        if (isSwitcherVisible) {
+          handleNavigate('prev');
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // When Alt is released, activate the selected tab
+      if (e.key === "Alt" && isAltHeld && isSwitcherVisible) {
+        setIsAltHeld(false);
+        handleSelectTab(mockTabs[selectedIndex].id);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isSwitcherVisible, isAltHeld, selectedIndex]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,7 +201,7 @@ const Index = () => {
               Quick Search
             </h3>
             <p className="text-muted-foreground">
-              Search tabs by URL and page title. Also accessible in Chrome omnibox by typing 'tas' then tab.
+              Search tabs by URL and page title for instant access to any open tab.
             </p>
           </div>
 
@@ -235,7 +278,7 @@ const Index = () => {
           </div>
 
           <p className="text-sm text-muted-foreground pt-4 border-t border-border">
-            Shortcuts are configurable through the Options panel. The current window must have focus to use keyboard shortcuts.
+            Shortcuts are configurable through the Options panel.
           </p>
         </div>
       </div>
@@ -265,8 +308,13 @@ const Index = () => {
       <TabSwitcher
         tabs={mockTabs}
         isVisible={isSwitcherVisible}
+        selectedIndex={selectedIndex}
         onSelectTab={handleSelectTab}
-        onClose={() => setIsSwitcherVisible(false)}
+        onClose={() => {
+          setIsSwitcherVisible(false);
+          setIsAltHeld(false);
+        }}
+        onNavigate={handleNavigate}
       />
     </div>
   );
