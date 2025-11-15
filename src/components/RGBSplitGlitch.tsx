@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, cloneElement, isValidElement } from "react";
 
 interface RGBSplitGlitchProps {
   children: ReactNode;
@@ -54,67 +54,73 @@ export const RGBSplitGlitch = ({
     return () => clearTimeout(nextTimer);
   }, [randomRepeat, triggerCount, isAnimating]);
 
+  // Clone children and apply color filters for images
+  const applyColorFilter = (element: ReactNode, filterColor: string) => {
+    if (isValidElement(element) && element.type === 'img') {
+      return cloneElement(element as React.ReactElement, {
+        style: {
+          ...((element as React.ReactElement).props.style || {}),
+          filter: filterColor === 'red' 
+            ? 'brightness(1) sepia(1) saturate(10000%) hue-rotate(0deg)'
+            : filterColor === 'green'
+            ? 'brightness(1) sepia(1) saturate(10000%) hue-rotate(80deg)'
+            : 'brightness(1) sepia(1) saturate(10000%) hue-rotate(180deg)'
+        }
+      });
+    }
+    return element;
+  };
+
   return (
     <div 
       className={`relative ${className}`}
     >
       {/* Red channel - glitchy movement */}
       <div 
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none [&_*]:!text-[#ff0000]"
         style={{
-          color: '#ff0000',
-          filter: 'saturate(3)',
           mixBlendMode: 'screen',
-          opacity: isAnimating ? 1 : 0,
+          opacity: isAnimating ? 0.8 : 0,
           animation: isAnimating ? `glitch-red ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)` : 'none',
           animationFillMode: 'both'
         }}
       >
-        <div style={{ color: '#ff0000' }}>
-          {children}
-        </div>
+        {applyColorFilter(children, 'red')}
       </div>
 
       {/* Green channel - glitchy movement */}
       <div 
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none [&_*]:!text-[#00ff00]"
         style={{
-          color: '#00ff00',
-          filter: 'saturate(3)',
           mixBlendMode: 'screen',
-          opacity: isAnimating ? 1 : 0,
+          opacity: isAnimating ? 0.8 : 0,
           animation: isAnimating ? `glitch-green ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)` : 'none',
           animationFillMode: 'both'
         }}
       >
-        <div style={{ color: '#00ff00' }}>
-          {children}
-        </div>
+        {applyColorFilter(children, 'green')}
       </div>
 
       {/* Blue channel - glitchy movement */}
       <div 
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none [&_*]:!text-[#0000ff]"
         style={{
-          color: '#0000ff',
-          filter: 'saturate(3)',
           mixBlendMode: 'screen',
-          opacity: isAnimating ? 1 : 0,
+          opacity: isAnimating ? 0.8 : 0,
           animation: isAnimating ? `glitch-blue ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)` : 'none',
           animationFillMode: 'both'
         }}
       >
-        <div style={{ color: '#0000ff' }}>
-          {children}
-        </div>
+        {applyColorFilter(children, 'blue')}
       </div>
 
       {/* Main content with optional fade */}
       <div 
         className="relative"
         style={{
-          opacity: fade ? 1 : 1,
-          animation: fade ? 'fade-in 800ms ease-out' : 'none'
+          opacity: isAnimating ? 0.3 : 1,
+          animation: fade ? 'fade-in 800ms ease-out' : 'none',
+          transition: 'opacity 200ms ease-out'
         }}
       >
         {children}
@@ -134,24 +140,24 @@ export const RGBSplitGlitch = ({
 
         @keyframes glitch-red {
           0% {
-            transform: translate(12px, -8px);
-            opacity: 0.9;
+            transform: translate(20px, -15px);
+            opacity: 0.8;
           }
           20% {
-            transform: translate(-10px, 6px);
-            opacity: 0.95;
-          }
-          40% {
-            transform: translate(15px, -4px);
+            transform: translate(-18px, 12px);
             opacity: 0.9;
           }
-          60% {
-            transform: translate(-8px, 10px);
+          40% {
+            transform: translate(25px, -10px);
             opacity: 0.85;
           }
+          60% {
+            transform: translate(-15px, 18px);
+            opacity: 0.8;
+          }
           80% {
-            transform: translate(5px, -6px);
-            opacity: 0.7;
+            transform: translate(10px, -12px);
+            opacity: 0.6;
           }
           100% {
             transform: translate(0, 0);
@@ -161,28 +167,28 @@ export const RGBSplitGlitch = ({
 
         @keyframes glitch-green {
           0% {
-            transform: translate(-15px, 10px);
-            opacity: 0.9;
+            transform: translate(-22px, 18px);
+            opacity: 0.8;
           }
           15% {
-            transform: translate(12px, -12px);
-            opacity: 0.95;
-          }
-          35% {
-            transform: translate(-8px, 5px);
+            transform: translate(20px, -20px);
             opacity: 0.9;
           }
-          50% {
-            transform: translate(14px, -7px);
+          35% {
+            transform: translate(-16px, 14px);
             opacity: 0.85;
           }
+          50% {
+            transform: translate(24px, -16px);
+            opacity: 0.8;
+          }
           70% {
-            transform: translate(-6px, 9px);
-            opacity: 0.7;
+            transform: translate(-12px, 16px);
+            opacity: 0.6;
           }
           90% {
-            transform: translate(3px, -4px);
-            opacity: 0.5;
+            transform: translate(8px, -10px);
+            opacity: 0.4;
           }
           100% {
             transform: translate(0, 0);
@@ -192,28 +198,28 @@ export const RGBSplitGlitch = ({
 
         @keyframes glitch-blue {
           0% {
-            transform: translate(8px, 14px);
-            opacity: 0.9;
+            transform: translate(16px, 22px);
+            opacity: 0.8;
           }
           18% {
-            transform: translate(-14px, -9px);
-            opacity: 0.95;
-          }
-          38% {
-            transform: translate(10px, 7px);
+            transform: translate(-24px, -18px);
             opacity: 0.9;
           }
-          55% {
-            transform: translate(-12px, -11px);
+          38% {
+            transform: translate(18px, 16px);
             opacity: 0.85;
           }
+          55% {
+            transform: translate(-20px, -20px);
+            opacity: 0.8;
+          }
           72% {
-            transform: translate(7px, 6px);
-            opacity: 0.7;
+            transform: translate(14px, 14px);
+            opacity: 0.6;
           }
           88% {
-            transform: translate(-4px, -5px);
-            opacity: 0.5;
+            transform: translate(-10px, -12px);
+            opacity: 0.4;
           }
           100% {
             transform: translate(0, 0);
