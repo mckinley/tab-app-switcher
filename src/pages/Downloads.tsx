@@ -31,20 +31,21 @@ const Downloads = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-            <NavLink to="/" className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
+          <div className="flex items-center justify-between gap-2">
+            <NavLink to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img 
                 src={logo} 
                 alt="Tab Application Switcher Logo" 
-                className="h-8 w-auto rounded opacity-80 hover:opacity-100 transition-opacity"
+                className="h-8 w-auto rounded opacity-80 hover:opacity-100 transition-opacity flex-shrink-0"
               />
-              <h1 className="text-xl font-bold text-foreground">Tab Application Switcher</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">Tab Application Switcher</h1>
             </NavLink>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <Link to="/">
-                <Button variant="ghost">
-                  Back to Home
+                <Button variant="ghost" size="sm" className="sm:h-10 sm:px-4">
+                  <span className="hidden sm:inline">Back to Home</span>
+                  <span className="sm:hidden">Home</span>
                 </Button>
               </Link>
               <ThemeToggle />
