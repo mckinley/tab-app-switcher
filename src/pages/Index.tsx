@@ -180,6 +180,9 @@ const Index = () => {
   // Mac-like Application Switcher behavior with configurable modifier key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable all TAS shortcuts when settings panel is open
+      if (isSettingsOpen) return;
+      
       // Check if modifier key is pressed
       const isModifierPressed = 
         (shortcuts.modifier === "Alt" && e.altKey) ||
@@ -216,6 +219,9 @@ const Index = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Disable all TAS shortcuts when settings panel is open
+      if (isSettingsOpen) return;
+      
       // When modifier is released, activate the selected tab (unless search is focused or settings is open)
       const isModifierRelease = 
         e.key === shortcuts.modifier ||
