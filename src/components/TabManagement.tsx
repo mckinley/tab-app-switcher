@@ -21,6 +21,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -56,6 +57,14 @@ interface SortableTabProps {
   onSelect: () => void;
   onClose?: () => void;
   showClose?: boolean;
+}
+
+interface DroppableCollectionProps {
+  collection: Collection;
+  isSelected: boolean;
+  tabs: Tab[];
+  onSelect: () => void;
+  onDelete: () => void;
 }
 
 const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
@@ -112,6 +121,65 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
         >
           <X className="h-3 w-3" />
         </button>
+      )}
+    </div>
+  );
+};
+
+const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete }: DroppableCollectionProps) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: collection.id,
+  });
+
+  const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "p-4 rounded-lg border cursor-pointer transition-all",
+        isSelected && "bg-primary/10 border-primary",
+        isOver && "bg-primary/5 border-primary ring-2 ring-primary/20",
+        !isSelected && !isOver && "hover:bg-muted/50"
+      )}
+      onClick={onSelect}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="font-medium">{collection.name}</h3>
+          <p className="text-xs text-muted-foreground">
+            {collection.tabIds.length} tabs
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      {/* Show tabs in collection */}
+      {collectionTabs.length > 0 && (
+        <div className="space-y-1 mt-3 pt-3 border-t">
+          {collectionTabs.map(tab => (
+            <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+              <img
+                src={tab.favicon}
+                alt=""
+                className="w-4 h-4 flex-shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = '/favicon.png';
+                }}
+              />
+              <span className="text-xs truncate flex-1">{tab.title}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -196,7 +264,24 @@ export const TabManagement = ({
     setActiveTab(null);
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
+    if (!over) return;
+
+    // Check if dropping into a collection
+    const collection = collections.find(c => c.id === over.id);
+    if (collection) {
+      // Add tab to collection if not already there
+      if (!collection.tabIds.includes(active.id as string)) {
+        setCollections(collections.map(c => 
+          c.id === collection.id 
+            ? { ...c, tabIds: [...c.tabIds, active.id as string] }
+            : c
+        ));
+      }
+      return;
+    }
+
+    // Otherwise, handle reordering within current tabs
+    if (active.id !== over.id) {
       setCurrentTabs((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -448,37 +533,16 @@ export const TabManagement = ({
                       </div>
                     ) : (
                       collections.map((collection) => (
-                        <div
+                        <DroppableCollection
                           key={collection.id}
-                          className={cn(
-                            "p-4 rounded-lg border cursor-pointer transition-colors",
-                            selectedCollection === collection.id
-                              ? "bg-primary/10 border-primary"
-                              : "hover:bg-muted/50"
-                          )}
-                          onClick={() => setSelectedCollection(
+                          collection={collection}
+                          isSelected={selectedCollection === collection.id}
+                          tabs={tabs}
+                          onSelect={() => setSelectedCollection(
                             selectedCollection === collection.id ? null : collection.id
                           )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium">{collection.name}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {collection.tabIds.length} tabs
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCollection(collection.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+                          onDelete={() => handleDeleteCollection(collection.id)}
+                        />
                       ))
                     )}
                   </div>
