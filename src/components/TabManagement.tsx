@@ -65,6 +65,7 @@ interface DroppableCollectionProps {
   tabs: Tab[];
   onSelect: () => void;
   onDelete: () => void;
+  onRename: (newName: string) => void;
 }
 
 const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
@@ -126,12 +127,19 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
   );
 };
 
-const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete }: DroppableCollectionProps) => {
+const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete, onRename }: DroppableCollectionProps) => {
   const { setNodeRef, isOver } = useDroppable({
     id: collection.id,
   });
 
   const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
+
+  const handleNameEdit = (e: React.FormEvent<HTMLHeadingElement>) => {
+    const newName = e.currentTarget.textContent?.trim() || collection.name;
+    if (newName !== collection.name) {
+      onRename(newName);
+    }
+  };
 
   return (
     <div
@@ -145,8 +153,22 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete 
       onClick={onSelect}
     >
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-medium">{collection.name}</h3>
+        <div className="flex-1">
+          <h3 
+            className="font-medium outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1"
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleNameEdit}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
+          >
+            {collection.name}
+          </h3>
           <p className="text-xs text-muted-foreground">
             {collection.tabIds.length} tabs
           </p>
@@ -199,12 +221,21 @@ export const TabManagement = ({
   const [sortBy, setSortBy] = useState<SortOption>("mru");
   const [reverseSort, setReverseSort] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("search");
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [collections, setCollections] = useState<Collection[]>(() => {
+    const saved = localStorage.getItem('tab-collections');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
   const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs);
+
+  // Save collections to localStorage whenever they change
+  const updateCollections = (newCollections: Collection[]) => {
+    setCollections(newCollections);
+    localStorage.setItem('tab-collections', JSON.stringify(newCollections));
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -261,22 +292,27 @@ export const TabManagement = ({
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveTab(null);
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      setActiveTab(null);
+      return;
+    }
 
     // Check if dropping into a collection
     const collection = collections.find(c => c.id === over.id);
     if (collection) {
       // Add tab to collection if not already there
       if (!collection.tabIds.includes(active.id as string)) {
-        setCollections(collections.map(c => 
-          c.id === collection.id 
+        updateCollections(collections.map(c =>
+          c.id === collection.id
             ? { ...c, tabIds: [...c.tabIds, active.id as string] }
             : c
         ));
+        // Remove from current tabs so it disappears
+        setCurrentTabs(prev => prev.filter(t => t.id !== active.id));
       }
+      setActiveTab(null);
       return;
     }
 
@@ -290,6 +326,8 @@ export const TabManagement = ({
         return reordered;
       });
     }
+    
+    setActiveTab(null);
   };
 
   const handleCreateCollection = () => {
@@ -299,15 +337,21 @@ export const TabManagement = ({
       name: newCollectionName,
       tabIds: [],
     };
-    setCollections([...collections, newCollection]);
+    updateCollections([...collections, newCollection]);
     setNewCollectionName("");
   };
 
   const handleDeleteCollection = (collectionId: string) => {
-    setCollections(collections.filter(c => c.id !== collectionId));
+    updateCollections(collections.filter(c => c.id !== collectionId));
     if (selectedCollection === collectionId) {
       setSelectedCollection(null);
     }
+  };
+
+  const handleRenameCollection = (id: string, newName: string) => {
+    updateCollections(collections.map(c =>
+      c.id === id ? { ...c, name: newName } : c
+    ));
   };
 
   const handleCloseTab = (tabId: string) => {
@@ -548,6 +592,7 @@ export const TabManagement = ({
                             selectedCollection === collection.id ? null : collection.id
                           )}
                           onDelete={() => handleDeleteCollection(collection.id)}
+                          onRename={(newName) => handleRenameCollection(collection.id, newName)}
                         />
                       ))
                     )}
