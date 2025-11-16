@@ -230,6 +230,7 @@ export const TabManagement = ({
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
   const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs);
+  const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false);
 
   // Save collections to localStorage whenever they change
   const updateCollections = (newCollections: Collection[]) => {
@@ -288,6 +289,7 @@ export const TabManagement = ({
     const tab = currentTabs.find(t => t.id === event.active.id);
     if (tab) {
       setActiveTab(tab);
+      setIsDroppedOnCollection(false);
     }
   };
 
@@ -309,9 +311,9 @@ export const TabManagement = ({
             ? { ...c, tabIds: [...c.tabIds, active.id as string] }
             : c
         ));
-        // Remove from current tabs so it disappears
-        setCurrentTabs(prev => prev.filter(t => t.id !== active.id));
       }
+      // Mark as dropped on collection so drag overlay disappears
+      setIsDroppedOnCollection(true);
       setActiveTab(null);
       return;
     }
@@ -695,7 +697,7 @@ export const TabManagement = ({
         </div>
       </div>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
           {activeTab && (
             <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
               <img
