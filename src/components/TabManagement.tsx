@@ -525,7 +525,7 @@ export const TabManagement = ({
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[70]">
                     <SelectItem value="mru">
                       <Clock className="inline-block w-4 h-4 mr-2" />
                       Most Recent
