@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Sun, Moon, Monitor } from "lucide-react";
+import { Settings } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useTheme } from "next-themes";
+import { ThemeToggle } from "./ThemeToggle";
 import { KeyButton } from "./KeyButton";
 
 interface KeyboardShortcuts {
@@ -35,7 +28,6 @@ interface TasSettingsProps {
 }
 
 export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasSettingsProps) => {
-  const { theme, setTheme } = useTheme();
   const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
   const [capturingKey, setCapturingKey] = useState<string | null>(null);
@@ -77,58 +69,33 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
           <Settings className="h-4 w-4" />
         </button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent 
+        className="w-[95vw] max-w-[500px] p-4 sm:p-6"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>TAS Settings</DialogTitle>
           <DialogDescription>
-            Customize keyboard shortcuts and appearance preferences
+            Customize keyboard shortcuts and appearance
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-3">
           {/* Theme Selection */}
           <div className="flex items-center justify-between gap-4">
             <Label className="text-sm font-medium">Theme</Label>
-            <div className="flex gap-1.5">
-              <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTheme('light')}
-                className="h-8 px-3"
-              >
-                <Sun className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Light</span>
-              </Button>
-              <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTheme('dark')}
-                className="h-8 px-3"
-              >
-                <Moon className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Dark</span>
-              </Button>
-              <Button
-                variant={theme === 'system' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTheme('system')}
-                className="h-8 px-3"
-              >
-                <Monitor className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">System</span>
-              </Button>
-            </div>
+            <ThemeToggle />
           </div>
 
           {/* Keyboard Shortcuts */}
-          <div className="space-y-5">
+          <div className="space-y-3">
             <div>
               <h3 className="text-sm font-medium mb-1">Keyboard Shortcuts</h3>
               <p className="text-xs text-muted-foreground">Click a key to customize it</p>
             </div>
 
             {/* Modifier Key */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-sm font-medium">Modifier Key</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton
@@ -146,7 +113,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Navigation Shortcuts */}
-            <div className="space-y-3 p-4 bg-accent dark:bg-accent/60 rounded-lg border-2 border-border">
+            <div className="space-y-2 p-3 bg-muted/90 dark:bg-muted rounded-lg border border-border">
               <Label className="text-sm font-medium">TAS Navigation</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton
@@ -172,7 +139,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Action Shortcuts */}
-            <div className="space-y-3 p-4 bg-accent dark:bg-accent/60 rounded-lg border-2 border-border">
+            <div className="space-y-2 p-3 bg-muted/90 dark:bg-muted rounded-lg border border-border">
               <Label className="text-sm font-medium">Actions</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton
@@ -199,7 +166,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 pt-4">
+        <div className="flex justify-between gap-3 pt-3 border-t">
           <Button variant="outline" onClick={handleReset}>
             Reset to Defaults
           </Button>
