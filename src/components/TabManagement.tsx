@@ -325,8 +325,14 @@ export const TabManagement = ({
         onClick={onClose}
       />
 
-      {/* Tab Management Panel */}
-      <div className="fixed inset-2 z-[61] bg-background rounded-lg border shadow-2xl flex overflow-hidden">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* Tab Management Panel */}
+        <div className="fixed inset-2 z-[61] bg-background rounded-lg border shadow-2xl flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-40 border-r bg-muted/30 flex flex-col">
           <div className="p-4 border-b">
@@ -613,13 +619,7 @@ export const TabManagement = ({
           
           <ScrollArea className="flex-1">
             <div className="p-2">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
+              {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
                   <div key={windowName} className="mb-4">
                     <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
                       {windowName} ({windowTabs.length})
@@ -645,26 +645,27 @@ export const TabManagement = ({
                     </SortableContext>
                   </div>
                 ))}
-                <DragOverlay>
-                  {activeTab && (
-                    <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
-                      <img
-                        src={activeTab.favicon}
-                        alt=""
-                        className="w-4 h-4 flex-shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = '/favicon.png';
-                        }}
-                      />
-                      <span className="text-xs truncate">{activeTab.title}</span>
-                    </div>
-                  )}
-                </DragOverlay>
-              </DndContext>
             </div>
           </ScrollArea>
         </div>
       </div>
+
+        <DragOverlay>
+          {activeTab && (
+            <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
+              <img
+                src={activeTab.favicon}
+                alt=""
+                className="w-4 h-4 flex-shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = '/favicon.png';
+                }}
+              />
+              <span className="text-xs truncate">{activeTab.title}</span>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
     </>
   );
 };
