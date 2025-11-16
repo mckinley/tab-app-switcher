@@ -31,38 +31,13 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
   const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
   const [capturingKey, setCapturingKey] = useState<string | null>(null);
-  const [escapePressed, setEscapePressed] = useState(false);
 
   // Sync localShortcuts when shortcuts prop changes
   useEffect(() => {
     setLocalShortcuts(shortcuts);
   }, [shortcuts]);
 
-  // Listen for Escape key to prevent dialog closing
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setEscapePressed(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown, { capture: true });
-      setEscapePressed(false);
-    };
-  }, [open]);
-
   const handleOpenChange = (newOpen: boolean) => {
-    // Prevent closing if Escape was just pressed
-    if (!newOpen && escapePressed) {
-      setEscapePressed(false);
-      return;
-    }
     setOpen(newOpen);
     onOpenChange?.(newOpen);
   };

@@ -36,9 +36,15 @@ interface TabSwitcherProps {
 export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClose, onNavigate, onSearchFocusChange, onCloseTab, onSettingsOpenChange, shortcuts, onShortcutsChange }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
+
+  const handleSettingsOpenChange = (open: boolean) => {
+    setIsSettingsOpen(open);
+    onSettingsOpenChange?.(open);
+  };
 
   const filteredTabs = tabs.filter(tab =>
     tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,6 +72,9 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
+      
+      // Don't handle ANY keys when settings dialog is open
+      if (isSettingsOpen) return;
 
       // Search key to focus search (works even with modifier held)
       if (e.key.toUpperCase() === shortcuts.search.toUpperCase() && !isSearchFocused) {
@@ -133,7 +142,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [isVisible, isSearchFocused, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate, onCloseTab]);
+  }, [isVisible, isSearchFocused, isSettingsOpen, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate, onCloseTab, shortcuts]);
 
   if (!isVisible) return null;
 
@@ -201,7 +210,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
               <TasSettings 
                 shortcuts={shortcuts}
                 onShortcutsChange={onShortcutsChange}
-                onOpenChange={onSettingsOpenChange}
+                onOpenChange={handleSettingsOpenChange}
               />
             </div>
           </div>
