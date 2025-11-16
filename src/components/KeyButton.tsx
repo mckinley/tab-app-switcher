@@ -67,21 +67,21 @@ export const KeyButton = ({
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleClick}
-        className={cn(
-          "w-[70px] h-[52px] px-3 rounded-md font-medium transition-all",
-          "border-2 shadow-sm flex items-center justify-center",
-          isCapturing 
-            ? "border-primary bg-primary/10 text-primary animate-pulse" 
-            : disabled
-            ? "border-border/30 bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
-            : "border-border/50 bg-muted/80 text-foreground hover:border-primary/50 hover:bg-muted cursor-pointer",
-          "font-mono tracking-wide"
-        )}
-      >
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={handleClick}
+      className={cn(
+        "w-[70px] h-[52px] px-3 rounded-md font-medium transition-all",
+        "border-2 shadow-sm flex items-center justify-center",
+        isCapturing 
+          ? "border-primary bg-primary/10 text-primary animate-pulse" 
+          : disabled
+          ? "border-border/30 bg-background/30 text-muted-foreground/50 cursor-not-allowed"
+          : "border-border/50 bg-background text-foreground hover:border-primary/50 hover:bg-background/80 cursor-pointer",
+        "font-mono tracking-wide"
+      )}
+    >
         <span className="text-center text-[10px] leading-tight">
           {isCapturing ? (
             <>Press<br />key</>
