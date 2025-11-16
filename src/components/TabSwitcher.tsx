@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search, LayoutGrid } from "lucide-react";
 import { TabItem } from "./TabItem";
 import { TasSettings } from "./TasSettings";
+import { AdvancedTabManagement } from "./AdvancedTabManagement";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -37,6 +38,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
@@ -201,6 +203,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
             {/* Action Icons */}
             <div className="flex flex-col gap-1">
               <button
+                onClick={() => setIsAdvancedOpen(true)}
                 className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Advanced tab management"
               >
@@ -273,6 +276,18 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
           </div>
         </div>
       </div>
+
+      {/* Advanced Tab Management Panel */}
+      <AdvancedTabManagement
+        tabs={tabs}
+        isVisible={isAdvancedOpen}
+        onClose={() => setIsAdvancedOpen(false)}
+        onSelectTab={(tabId) => {
+          onSelectTab(tabId);
+          setIsAdvancedOpen(false);
+        }}
+        onCloseTab={onCloseTab}
+      />
     </>
   );
 };
