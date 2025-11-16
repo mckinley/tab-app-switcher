@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, X, Clock, Link as LinkIcon, Type, Settings, User, ArrowUpDown, Plus, Trash2 } from "lucide-react";
+import { Search, X, Clock, Link as LinkIcon, Type, Settings, User, ArrowUpDown, Plus, Trash2, ExternalLink } from "lucide-react";
 import { Tab } from "./TabSwitcher";
 import { cn } from "@/lib/utils";
 import { Input } from "./ui/input";
@@ -66,6 +66,7 @@ interface DroppableCollectionProps {
   onSelect: () => void;
   onDelete: () => void;
   onRename: (newName: string) => void;
+  onSendToWindow: () => void;
 }
 
 const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
@@ -127,7 +128,7 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
   );
 };
 
-const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete, onRename }: DroppableCollectionProps) => {
+const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete, onRename, onSendToWindow }: DroppableCollectionProps) => {
   const { setNodeRef, isOver } = useDroppable({
     id: collection.id,
   });
@@ -173,16 +174,28 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
             {collection.tabIds.length} tabs
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSendToWindow();
+            }}
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
       {/* Show tabs in collection */}
@@ -231,6 +244,14 @@ export const TabManagement = ({
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
   const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs);
   const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false);
+  const [tabWindows, setTabWindows] = useState<Record<string, string>>(() => {
+    // Initialize all tabs to Window 1
+    const windows: Record<string, string> = {};
+    tabs.forEach(tab => {
+      windows[tab.id] = "Window 1";
+    });
+    return windows;
+  });
 
   // Save collections to localStorage whenever they change
   const updateCollections = (newCollections: Collection[]) => {
@@ -248,10 +269,16 @@ export const TabManagement = ({
 
   // Group tabs by window
   const tabsByWindow = useMemo(() => {
-    return {
-      "Window 1": currentTabs
-    };
-  }, [currentTabs]);
+    const grouped: Record<string, Tab[]> = {};
+    currentTabs.forEach(tab => {
+      const windowName = tabWindows[tab.id] || "Window 1";
+      if (!grouped[windowName]) {
+        grouped[windowName] = [];
+      }
+      grouped[windowName].push(tab);
+    });
+    return grouped;
+  }, [currentTabs, tabWindows]);
 
   // Filter and sort tabs
   const filteredAndSortedTabs = useMemo(() => {
@@ -354,6 +381,41 @@ export const TabManagement = ({
     updateCollections(collections.map(c =>
       c.id === id ? { ...c, name: newName } : c
     ));
+  };
+
+  const handleSendCollectionToWindow = (collectionId: string) => {
+    const collection = collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    // Get tabs from the collection
+    const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
+    if (collectionTabs.length === 0) return;
+
+    // Find the highest window number
+    const windowNumbers = Object.values(tabWindows)
+      .map(name => {
+        const match = name.match(/Window (\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      });
+    const maxWindowNumber = Math.max(0, ...windowNumbers);
+    const newWindowName = `Window ${maxWindowNumber + 1}`;
+
+    // Add tabs to current tabs if not already there and assign to new window
+    const newTabWindows = { ...tabWindows };
+    const tabsToAdd: Tab[] = [];
+    
+    collectionTabs.forEach(tab => {
+      const existingTab = currentTabs.find(t => t.id === tab.id);
+      if (!existingTab) {
+        tabsToAdd.push(tab);
+      }
+      newTabWindows[tab.id] = newWindowName;
+    });
+
+    if (tabsToAdd.length > 0) {
+      setCurrentTabs([...currentTabs, ...tabsToAdd]);
+    }
+    setTabWindows(newTabWindows);
   };
 
   const handleCloseTab = (tabId: string) => {
@@ -595,6 +657,7 @@ export const TabManagement = ({
                           )}
                           onDelete={() => handleDeleteCollection(collection.id)}
                           onRename={(newName) => handleRenameCollection(collection.id, newName)}
+                          onSendToWindow={() => handleSendCollectionToWindow(collection.id)}
                         />
                       ))
                     )}
