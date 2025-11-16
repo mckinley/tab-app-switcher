@@ -400,21 +400,21 @@ export const TabManagement = ({
     const maxWindowNumber = Math.max(0, ...windowNumbers);
     const newWindowName = `Window ${maxWindowNumber + 1}`;
 
-    // Add tabs to current tabs if not already there and assign to new window
+    // Create duplicate tabs with new IDs for the new window
     const newTabWindows = { ...tabWindows };
-    const tabsToAdd: Tab[] = [];
+    const duplicateTabs: Tab[] = [];
     
     collectionTabs.forEach(tab => {
-      const existingTab = currentTabs.find(t => t.id === tab.id);
-      if (!existingTab) {
-        tabsToAdd.push(tab);
-      }
-      newTabWindows[tab.id] = newWindowName;
+      // Create a duplicate tab with a new unique ID
+      const duplicateTab: Tab = {
+        ...tab,
+        id: `${tab.id}-${Date.now()}-${Math.random()}`,
+      };
+      duplicateTabs.push(duplicateTab);
+      newTabWindows[duplicateTab.id] = newWindowName;
     });
 
-    if (tabsToAdd.length > 0) {
-      setCurrentTabs([...currentTabs, ...tabsToAdd]);
-    }
+    setCurrentTabs([...currentTabs, ...duplicateTabs]);
     setTabWindows(newTabWindows);
   };
 
