@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, LayoutGrid } from "lucide-react";
 import { TabItem } from "./TabItem";
-import { TasSettings } from "./TasSettings";
+import { TasSettings, KeyboardShortcuts } from "./TasSettings";
 import { TabManagement } from "./TabManagement";
 import { cn } from "@/lib/utils";
 
@@ -10,14 +10,6 @@ export interface Tab {
   title: string;
   url: string;
   favicon: string;
-}
-
-interface KeyboardShortcuts {
-  modifier: string;
-  activateForward: string;
-  activateBackward: string;
-  search: string;
-  closeTab: string;
 }
 
 interface TabSwitcherProps {
@@ -155,6 +147,8 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
         isOpen={isTabManagementOpen}
         onClose={() => setIsTabManagementOpen(false)}
         onSelectTab={onSelectTab}
+        shortcuts={shortcuts}
+        onShortcutsChange={onShortcutsChange}
       />
       {/* Backdrop */}
       <div
