@@ -71,6 +71,10 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
       </DialogTrigger>
       <DialogContent 
         className="w-[90vw] max-w-[450px] p-3 sm:p-6"
+        onEscapeKeyDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
