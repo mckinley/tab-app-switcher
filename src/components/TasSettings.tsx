@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings } from "lucide-react";
+import { Settings, Sun, Moon, Monitor } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -77,7 +77,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
           <Settings className="h-4 w-4" />
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>TAS Settings</DialogTitle>
           <DialogDescription>
@@ -87,21 +87,37 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
 
         <div className="space-y-6 py-4">
           {/* Theme Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
-            <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger id="theme">
-                <SelectValue placeholder="Select theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">System Default</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Choose your preferred color scheme
-            </p>
+          <div className="flex items-center justify-between gap-4">
+            <Label className="text-sm font-medium">Theme</Label>
+            <div className="flex gap-1.5">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('light')}
+                className="h-8 px-3"
+              >
+                <Sun className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Light</span>
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('dark')}
+                className="h-8 px-3"
+              >
+                <Moon className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Dark</span>
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('system')}
+                className="h-8 px-3"
+              >
+                <Monitor className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">System</span>
+              </Button>
+            </div>
           </div>
 
           {/* Keyboard Shortcuts */}
@@ -130,7 +146,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Navigation Shortcuts */}
-            <div className="space-y-3 p-3 bg-muted/70 dark:bg-muted/50 rounded-lg">
+            <div className="space-y-3 p-4 bg-accent dark:bg-accent/60 rounded-lg border-2 border-border">
               <Label className="text-sm font-medium">TAS Navigation</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton
@@ -156,7 +172,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Action Shortcuts */}
-            <div className="space-y-3 p-3 bg-muted/70 dark:bg-muted/50 rounded-lg">
+            <div className="space-y-3 p-4 bg-accent dark:bg-accent/60 rounded-lg border-2 border-border">
               <Label className="text-sm font-medium">Actions</Label>
               <div className="flex gap-3 flex-wrap">
                 <KeyButton

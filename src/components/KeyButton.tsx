@@ -38,6 +38,7 @@ export const KeyButton = ({
       if (key === "Alt") key = "Alt";
       if (key === " ") key = "Space";
       if (key === "Escape") {
+        e.stopPropagation();
         setLocalCapturing(false);
         onCaptureEnd?.();
         return;
@@ -71,8 +72,8 @@ export const KeyButton = ({
         disabled={disabled}
         onClick={handleClick}
         className={cn(
-          "min-w-[60px] px-3 py-2 rounded-md font-medium transition-all",
-          "border-2 shadow-sm",
+          "w-[70px] h-[52px] px-3 rounded-md font-medium transition-all",
+          "border-2 shadow-sm flex items-center justify-center",
           isCapturing 
             ? "border-primary bg-primary/10 text-primary animate-pulse" 
             : disabled
@@ -81,11 +82,11 @@ export const KeyButton = ({
           "font-mono tracking-wide"
         )}
       >
-        <span className={cn("block", isCapturing ? "text-[10px] leading-tight" : "text-sm")}>
+        <span className="text-center text-[10px] leading-tight">
           {isCapturing ? (
-            <>Press<br />key...</>
+            <>Press<br />key</>
           ) : (
-            value
+            <span className="text-sm block">{value}</span>
           )}
         </span>
       </button>
