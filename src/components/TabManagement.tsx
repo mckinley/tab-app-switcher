@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { Search, X, ArrowUpDown, Clock, Link as LinkIcon, Type, Settings, User } from "lucide-react";
+import { Search, X, Clock, Link as LinkIcon, Type, Settings, User, ArrowUpDown, Plus, Trash2 } from "lucide-react";
 import { Tab } from "./TabSwitcher";
 import { cn } from "@/lib/utils";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { SettingsContent, KeyboardShortcuts } from "./SettingsContent";
 import {
   Select,
   SelectContent,
@@ -11,29 +12,146 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface TabManagementProps {
   tabs: Tab[];
   isOpen: boolean;
   onClose: () => void;
   onSelectTab: (tabId: string) => void;
+  onCloseTab?: (tabId: string) => void;
+  onReorderTabs?: (tabs: Tab[]) => void;
+  shortcuts: KeyboardShortcuts;
+  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
 }
 
-type SortOption = "mru" | "mru-reverse" | "url" | "url-reverse" | "title" | "title-reverse";
-type ViewMode = "search" | "collections";
+type SortOption = "mru" | "url" | "title";
+type ViewMode = "search" | "collections" | "account" | "settings";
 
-export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagementProps) => {
+interface Collection {
+  id: string;
+  name: string;
+  tabIds: string[];
+}
+
+interface SortableTabProps {
+  tab: Tab;
+  onSelect: () => void;
+  onClose?: () => void;
+  showClose?: boolean;
+}
+
+const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tab.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors cursor-grab active:cursor-grabbing",
+        isDragging && "z-50"
+      )}
+      {...attributes}
+      {...listeners}
+    >
+      <img
+        src={tab.favicon}
+        alt=""
+        className="w-4 h-4 flex-shrink-0"
+        onError={(e) => {
+          e.currentTarget.src = '/favicon.png';
+        }}
+      />
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+        }}
+        className="flex-1 text-left text-xs truncate"
+      >
+        {tab.title}
+      </button>
+      {showClose && onClose && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+};
+
+export const TabManagement = ({
+  tabs,
+  isOpen,
+  onClose,
+  onSelectTab,
+  onCloseTab,
+  onReorderTabs,
+  shortcuts,
+  onShortcutsChange,
+}: TabManagementProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("mru");
+  const [reverseSort, setReverseSort] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("search");
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs);
 
-  // Group tabs by window (simulated - in real implementation would come from browser API)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  // Group tabs by window
   const tabsByWindow = useMemo(() => {
-    // For now, we'll just group all tabs as "Window 1"
     return {
-      "Window 1": tabs
+      "Window 1": currentTabs
     };
-  }, [tabs]);
+  }, [currentTabs]);
 
   // Filter and sort tabs
   const filteredAndSortedTabs = useMemo(() => {
@@ -50,27 +168,67 @@ export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagem
     // Sort
     switch (sortBy) {
       case "mru":
-        // Most recently used (current order is assumed to be MRU)
-        break;
-      case "mru-reverse":
-        result.reverse();
+        // Most recently used (current order)
         break;
       case "url":
         result.sort((a, b) => a.url.localeCompare(b.url));
         break;
-      case "url-reverse":
-        result.sort((a, b) => b.url.localeCompare(a.url));
-        break;
       case "title":
         result.sort((a, b) => a.title.localeCompare(b.title));
         break;
-      case "title-reverse":
-        result.sort((a, b) => b.title.localeCompare(a.title));
-        break;
+    }
+
+    if (reverseSort) {
+      result.reverse();
     }
 
     return result;
-  }, [tabs, searchQuery, sortBy]);
+  }, [tabs, searchQuery, sortBy, reverseSort]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const tab = currentTabs.find(t => t.id === event.active.id);
+    if (tab) {
+      setActiveTab(tab);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTab(null);
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCurrentTabs((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        const reordered = arrayMove(items, oldIndex, newIndex);
+        onReorderTabs?.(reordered);
+        return reordered;
+      });
+    }
+  };
+
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) return;
+    const newCollection: Collection = {
+      id: Date.now().toString(),
+      name: newCollectionName,
+      tabIds: [],
+    };
+    setCollections([...collections, newCollection]);
+    setNewCollectionName("");
+  };
+
+  const handleDeleteCollection = (collectionId: string) => {
+    setCollections(collections.filter(c => c.id !== collectionId));
+    if (selectedCollection === collectionId) {
+      setSelectedCollection(null);
+    }
+  };
+
+  const handleCloseTab = (tabId: string) => {
+    setCurrentTabs(currentTabs.filter(t => t.id !== tabId));
+    onCloseTab?.(tabId);
+  };
 
   if (!isOpen) return null;
 
@@ -85,7 +243,7 @@ export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagem
       {/* Tab Management Panel */}
       <div className="fixed inset-2 z-[61] bg-background rounded-lg border shadow-2xl flex overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-48 border-r bg-muted/30 flex flex-col">
+        <div className="w-40 border-r bg-muted/30 flex flex-col">
           <div className="p-4 border-b">
             <h2 className="font-semibold text-sm">Tab Manager</h2>
           </div>
@@ -120,11 +278,27 @@ export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagem
 
           {/* Bottom Links */}
           <div className="p-2 border-t space-y-1">
-            <button className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors">
+            <button
+              onClick={() => setViewMode("account")}
+              className={cn(
+                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                viewMode === "account" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-muted"
+              )}
+            >
               <User className="inline-block w-4 h-4 mr-2" />
               Account
             </button>
-            <button className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors">
+            <button
+              onClick={() => setViewMode("settings")}
+              className={cn(
+                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                viewMode === "settings" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-muted"
+              )}
+            >
               <Settings className="inline-block w-4 h-4 mr-2" />
               Settings
             </button>
@@ -135,48 +309,67 @@ export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagem
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="border-b p-4 flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tabs..."
-                className="pl-9"
-              />
-            </div>
-            
-            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mru">
-                  <Clock className="inline-block w-4 h-4 mr-2" />
-                  Most Recent
-                </SelectItem>
-                <SelectItem value="mru-reverse">
-                  <Clock className="inline-block w-4 h-4 mr-2" />
-                  Least Recent
-                </SelectItem>
-                <SelectItem value="url">
-                  <LinkIcon className="inline-block w-4 h-4 mr-2" />
-                  URL (A-Z)
-                </SelectItem>
-                <SelectItem value="url-reverse">
-                  <LinkIcon className="inline-block w-4 h-4 mr-2" />
-                  URL (Z-A)
-                </SelectItem>
-                <SelectItem value="title">
-                  <Type className="inline-block w-4 h-4 mr-2" />
-                  Title (A-Z)
-                </SelectItem>
-                <SelectItem value="title-reverse">
-                  <Type className="inline-block w-4 h-4 mr-2" />
-                  Title (Z-A)
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            {viewMode === "search" && (
+              <>
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search tabs..."
+                    className="pl-9"
+                  />
+                </div>
+                
+                <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mru">
+                      <Clock className="inline-block w-4 h-4 mr-2" />
+                      Most Recent
+                    </SelectItem>
+                    <SelectItem value="url">
+                      <LinkIcon className="inline-block w-4 h-4 mr-2" />
+                      URL
+                    </SelectItem>
+                    <SelectItem value="title">
+                      <Type className="inline-block w-4 h-4 mr-2" />
+                      Title
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant={reverseSort ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setReverseSort(!reverseSort)}
+                  title="Reverse sort order"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+
+            {viewMode === "collections" && (
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold">Collections</h2>
+              </div>
+            )}
+
+            {viewMode === "account" && (
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold">Account</h2>
+              </div>
+            )}
+
+            {viewMode === "settings" && (
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold">Settings</h2>
+              </div>
+            )}
 
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
@@ -184,92 +377,228 @@ export const TabManagement = ({ tabs, isOpen, onClose, onSelectTab }: TabManagem
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {viewMode === "search" ? (
-              <div className="space-y-2">
-                {filteredAndSortedTabs.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    No tabs found
-                  </div>
-                ) : (
-                  filteredAndSortedTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        onSelectTab(tab.id);
-                        onClose();
-                      }}
-                      className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={tab.favicon}
-                          alt=""
-                          className="w-5 h-5 mt-0.5 flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.src = '/favicon.png';
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
-                            {tab.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {tab.url}
+          <ScrollArea className="flex-1">
+            <div className="p-4">
+              {viewMode === "search" && (
+                <div className="space-y-2">
+                  {filteredAndSortedTabs.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      No tabs found
+                    </div>
+                  ) : (
+                    filteredAndSortedTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          onSelectTab(tab.id);
+                          onClose();
+                        }}
+                        className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={tab.favicon}
+                            alt=""
+                            className="w-5 h-5 mt-0.5 flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.src = '/favicon.png';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">
+                              {tab.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {tab.url}
+                            </div>
                           </div>
                         </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {viewMode === "collections" && (
+                <div className="space-y-4">
+                  {/* Create Collection */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={newCollectionName}
+                      onChange={(e) => setNewCollectionName(e.target.value)}
+                      placeholder="New collection name..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateCollection();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleCreateCollection}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create
+                    </Button>
+                  </div>
+
+                  {/* Collections List */}
+                  <div className="space-y-2">
+                    {collections.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        No collections yet. Create one to organize your tabs.
                       </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                Collections view coming soon
-              </div>
-            )}
-          </div>
+                    ) : (
+                      collections.map((collection) => (
+                        <div
+                          key={collection.id}
+                          className={cn(
+                            "p-4 rounded-lg border cursor-pointer transition-colors",
+                            selectedCollection === collection.id
+                              ? "bg-primary/10 border-primary"
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => setSelectedCollection(
+                            selectedCollection === collection.id ? null : collection.id
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-medium">{collection.name}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {collection.tabIds.length} tabs
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCollection(collection.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {viewMode === "account" && (
+                <div className="py-12">
+                  {!isSignedIn ? (
+                    <div className="text-center space-y-4">
+                      <p className="text-muted-foreground mb-4">
+                        Sign in to sync your tabs across devices
+                      </p>
+                      <Button onClick={() => setIsSignedIn(true)}>
+                        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                          <path
+                            fill="currentColor"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          />
+                        </svg>
+                        Sign in with Google
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-lg border">
+                        <h3 className="font-medium mb-2">Account Information</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Signed in with Google
+                        </p>
+                      </div>
+                      <Button variant="outline" onClick={() => setIsSignedIn(false)}>
+                        Sign Out
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {viewMode === "settings" && (
+                <SettingsContent
+                  shortcuts={shortcuts}
+                  onShortcutsChange={onShortcutsChange}
+                  showActions={false}
+                />
+              )}
+            </div>
+          </ScrollArea>
         </div>
 
-        {/* Right Sidebar - Tabs by Window */}
+        {/* Right Sidebar - Current Tabs */}
         <div className="w-80 border-l bg-muted/30 flex flex-col overflow-hidden">
           <div className="p-4 border-b">
-            <h3 className="font-semibold text-sm">Tabs by Window</h3>
+            <h3 className="font-semibold text-sm">Current</h3>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-2">
-            {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
-              <div key={windowName} className="mb-4">
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                  {windowName} ({windowTabs.length})
-                </div>
-                <div className="space-y-1">
-                  {windowTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        onSelectTab(tab.id);
-                        onClose();
-                      }}
-                      className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors group"
+          <ScrollArea className="flex-1">
+            <div className="p-2">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
+                  <div key={windowName} className="mb-4">
+                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                      {windowName} ({windowTabs.length})
+                    </div>
+                    <SortableContext
+                      items={windowTabs.map(t => t.id)}
+                      strategy={verticalListSortingStrategy}
                     >
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={tab.favicon}
-                          alt=""
-                          className="w-4 h-4 flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.src = '/favicon.png';
-                          }}
-                        />
-                        <span className="text-xs truncate">{tab.title}</span>
+                      <div className="space-y-1">
+                        {windowTabs.map((tab) => (
+                          <SortableTab
+                            key={tab.id}
+                            tab={tab}
+                            onSelect={() => {
+                              onSelectTab(tab.id);
+                              onClose();
+                            }}
+                            onClose={() => handleCloseTab(tab.id)}
+                            showClose={true}
+                          />
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+                    </SortableContext>
+                  </div>
+                ))}
+                <DragOverlay>
+                  {activeTab && (
+                    <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
+                      <img
+                        src={activeTab.favicon}
+                        alt=""
+                        className="w-4 h-4 flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = '/favicon.png';
+                        }}
+                      />
+                      <span className="text-xs truncate">{activeTab.title}</span>
+                    </div>
+                  )}
+                </DragOverlay>
+              </DndContext>
+            </div>
+          </ScrollArea>
         </div>
       </div>
     </>
