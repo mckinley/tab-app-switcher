@@ -16,6 +16,7 @@ interface SettingsContentProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
   onSave?: () => void;
+  onCancel?: () => void;
   showActions?: boolean;
 }
 
@@ -23,6 +24,7 @@ export const SettingsContent = ({
   shortcuts, 
   onShortcutsChange, 
   onSave,
+  onCancel,
   showActions = true 
 }: SettingsContentProps) => {
   const [capturingKey, setCapturingKey] = useState<string | null>(null);
@@ -153,15 +155,22 @@ export const SettingsContent = ({
       </div>
 
       {showActions && (
-        <div className="flex justify-between items-center gap-2 pt-2">
+        <div className="flex justify-between items-center gap-2 pt-4 border-t mt-4">
           <Button variant="outline" size="sm" onClick={handleReset}>
             Reset to Defaults
           </Button>
-          {onSave && (
-            <Button size="sm" onClick={onSave}>
-              Save Changes
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {onCancel && (
+              <Button variant="outline" size="sm" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            {onSave && (
+              <Button size="sm" onClick={onSave}>
+                Save Changes
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

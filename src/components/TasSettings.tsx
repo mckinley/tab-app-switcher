@@ -37,6 +37,11 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
     handleOpenChange(false);
   };
 
+  const handleCancel = () => {
+    setLocalShortcuts(shortcuts);
+    handleOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -66,6 +71,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
           shortcuts={localShortcuts}
           onShortcutsChange={setLocalShortcuts}
           onSave={handleSave}
+          onCancel={handleCancel}
           showActions={true}
         />
       </DialogContent>
