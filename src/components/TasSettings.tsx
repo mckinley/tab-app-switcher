@@ -70,17 +70,18 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
         </button>
       </DialogTrigger>
       <DialogContent 
-        className="w-[95vw] max-w-[500px] p-4 sm:p-6"
+        className="w-[90vw] max-w-[450px] p-3 sm:p-6"
         onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>TAS Settings</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base sm:text-lg">TAS Settings</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Customize keyboard shortcuts and appearance
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-3">
+        <div className="space-y-3 py-2">
           {/* Theme Selection */}
           <div className="flex items-center justify-between gap-4">
             <Label className="text-sm font-medium">Theme</Label>
@@ -95,9 +96,9 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
             </div>
 
             {/* Modifier Key */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Modifier Key</Label>
-              <div className="flex gap-3 flex-wrap">
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm font-medium">Modifier Key</Label>
+              <div className="flex gap-2 flex-wrap">
                 <KeyButton
                   value={localShortcuts.modifier}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, modifier: key })}
@@ -107,15 +108,15 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
                   onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Main modifier key for all shortcuts (e.g., Alt, Cmd, Ctrl)
               </p>
             </div>
 
             {/* Navigation Shortcuts */}
-            <div className="space-y-2 p-3 bg-muted/90 dark:bg-muted rounded-lg border border-border">
-              <Label className="text-sm font-medium">TAS Navigation</Label>
-              <div className="flex gap-3 flex-wrap">
+            <div className="space-y-1.5 p-2 sm:p-3 bg-muted rounded-lg border border-border">
+              <Label className="text-xs sm:text-sm font-medium">TAS Navigation</Label>
+              <div className="flex gap-2 flex-wrap">
                 <KeyButton
                   value={localShortcuts.activateForward}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, activateForward: key })}
@@ -133,15 +134,15 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
                   onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
                 {localShortcuts.modifier}+{localShortcuts.activateForward} opens TAS and moves forward in MRU list. {localShortcuts.modifier}+{localShortcuts.activateBackward} moves backward.
               </p>
             </div>
 
             {/* Action Shortcuts */}
-            <div className="space-y-2 p-3 bg-muted/90 dark:bg-muted rounded-lg border border-border">
-              <Label className="text-sm font-medium">Actions</Label>
-              <div className="flex gap-3 flex-wrap">
+            <div className="space-y-1.5 p-2 sm:p-3 bg-muted rounded-lg border border-border">
+              <Label className="text-xs sm:text-sm font-medium">Actions</Label>
+              <div className="flex gap-2 flex-wrap">
                 <KeyButton
                   value={localShortcuts.search}
                   onKeyCapture={(key) => setLocalShortcuts({ ...localShortcuts, search: key })}
@@ -159,22 +160,22 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange }: TasS
                   onCaptureEnd={() => setCapturingKey(null)}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
                 Press {localShortcuts.search} to search tabs. {localShortcuts.modifier}+{localShortcuts.closeTab} to close selected tab.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 pt-3 border-t">
-          <Button variant="outline" onClick={handleReset}>
-            Reset to Defaults
+        <div className="flex justify-between gap-2 pt-3 border-t">
+          <Button variant="outline" onClick={handleReset} className="text-xs sm:text-sm">
+            Reset
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => handleOpenChange(false)}>
+            <Button variant="ghost" onClick={() => handleOpenChange(false)} className="text-xs sm:text-sm">
               Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} className="text-xs sm:text-sm">
               Save Changes
             </Button>
           </div>
