@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search, LayoutGrid } from "lucide-react";
 import { TabItem } from "./TabItem";
 import { TasSettings } from "./TasSettings";
+import { TabManagement } from "./TabManagement";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -37,6 +38,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTabManagementOpen, setIsTabManagementOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,12 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
 
   return (
     <>
+      <TabManagement 
+        tabs={tabs}
+        isOpen={isTabManagementOpen}
+        onClose={() => setIsTabManagementOpen(false)}
+        onSelectTab={onSelectTab}
+      />
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-[hsl(var(--switcher-backdrop))]/20 backdrop-blur-sm z-50"
@@ -201,6 +209,7 @@ export const TabSwitcher = ({ tabs, isVisible, selectedIndex, onSelectTab, onClo
             {/* Action Icons */}
             <div className="flex flex-col gap-1">
               <button
+                onClick={() => setIsTabManagementOpen(true)}
                 className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Advanced tab management"
               >
