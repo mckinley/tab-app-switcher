@@ -484,6 +484,20 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Footer */}
+      <div className="max-w-4xl mx-auto px-8 py-8">
+        <div className="text-right">
+          <a 
+            href="https://www.mckinleydigital.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+          >
+            McKinley Digital
+          </a>
+        </div>
+      </div>
+
       <TabSwitcher
         tabs={mruTabs}
         isVisible={isSwitcherVisible}
