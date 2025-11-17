@@ -41,15 +41,17 @@ export const SettingsContent = ({
   };
 
   return (
-    <div className="space-y-5 py-2">
+    <div className="space-y-4 py-2">
       {/* Keyboard Shortcuts Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
             <h3 className="text-sm font-medium">Keyboard Shortcuts</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Click a key to customize it</p>
           </div>
-          <ThemeToggle />
+          <div className="flex-shrink-0">
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Modifier Key */}
@@ -72,7 +74,7 @@ export const SettingsContent = ({
         </div>
 
         {/* Navigation Shortcuts Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Next */}
           <div className="space-y-2">
             <div>
@@ -129,7 +131,7 @@ export const SettingsContent = ({
         </div>
 
         {/* Actions Shortcuts Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Search */}
           <div className="space-y-2">
             <div>
@@ -187,18 +189,18 @@ export const SettingsContent = ({
       </div>
 
       {showActions && (
-        <div className="flex justify-between items-center gap-2 pt-4 border-t mt-4">
-          <Button variant="outline" size="sm" onClick={handleReset}>
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-4 border-t mt-4">
+          <Button variant="outline" size="sm" onClick={handleReset} className="w-full sm:w-auto">
             Reset to Defaults
           </Button>
           <div className="flex gap-2">
             {onCancel && (
-              <Button variant="outline" size="sm" onClick={onCancel}>
+              <Button variant="outline" size="sm" onClick={onCancel} className="flex-1 sm:flex-none">
                 Cancel
               </Button>
             )}
             {onSave && (
-              <Button size="sm" onClick={onSave}>
+              <Button size="sm" onClick={onSave} className="flex-1 sm:flex-none">
                 Save Changes
               </Button>
             )}
