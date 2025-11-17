@@ -270,13 +270,26 @@ const Index = () => {
       </div>
 
       {/* Header - positioned below tabs */}
-      <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-2 pt-4 pb-8">
-        <Link to="/downloads">
-          <Button variant="ghost">
-            Downloads
+      <div className="max-w-7xl mx-auto px-4 flex justify-between items-center gap-2 pt-4 pb-8">
+        {/* Help button - shown after tooltip is dismissed or TAS is used */}
+        {(!showTooltip || hasUsedTAS) && (
+          <Button
+            onClick={() => setShowTooltip(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            size="icon"
+            aria-label="Show help"
+          >
+            <span className="text-lg">?</span>
           </Button>
-        </Link>
-        <ThemeToggle />
+        )}
+        <div className="flex items-center gap-2 ml-auto">
+          <Link to="/downloads">
+            <Button variant="ghost">
+              Downloads
+            </Button>
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Hero Section */}
