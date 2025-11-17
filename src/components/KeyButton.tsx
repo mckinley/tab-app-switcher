@@ -23,6 +23,13 @@ export const KeyButton = ({
   const [localCapturing, setLocalCapturing] = useState(false);
   const isCapturing = externalIsCapturing || localCapturing;
 
+  // Reset local capturing when another key takes over
+  useEffect(() => {
+    if (externalIsCapturing === false && localCapturing) {
+      setLocalCapturing(false);
+    }
+  }, [externalIsCapturing, localCapturing]);
+
   useEffect(() => {
     if (!isCapturing) return;
 
@@ -65,36 +72,31 @@ export const KeyButton = ({
   };
 
   return (
-    <div className="flex flex-col gap-1 relative">
-      {label && <span className="text-xs text-muted-foreground">{label}</span>}
+    <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
       <button
         type="button"
         disabled={disabled}
         onClick={handleClick}
         className={cn(
-          "w-12 h-12 rounded-md font-medium transition-all",
+          "w-11 h-11 rounded-md font-medium transition-all",
           "border-2 shadow-sm flex items-center justify-center",
           isCapturing 
             ? "border-primary bg-primary/10 text-primary animate-pulse" 
             : disabled
             ? "border-border/30 bg-background/30 text-muted-foreground/50 cursor-not-allowed"
             : "border-border/50 bg-background text-foreground hover:border-primary/50 hover:bg-background/80 cursor-pointer",
-          "font-mono tracking-wide"
+          "font-mono text-sm"
         )}
       >
-        <span className="text-center text-[9px] leading-tight">
-          {isCapturing ? (
-            <>Press<br />key</>
-          ) : (
-            <span className="text-sm">{value}</span>
-          )}
-        </span>
-      </button>
-      <div className="h-3 flex items-center justify-center">
-        {isCapturing && (
-          <span className="text-[9px] text-muted-foreground absolute">Press Esc to cancel</span>
+        {isCapturing ? (
+          <span className="text-[9px] leading-tight text-center">Press<br />key</span>
+        ) : (
+          value
         )}
-      </div>
+      </button>
+      {isCapturing && (
+        <span className="text-[9px] text-muted-foreground absolute top-[52px] whitespace-nowrap">Press Esc to cancel</span>
+      )}
     </div>
   );
 };
