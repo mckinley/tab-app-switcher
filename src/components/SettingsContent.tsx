@@ -81,19 +81,21 @@ export const SettingsContent = ({
                 Switch to more recently used tab
               </p>
             </div>
-            <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
+            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
               <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
                 {shortcuts.modifier}
               </div>
-              <span className="text-muted-foreground text-sm">+</span>
-              <KeyButton
-                value={shortcuts.activateForward}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateForward: key })}
-                isCapturing={capturingKey === 'forward'}
-                onCaptureStart={() => setCapturingKey('forward')}
-                onCaptureEnd={() => setCapturingKey(null)}
-              />
             </div>
+            <span className="text-muted-foreground text-sm">+</span>
+            <KeyButton
+              value={shortcuts.activateForward}
+              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateForward: key })}
+              isCapturing={capturingKey === 'forward'}
+              onCaptureStart={() => setCapturingKey('forward')}
+              onCaptureEnd={() => setCapturingKey(null)}
+            />
+          </div>
           </div>
 
           {/* Previous */}
@@ -104,19 +106,21 @@ export const SettingsContent = ({
                 Switch to less recently used tab
               </p>
             </div>
-            <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
+            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
               <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
                 {shortcuts.modifier}
               </div>
-              <span className="text-muted-foreground text-sm">+</span>
-              <KeyButton
-                value={shortcuts.activateBackward}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateBackward: key })}
-                isCapturing={capturingKey === 'backward'}
-                onCaptureStart={() => setCapturingKey('backward')}
-                onCaptureEnd={() => setCapturingKey(null)}
-              />
             </div>
+            <span className="text-muted-foreground text-sm">+</span>
+            <KeyButton
+              value={shortcuts.activateBackward}
+              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateBackward: key })}
+              isCapturing={capturingKey === 'backward'}
+              onCaptureStart={() => setCapturingKey('backward')}
+              onCaptureEnd={() => setCapturingKey(null)}
+            />
+          </div>
           </div>
         </div>
 
@@ -130,19 +134,21 @@ export const SettingsContent = ({
                 Open tab search
               </p>
             </div>
-            <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
+            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
               <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
                 {shortcuts.modifier}
               </div>
-              <span className="text-muted-foreground text-sm">+</span>
-              <KeyButton
-                value={shortcuts.search}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, search: key })}
-                isCapturing={capturingKey === 'search'}
-                onCaptureStart={() => setCapturingKey('search')}
-                onCaptureEnd={() => setCapturingKey(null)}
-              />
             </div>
+            <span className="text-muted-foreground text-sm">+</span>
+            <KeyButton
+              value={shortcuts.search}
+              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, search: key })}
+              isCapturing={capturingKey === 'search'}
+              onCaptureStart={() => setCapturingKey('search')}
+              onCaptureEnd={() => setCapturingKey(null)}
+            />
+          </div>
           </div>
 
           {/* Close */}
@@ -153,19 +159,21 @@ export const SettingsContent = ({
                 Close current tab
               </p>
             </div>
-            <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
+            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
               <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
                 {shortcuts.modifier}
               </div>
-              <span className="text-muted-foreground text-sm">+</span>
-              <KeyButton
-                value={shortcuts.closeTab}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, closeTab: key })}
-                isCapturing={capturingKey === 'close'}
-                onCaptureStart={() => setCapturingKey('close')}
-                onCaptureEnd={() => setCapturingKey(null)}
-              />
             </div>
+            <span className="text-muted-foreground text-sm">+</span>
+            <KeyButton
+              value={shortcuts.closeTab}
+              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, closeTab: key })}
+              isCapturing={capturingKey === 'close'}
+              onCaptureStart={() => setCapturingKey('close')}
+              onCaptureEnd={() => setCapturingKey(null)}
+            />
+          </div>
           </div>
         </div>
       </div>
