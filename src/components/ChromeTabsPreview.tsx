@@ -32,7 +32,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
           </div>
         ) : (
           <div className="relative">
-            <div className="flex gap-0 overflow-x-auto scrollbar-hide" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide pb-6" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
               <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
                   display: none;
@@ -103,8 +103,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                   
                   {/* MRU Position Badge - Below border */}
                   {showBadge && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-[48px] flex items-center justify-center animate-scale-in z-10">
-                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="absolute left-1/2 -translate-x-1/2 top-[50px] flex items-center justify-center animate-scale-in z-10">
+                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                         <span className="text-[10px] font-medium text-primary">
                           {mruPosition}
                         </span>
