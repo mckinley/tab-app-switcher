@@ -108,6 +108,7 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const [hasUsedTAS, setHasUsedTAS] = useState(false);
+  const [clickedTabs, setClickedTabs] = useState<Set<string>>(new Set());
 
   // Get tabs in MRU order for the switcher (filter out any invalid IDs)
   const mruTabs = mruOrder
@@ -127,6 +128,8 @@ const Index = () => {
     setActiveTabId(tabId);
     // Move clicked tab to front of MRU order
     setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
+    // Track that this tab has been clicked
+    setClickedTabs(prev => new Set([...prev, tabId]));
   };
 
   const handleCloseTab = (tabId: string) => {
@@ -254,6 +257,7 @@ const Index = () => {
         onAddTab={handleAddTab}
         canAddTab={tabs.length < 8}
         mruOrder={mruOrder}
+        clickedTabs={clickedTabs}
       />
 
       <div className="relative">
