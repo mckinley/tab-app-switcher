@@ -16,7 +16,7 @@ interface ChromeTabsPreviewProps {
 export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder, clickedTabs }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 relative">
         {tabs.length === 0 ? (
           /* Empty State */
           <div className="flex items-center justify-center py-3 text-muted-foreground text-sm">
@@ -103,7 +103,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                   
                   {/* MRU Position Badge - Below border */}
                   {showBadge && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 flex items-center justify-center animate-scale-in z-10">
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-[-28px] flex items-center justify-center animate-scale-in z-50">
                       <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                         <span className="text-[10px] font-medium text-primary">
                           {mruPosition}
