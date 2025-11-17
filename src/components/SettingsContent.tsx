@@ -54,27 +54,32 @@ export const SettingsContent = ({
           </div>
         </div>
 
-        {/* Modifier Key */}
-        <div className="space-y-2">
-          <div>
-            <Label className="text-sm font-medium">Modifier</Label>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Main modifier key for all shortcuts (e.g., Alt, Cmd, Ctrl)
-            </p>
+        {/* Shortcuts Panel */}
+        <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+          {/* Modifier Key */}
+          <div className="space-y-2">
+            <div>
+              <Label className="text-sm font-medium">Modifier</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Main modifier key for all shortcuts (e.g., Alt, Cmd, Ctrl)
+              </p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <KeyButton
+                value={shortcuts.modifier}
+                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, modifier: key })}
+                isCapturing={capturingKey === 'modifier'}
+                onCaptureStart={() => setCapturingKey('modifier')}
+                onCaptureEnd={() => setCapturingKey(null)}
+              />
+            </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <KeyButton
-              value={shortcuts.modifier}
-              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, modifier: key })}
-              isCapturing={capturingKey === 'modifier'}
-              onCaptureStart={() => setCapturingKey('modifier')}
-              onCaptureEnd={() => setCapturingKey(null)}
-            />
-          </div>
-        </div>
 
-        {/* Navigation Shortcuts Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Separator */}
+          <div className="border-t border-border/50" />
+
+          {/* Navigation Shortcuts Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Next */}
           <div className="space-y-2">
             <div>
@@ -183,8 +188,9 @@ export const SettingsContent = ({
               onCaptureStart={() => setCapturingKey('close')}
               onCaptureEnd={() => setCapturingKey(null)}
             />
+            </div>
           </div>
-          </div>
+        </div>
         </div>
       </div>
 
