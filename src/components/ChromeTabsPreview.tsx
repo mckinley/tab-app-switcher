@@ -15,7 +15,7 @@ interface ChromeTabsPreviewProps {
 
 export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder, clickedTabs }: ChromeTabsPreviewProps) => {
   return (
-    <div className="w-full border-b border-border bg-background relative">
+    <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
         {tabs.length === 0 ? (
           /* Empty State */
@@ -31,7 +31,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
             )}
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative pb-8">
             <div className="flex gap-0 overflow-x-auto scrollbar-hide" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
               <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
@@ -42,10 +42,12 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                   scrollbar-width: none;
                 }
               `}</style>
-              {tabs.map((tab, index) => {
+              {tabs.map((tab) => {
                 const isActive = !isVisible && tab.id === activeTabId;
+                const mruPosition = mruOrder.indexOf(tab.id) + 1;
+                const showBadge = clickedTabs.has(tab.id);
                 return (
-                  <div key={tab.id} className="relative flex-1 min-w-[120px] max-w-[240px]" data-tab-index={index}>
+                  <div key={tab.id} className="relative flex-1 min-w-[120px] max-w-[240px]">
                   <button
                     onClick={() => onTabClick(tab.id)}
                     className={cn(
@@ -98,6 +100,17 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                     </button>
                     </div>
                   </button>
+                  
+                  {/* MRU Position Badge - Below the tab */}
+                  {showBadge && (
+                    <div className="absolute left-1/2 -translate-x-1/2 top-[60px] flex items-center justify-center animate-scale-in z-50">
+                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                        <span className="text-[10px] font-medium text-primary">
+                          {mruPosition}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   </div>
                 );
               })}
@@ -116,31 +129,6 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
           </div>
         )}
       </div>
-      
-      {/* MRU Position Badges - Rendered outside the scrollable area */}
-      {tabs.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 absolute top-full left-0 right-0 pointer-events-none">
-          <div className="relative flex gap-0" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
-            {tabs.map((tab, index) => {
-              const mruPosition = mruOrder.indexOf(tab.id) + 1;
-              const showBadge = clickedTabs.has(tab.id);
-              if (!showBadge) return null;
-              
-              return (
-                <div key={tab.id} className="flex-1 min-w-[120px] max-w-[240px] relative">
-                  <div className="absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center animate-scale-in z-50">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                      <span className="text-[10px] font-medium text-primary">
-                        {mruPosition}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
