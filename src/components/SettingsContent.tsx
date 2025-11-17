@@ -62,7 +62,6 @@ export const SettingsContent = ({
             <KeyButton
               value={shortcuts.modifier}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, modifier: key })}
-              label="Modifier"
               isCapturing={capturingKey === 'modifier'}
               onCaptureStart={() => setCapturingKey('modifier')}
               onCaptureEnd={() => setCapturingKey(null)}
@@ -84,7 +83,6 @@ export const SettingsContent = ({
             <KeyButton
               value={shortcuts.activateForward}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateForward: key })}
-              label="Forward"
               isCapturing={capturingKey === 'forward'}
               onCaptureStart={() => setCapturingKey('forward')}
               onCaptureEnd={() => setCapturingKey(null)}
@@ -107,7 +105,6 @@ export const SettingsContent = ({
             <KeyButton
               value={shortcuts.activateBackward}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateBackward: key })}
-              label="Backward"
               isCapturing={capturingKey === 'backward'}
               onCaptureStart={() => setCapturingKey('backward')}
               onCaptureEnd={() => setCapturingKey(null)}
@@ -126,7 +123,6 @@ export const SettingsContent = ({
             <KeyButton
               value={shortcuts.search}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, search: key })}
-              label="Search"
               isCapturing={capturingKey === 'search'}
               onCaptureStart={() => setCapturingKey('search')}
               onCaptureEnd={() => setCapturingKey(null)}
@@ -145,7 +141,6 @@ export const SettingsContent = ({
             <KeyButton
               value={shortcuts.closeTab}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, closeTab: key })}
-              label="Close"
               isCapturing={capturingKey === 'close'}
               onCaptureStart={() => setCapturingKey('close')}
               onCaptureEnd={() => setCapturingKey(null)}

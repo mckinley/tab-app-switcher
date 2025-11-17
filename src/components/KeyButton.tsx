@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface KeyButtonProps {
   value: string;
   onKeyCapture: (key: string) => void;
-  label: string;
+  label?: string;
   disabled?: boolean;
   isCapturing?: boolean;
   onCaptureStart?: () => void;
@@ -66,7 +66,7 @@ export const KeyButton = ({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      {label && <span className="text-xs text-muted-foreground">{label}</span>}
     <button
       type="button"
       disabled={disabled}
