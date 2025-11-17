@@ -10,9 +10,10 @@ interface ChromeTabsPreviewProps {
   onAddTab: () => void;
   canAddTab: boolean;
   mruOrder: string[];
+  clickedTabs: Set<string>;
 }
 
-export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder, clickedTabs }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
@@ -44,14 +45,14 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
               {tabs.map((tab) => {
                 const isActive = !isVisible && tab.id === activeTabId;
                 const mruPosition = mruOrder.indexOf(tab.id) + 1;
+                const showBadge = clickedTabs.has(tab.id);
                 return (
+                  <div key={tab.id} className="relative flex-1 min-w-[120px] max-w-[240px]">
                   <button
-                    key={tab.id}
                     onClick={() => onTabClick(tab.id)}
                     className={cn(
-                      "group relative flex flex-col items-center gap-0 px-4 pb-1",
-                      "flex-1 min-w-[120px] max-w-[240px]",
-                      "h-[60px]", // Increased height to accommodate badge
+                      "group relative flex items-center gap-3 px-4 w-full",
+                      "h-12",
                       "transition-all duration-150",
                       "border-b-2 border-r border-border/10",
                       isActive
@@ -59,7 +60,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                         : "border-b-transparent hover:border-b-muted-foreground/30"
                     )}
                   >
-                    <div className="flex items-center gap-3 w-full pt-2">
+                    <div className="flex items-center gap-3 w-full">
                     {/* Favicon */}
                     <img
                       src={tab.favicon}
@@ -98,16 +99,19 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                       <span className="text-xs text-muted-foreground hover:text-foreground">×</span>
                     </button>
                     </div>
-                    
-                    {/* MRU Position Badge */}
-                    <div className="flex items-center justify-center mt-0.5 animate-scale-in">
-                      <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-[9px] font-medium text-primary">
+                  </button>
+                  
+                  {/* MRU Position Badge - Below border */}
+                  {showBadge && (
+                    <div className="absolute left-1/2 -translate-x-1/2 top-[48px] flex items-center justify-center animate-scale-in z-10">
+                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-[10px] font-medium text-primary">
                           {mruPosition}
                         </span>
                       </div>
                     </div>
-                  </button>
+                  )}
+                  </div>
                 );
               })}
             </div>
