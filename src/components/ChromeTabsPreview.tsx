@@ -102,7 +102,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
             {canAddTab && (
               <button
                 onClick={onAddTab}
-                className="absolute right-0 top-0 flex items-center justify-center w-12 h-12 border-b-2 border-l border-border/10 border-b-transparent hover:border-b-muted-foreground/30 hover:bg-background/95 transition-all text-muted-foreground hover:text-foreground bg-background z-30"
+                className="absolute right-0 top-0 flex items-center justify-center w-10 py-2 border-b-2 border-l border-border/10 border-b-transparent hover:border-b-muted-foreground/30 hover:bg-background/95 transition-all text-muted-foreground hover:text-foreground bg-background z-30"
                 aria-label="Add new tab"
               >
                 <span className="text-lg font-light">+</span>
