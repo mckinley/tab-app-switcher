@@ -9,10 +9,9 @@ interface ChromeTabsPreviewProps {
   onCloseTab: (tabId: string) => void;
   onAddTab: () => void;
   canAddTab: boolean;
-  mruOrder: string[];
 }
 
-export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
@@ -43,15 +42,13 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
               `}</style>
               {tabs.map((tab) => {
                 const isActive = !isVisible && tab.id === activeTabId;
-                const mruPosition = mruOrder.indexOf(tab.id) + 1;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => onTabClick(tab.id)}
                     className={cn(
-                      "group relative flex flex-col items-center gap-0 px-4 pb-1",
+                      "group relative flex items-center gap-3 px-4 py-2",
                       "flex-1 min-w-[120px] max-w-[240px]",
-                      "h-[60px]", // Increased height to accommodate badge
                       "transition-all duration-150",
                       "border-b-2 border-r border-border/10",
                       isActive
@@ -59,12 +56,11 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                         : "border-b-transparent hover:border-b-muted-foreground/30"
                     )}
                   >
-                    <div className="flex items-center gap-3 w-full pt-2">
                     {/* Favicon */}
                     <img
                       src={tab.favicon}
                       alt=""
-                      className="w-[18px] h-[18px] flex-shrink-0 z-10"
+                      className="w-[18px] h-[18px] flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23999' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E";
                       }}
@@ -97,16 +93,6 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                     >
                       <span className="text-xs text-muted-foreground hover:text-foreground">×</span>
                     </button>
-                    </div>
-                    
-                    {/* MRU Position Badge */}
-                    <div className="flex items-center justify-center mt-0.5 animate-scale-in">
-                      <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-[9px] font-medium text-primary">
-                          {mruPosition}
-                        </span>
-                      </div>
-                    </div>
                   </button>
                 );
               })}
