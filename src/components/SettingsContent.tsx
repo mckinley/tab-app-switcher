@@ -81,13 +81,15 @@ export const SettingsContent = ({
                 Switch to more recently used tab
               </p>
             </div>
-          <div className="flex gap-2 items-center">
-            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
-              <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                {shortcuts.modifier}
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-1 relative min-h-[60px] justify-start">
+                <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
+                  {shortcuts.modifier}
+                </div>
               </div>
+              <span className="text-muted-foreground text-sm h-11 flex items-center">+</span>
             </div>
-            <span className="text-muted-foreground text-sm">+</span>
             <KeyButton
               value={shortcuts.activateForward}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateForward: key })}
@@ -106,13 +108,15 @@ export const SettingsContent = ({
                 Switch to less recently used tab
               </p>
             </div>
-          <div className="flex gap-2 items-center">
-            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
-              <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                {shortcuts.modifier}
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-1 relative min-h-[60px] justify-start">
+                <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
+                  {shortcuts.modifier}
+                </div>
               </div>
+              <span className="text-muted-foreground text-sm h-11 flex items-center">+</span>
             </div>
-            <span className="text-muted-foreground text-sm">+</span>
             <KeyButton
               value={shortcuts.activateBackward}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateBackward: key })}
@@ -134,13 +138,15 @@ export const SettingsContent = ({
                 Open tab search
               </p>
             </div>
-          <div className="flex gap-2 items-center">
-            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
-              <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                {shortcuts.modifier}
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-1 relative min-h-[60px] justify-start">
+                <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
+                  {shortcuts.modifier}
+                </div>
               </div>
+              <span className="text-muted-foreground text-sm h-11 flex items-center">+</span>
             </div>
-            <span className="text-muted-foreground text-sm">+</span>
             <KeyButton
               value={shortcuts.search}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, search: key })}
@@ -159,13 +165,15 @@ export const SettingsContent = ({
                 Close current tab
               </p>
             </div>
-          <div className="flex gap-2 items-center">
-            <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
-              <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                {shortcuts.modifier}
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-1 relative min-h-[60px] justify-start">
+                <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
+                  {shortcuts.modifier}
+                </div>
               </div>
+              <span className="text-muted-foreground text-sm h-11 flex items-center">+</span>
             </div>
-            <span className="text-muted-foreground text-sm">+</span>
             <KeyButton
               value={shortcuts.closeTab}
               onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, closeTab: key })}
