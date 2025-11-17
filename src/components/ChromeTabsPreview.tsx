@@ -9,9 +9,10 @@ interface ChromeTabsPreviewProps {
   onCloseTab: (tabId: string) => void;
   onAddTab: () => void;
   canAddTab: boolean;
+  mruOrder: string[];
 }
 
-export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab, mruOrder }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
@@ -42,14 +43,15 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
               `}</style>
               {tabs.map((tab) => {
                 const isActive = !isVisible && tab.id === activeTabId;
+                const mruPosition = mruOrder.indexOf(tab.id) + 1;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => onTabClick(tab.id)}
                     className={cn(
-                      "group relative flex items-center gap-3 px-4",
+                      "group relative flex flex-col items-center gap-0 px-4 pb-1",
                       "flex-1 min-w-[120px] max-w-[240px]",
-                      "h-12", // Fixed height
+                      "h-[60px]", // Increased height to accommodate badge
                       "transition-all duration-150",
                       "border-b-2 border-r border-border/10",
                       isActive
@@ -57,6 +59,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                         : "border-b-transparent hover:border-b-muted-foreground/30"
                     )}
                   >
+                    <div className="flex items-center gap-3 w-full pt-2">
                     {/* Favicon */}
                     <img
                       src={tab.favicon}
@@ -94,6 +97,16 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                     >
                       <span className="text-xs text-muted-foreground hover:text-foreground">×</span>
                     </button>
+                    </div>
+                    
+                    {/* MRU Position Badge */}
+                    <div className="flex items-center justify-center mt-0.5 animate-scale-in">
+                      <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-[9px] font-medium text-primary">
+                          {mruPosition}
+                        </span>
+                      </div>
+                    </div>
                   </button>
                 );
               })}

@@ -253,6 +253,7 @@ const Index = () => {
         onCloseTab={handleCloseTab}
         onAddTab={handleAddTab}
         canAddTab={tabs.length < 8}
+        mruOrder={mruOrder}
       />
 
       <div className="relative">
