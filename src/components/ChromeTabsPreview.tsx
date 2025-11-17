@@ -103,7 +103,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                   
                   {/* MRU Position Badge - Below border */}
                   {showBadge && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-[50px] flex items-center justify-center animate-scale-in z-10">
+                    <div className="absolute left-1/2 -translate-x-1/2 top-[54px] flex items-center justify-center animate-scale-in z-10">
                       <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                         <span className="text-[10px] font-medium text-primary">
                           {mruPosition}
