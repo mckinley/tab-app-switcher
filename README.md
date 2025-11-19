@@ -1,53 +1,113 @@
-# Welcome to your Lovable project
+# Tab Application Switcher Monorepo
 
-## Project info
+Like your system's Application Switcher, but for your browser tabs.
 
-**URL**: https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139
+**Website**: [Tab Application Switcher](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139)
 
-## How can I edit this code?
+## Monorepo Structure
 
-There are several ways of editing your application.
+This repository contains multiple projects:
 
-**Use Lovable**
+```
+/
+├── site/           Marketing website (Vite + React)
+├── extension/      Browser extension (Chrome/Firefox)
+├── tas/            Core Tab Application Switcher library
+├── [root configs]  Shared build configs for site deployment
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139) and start prompting.
+### Projects
+
+- **`site/`** - Marketing website showcasing TAS functionality with live demo
+- **`extension/`** - Browser extension that brings TAS to Chrome and Firefox
+- **`tas/`** - Self-contained component library with the core TAS functionality
+- **`native/`** (future) - Desktop app using Electron
+
+### Shared Architecture
+
+All projects use the `tas/` library for consistent Tab Application Switcher functionality. Each project has its own shadcn/ui components, while sharing design tokens via `tas/tailwind.preset.ts`.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <YOUR_GIT_URL>
+cd tab-app-switcher
+
+# Install all workspace dependencies
+npm install
+```
+
+### Development
+
+```bash
+# Run the marketing site
+npm run dev:site
+
+# Run the browser extension
+npm run dev:extension
+
+# Run both in parallel
+npm run dev:all
+```
+
+### Building
+
+```bash
+# Build the site
+npm run build:site
+
+# Build the extension
+npm run build:extension
+
+# Build everything
+npm run build:all
+```
+
+## Workspaces
+
+This project uses npm workspaces for monorepo management:
+
+- Shared dependencies are hoisted to the root
+- React (18.3.1) is consistent across all projects
+- Each workspace has its own `package.json`
+
+## Deployment
+
+### Site Deployment (Lovable)
+
+The site is deployed automatically via [Lovable](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139).
+
+**Important**: Root-level files must stay for Lovable compatibility:
+- `index.html`
+- `vite.config.ts`
+- `package.json`
+- `public/`
+
+### Extension Deployment
+
+See [`extension/README.md`](extension/README.md) for Chrome Web Store packaging instructions.
+
+## Project-Specific Documentation
+
+- **Site**: See `site/` directory
+- **Extension**: See [`extension/README.md`](extension/README.md)
+- **TAS Library**: See [`tas/README.md`](tas/README.md)
+
+## Contributing
 
 Changes made via Lovable will be committed automatically to this repo.
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
+You can also:
+- Edit files directly in your IDE and push changes
+- Edit files in GitHub's web interface
+- Use GitHub Codespaces
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
 ## What technologies are used for this project?

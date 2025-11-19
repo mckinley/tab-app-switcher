@@ -8,11 +8,17 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    watch: {
+      // Explicitly watch the tas directory for changes
+      ignored: ['!**/tas/**'],
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./site"),
+      "@tas": path.resolve(__dirname, "./tas"),
     },
+    dedupe: ["react", "react-dom"],
   },
 }));
