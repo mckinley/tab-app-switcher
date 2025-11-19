@@ -11,8 +11,8 @@ import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from 
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
 import logo from "@/assets/logo.jpg";
 
-// Mock data - in your actual extension, this will come from Chrome API
-const allTabs: Tab[] = [
+// Demo tab pool - these represent potential tabs that can be opened
+const DEMO_TAB_POOL: Tab[] = [
   {
     id: "1",
     title: "NRDC",
@@ -63,8 +63,104 @@ const allTabs: Tab[] = [
   }
 ];
 
+/**
+ * Custom hook to manage demo tabs with browser-like MRU behavior
+ * This simulates the extension's tab management API for the demo site
+ */
+const useDemoTabs = () => {
+  // Initialize with a random subset of tabs
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const shuffled = [...DEMO_TAB_POOL];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
+
+  // Track the active tab (simulates browser's active tab)
+  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "");
+
+  // MRU order - tracks tab IDs in most-recently-used order
+  const [mruOrder, setMruOrder] = useState<string[]>(tabs.map(t => t.id));
+
+  // Get tabs in MRU order (similar to GET_TABS message in extension)
+  const getTabsInMruOrder = (): Tab[] => {
+    return mruOrder
+      .map(id => tabs.find(t => t.id === id))
+      .filter((tab): tab is Tab => tab !== undefined);
+  };
+
+  // Activate a tab (similar to ACTIVATE_TAB message in extension)
+  const activateTab = (tabId: string) => {
+    setActiveTabId(tabId);
+    // Move to front of MRU order
+    setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
+  };
+
+  // Close a tab (similar to CLOSE_TAB message in extension)
+  const closeTab = (tabId: string) => {
+    // Calculate what the new active tab should be if we're closing the active one
+    if (activeTabId === tabId) {
+      const remainingInMru = mruOrder.filter(id => id !== tabId);
+      if (remainingInMru.length > 0) {
+        setActiveTabId(remainingInMru[0]);
+      } else {
+        setActiveTabId(""); // No tabs left
+      }
+    }
+
+    // Remove tab from tabs array
+    setTabs(prev => prev.filter(t => t.id !== tabId));
+    // Remove from MRU order
+    setMruOrder(prev => prev.filter(id => id !== tabId));
+  };
+
+  // Add a new tab (simulates opening a new tab)
+  const addTab = () => {
+    if (tabs.length >= 8) return;
+
+    // Pick a random tab from DEMO_TAB_POOL that's not currently in tabs
+    const availableTabs = DEMO_TAB_POOL.filter(t => !tabs.find(tab => tab.id === t.id));
+    if (availableTabs.length === 0) {
+      // If all tabs are used, pick any random tab and give it a new ID
+      const randomTab = DEMO_TAB_POOL[Math.floor(Math.random() * DEMO_TAB_POOL.length)];
+      const newTab = {
+        ...randomTab,
+        id: `${randomTab.id}-${Date.now()}`
+      };
+      setTabs(prev => [...prev, newTab]);
+      setMruOrder(prev => [...prev, newTab.id]);
+    } else {
+      const randomTab = availableTabs[Math.floor(Math.random() * availableTabs.length)];
+      setTabs(prev => [...prev, randomTab]);
+      setMruOrder(prev => [...prev, randomTab.id]);
+    }
+  };
+
+  return {
+    tabs,
+    activeTabId,
+    mruOrder,
+    getTabsInMruOrder,
+    activateTab,
+    closeTab,
+    addTab,
+  };
+};
+
 const Index = () => {
   const [platform] = useState(() => detectPlatform());
+
+  // Use the demo tab management hook
+  const {
+    tabs,
+    activeTabId,
+    getTabsInMruOrder,
+    activateTab,
+    closeTab,
+    addTab,
+  } = useDemoTabs();
 
   // Load shortcuts from localStorage or use defaults
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(() => {
@@ -84,18 +180,6 @@ const Index = () => {
     localStorage.setItem('tas-shortcuts', JSON.stringify(shortcuts));
   }, [shortcuts]);
 
-  // Randomize tab order on mount and make tabs dynamic
-  const [tabs, setTabs] = useState(() => {
-    const shuffled = [...allTabs];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  });
-
-  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "");
-  const [mruOrder, setMruOrder] = useState(tabs.map(t => t.id));
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isAltHeld, setIsAltHeld] = useState(false);
@@ -104,62 +188,26 @@ const Index = () => {
   const [showTooltip, setShowTooltip] = useState(true);
   const [hasUsedTAS, setHasUsedTAS] = useState(false);
 
-  // Get tabs in MRU order for the switcher (filter out any invalid IDs)
-  const mruTabs = mruOrder
-    .map(id => tabs.find(t => t.id === id))
-    .filter((tab): tab is Tab => tab !== undefined);
+  // Get tabs in MRU order for the switcher
+  const mruTabs = getTabsInMruOrder();
 
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
-    setActiveTabId(tabId);
-    // Move selected tab to front of MRU order
-    setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
+    activateTab(tabId);
     setIsSwitcherVisible(false);
     setIsAltHeld(false);
   };
 
   const handleTabClick = (tabId: string) => {
-    setActiveTabId(tabId);
-    // Move clicked tab to front of MRU order
-    setMruOrder(prev => [tabId, ...prev.filter(id => id !== tabId)]);
+    activateTab(tabId);
   };
 
   const handleCloseTab = (tabId: string) => {
-    // Calculate what the new active tab should be if we're closing the active one
-    if (activeTabId === tabId) {
-      const remainingInMru = mruOrder.filter(id => id !== tabId);
-      if (remainingInMru.length > 0) {
-        setActiveTabId(remainingInMru[0]);
-      } else {
-        setActiveTabId(""); // No tabs left
-      }
-    }
-
-    // Remove tab from tabs array
-    setTabs(prev => prev.filter(t => t.id !== tabId));
-    // Remove from MRU order
-    setMruOrder(prev => prev.filter(id => id !== tabId));
+    closeTab(tabId);
   };
 
   const handleAddTab = () => {
-    if (tabs.length >= 8) return;
-
-    // Pick a random tab from allTabs that's not currently in tabs
-    const availableTabs = allTabs.filter(t => !tabs.find(tab => tab.id === t.id));
-    if (availableTabs.length === 0) {
-      // If all tabs are used, pick any random tab and give it a new ID
-      const randomTab = allTabs[Math.floor(Math.random() * allTabs.length)];
-      const newTab = {
-        ...randomTab,
-        id: `${randomTab.id}-${Date.now()}`
-      };
-      setTabs(prev => [...prev, newTab]);
-      setMruOrder(prev => [...prev, newTab.id]);
-    } else {
-      const randomTab = availableTabs[Math.floor(Math.random() * availableTabs.length)];
-      setTabs(prev => [...prev, randomTab]);
-      setMruOrder(prev => [...prev, randomTab.id]);
-    }
+    addTab();
   };
 
   const handleNavigate = (direction: 'next' | 'prev') => {
