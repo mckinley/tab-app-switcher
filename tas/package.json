@@ -4,6 +4,12 @@
   "description": "Tab Application Switcher - Core product library",
   "type": "module",
   "main": "./components/TabSwitcher.tsx",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "lint": "eslint ."
+  },
   "exports": {
     ".": "./components/TabSwitcher.tsx",
     "./TabSwitcher": "./components/TabSwitcher.tsx",

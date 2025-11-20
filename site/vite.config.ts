@@ -16,8 +16,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./site"),
-      "@tas": path.resolve(__dirname, "./tas"),
+      "@": path.resolve(__dirname, "."),
+      "@tas": path.resolve(__dirname, "../tas"),
     },
     dedupe: ["react", "react-dom"],
   },

@@ -61,7 +61,7 @@ function App() {
 
   // Listen for messages from background script
   useEffect(() => {
-    const messageListener = (message: any) => {
+    const messageListener = (message: { type: string; direction?: 'next' | 'prev' }) => {
       if (message.type === 'ADVANCE_SELECTION') {
         handleNavigate(message.direction || 'next');
       }

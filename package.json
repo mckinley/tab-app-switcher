@@ -9,16 +9,25 @@
     "tas"
   ],
   "scripts": {
-    "dev": "vite",
-    "dev:site": "vite",
+    "dev": "npm run dev --workspace=site",
+    "dev:site": "npm run dev --workspace=site",
     "dev:extension": "npm run dev --workspace=extension",
-    "dev:all": "vite & npm run dev --workspace=extension",
-    "build": "vite build",
-    "build:site": "vite build",
+    "dev:all": "npm run dev --workspace=site & npm run dev --workspace=extension",
+    "build": "npm run build --workspace=site",
+    "build:site": "npm run build --workspace=site",
     "build:extension": "npm run build --workspace=extension",
-    "build:all": "vite build && npm run build --workspace=extension",
+    "build:all": "npm run build --workspace=site && npm run build --workspace=extension",
+    "test": "npm run test --workspace=site",
+    "test:site": "npm run test --workspace=site",
+    "test:extension": "npm run test --workspace=extension",
+    "test:tas": "npm run test --workspace=tas",
+    "test:all": "npm run test:run --workspace=site && npm run test:run --workspace=extension && npm run test:run --workspace=tas",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:site": "npm run lint --workspace=site",
+    "lint:extension": "npm run lint --workspace=extension",
+    "lint:tas": "npm run lint --workspace=tas",
+    "lint:all": "npm run lint --workspace=site && npm run lint --workspace=extension && npm run lint --workspace=tas",
+    "preview": "npm run preview --workspace=site"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

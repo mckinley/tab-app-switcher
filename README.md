@@ -2,18 +2,16 @@
 
 Like your system's Application Switcher, but for your browser tabs.
 
-**Website**: [Tab Application Switcher](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139)
-
 ## Monorepo Structure
 
 This repository contains multiple projects:
 
 ```
 /
-├── site/           Marketing website (Vite + React)
-├── extension/      Browser extension (Chrome/Firefox)
+├── site/           Marketing website (Vite + React) - self-contained
+├── extension/      Browser extension (Chrome/Firefox) - self-contained
 ├── tas/            Core Tab Application Switcher library
-├── [root configs]  Shared build configs for site deployment
+├── [root configs]  Shared monorepo configs (eslint, postcss)
 ```
 
 ### Projects
@@ -80,15 +78,19 @@ This project uses npm workspaces for monorepo management:
 
 ## Deployment
 
-### Site Deployment (Lovable)
+### Site Deployment
 
-The site is deployed automatically via [Lovable](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139).
+The site can be deployed to any static hosting platform (Vercel, Netlify, etc.).
 
-**Important**: Root-level files must stay for Lovable compatibility:
-- `index.html`
-- `vite.config.ts`
-- `package.json`
-- `public/`
+**For Vercel:**
+- Root Directory: `site`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+**For other platforms:**
+- Navigate to the `site/` directory
+- Run `npm install` and `npm run build`
+- Deploy the `dist/` folder
 
 ### Extension Deployment
 
@@ -102,13 +104,11 @@ See [`extension/README.md`](extension/README.md) for Chrome Web Store packaging 
 
 ## Contributing
 
-Changes made via Lovable will be committed automatically to this repo.
-
-You can also:
+Contributions are welcome! You can:
 - Edit files directly in your IDE and push changes
 - Edit files in GitHub's web interface
 - Use GitHub Codespaces
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Submit pull requests with your improvements
 
 ## What technologies are used for this project?
 
@@ -122,12 +122,11 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/96412299-9bcf-420f-899c-970901425139) and click on Share -> Publish.
+The site is a standard Vite + React application and can be deployed to any static hosting platform:
 
-## Can I connect a custom domain to my Lovable project?
+- **Vercel** (recommended): Connect your GitHub repo and set root directory to `site/`
+- **Netlify**: Similar to Vercel, set base directory to `site/`
+- **GitHub Pages**: Build locally and deploy the `site/dist/` folder
+- **Cloudflare Pages**: Connect repo and configure build settings
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+See the Deployment section above for detailed instructions.
