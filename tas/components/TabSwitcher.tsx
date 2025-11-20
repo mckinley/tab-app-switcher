@@ -73,7 +73,7 @@ export const TabSwitcher = ({
     if (selectedItemRef.current) {
       selectedItemRef.current.scrollIntoView({
         behavior: 'smooth',
-        block: 'nearest',
+        block: 'center',
       });
     }
   }, [selectedIndex]);
