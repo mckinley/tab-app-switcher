@@ -1,7 +1,7 @@
 {
   "files": [],
-  "references": [{ "path": "./site" }],
-  "compilerOptions": {
-    "skipLibCheck": true
-  }
+  "references": [
+    { "path": "./site" },
+    { "path": "./extension" }
+  ]
 }
