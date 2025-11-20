@@ -31,6 +31,9 @@ export default defineConfig({
         description: 'Activate Tab Application Switcher',
       },
     },
+    chrome_url_overrides: {
+      newtab: '/tabs.html',
+    },
   },
   vite: () => ({
     resolve: {
