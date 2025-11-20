@@ -5,6 +5,7 @@ import { TasSettings } from "./TasSettings";
 import { TabManagement } from "./TabManagement";
 import { cn } from "../lib/utils";
 import { Tab, KeyboardShortcuts } from "../types/tabs";
+import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
 
 interface TabSwitcherProps {
   tabs: Tab[];
@@ -77,80 +78,37 @@ export const TabSwitcher = ({
     }
   }, [selectedIndex]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isVisible) return;
-
-      // Don't handle ANY keys when settings dialog is open
-      if (isSettingsOpen) return;
-
-      // Search key to focus search (works even with modifier held)
-      if (e.key.toUpperCase() === shortcuts.search.toUpperCase() && !isSearchFocused) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsSearchFocused(true);
-        onSearchFocusChange?.(true);
-        searchInputRef.current?.focus();
-        return;
+  // Use the keyboard shortcuts hook to handle all keyboard events
+  useKeyboardShortcuts({
+    enabled: isVisible,
+    shortcuts,
+    isSearchFocused,
+    isSettingsOpen,
+    isTabManagementOpen,
+    onNavigateNext: () => onNavigate('next'),
+    onNavigatePrev: () => onNavigate('prev'),
+    onActivateSelected: () => {
+      if (filteredTabs[selectedIndex]) {
+        onSelectTab(filteredTabs[selectedIndex].id);
       }
-
-      // If search is focused, allow normal typing except for Escape
-      if (isSearchFocused) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          setIsSearchFocused(false);
-          onSearchFocusChange?.(false);
-          searchInputRef.current?.blur();
-        }
-        return;
+    },
+    onClose,
+    onFocusSearch: () => {
+      setIsSearchFocused(true);
+      onSearchFocusChange?.(true);
+      searchInputRef.current?.focus();
+    },
+    onBlurSearch: () => {
+      setIsSearchFocused(false);
+      onSearchFocusChange?.(false);
+      searchInputRef.current?.blur();
+    },
+    onCloseTab: () => {
+      if (filteredTabs[selectedIndex]) {
+        onCloseTab(filteredTabs[selectedIndex].id);
       }
-
-      // When search is NOT focused, prevent backtick from being typed
-      if (e.key === "`") {
-        e.preventDefault();
-        return;
-      }
-
-      // Modifier+CloseTab to close tab
-      const isModifierPressed =
-        (shortcuts.modifier === "Alt" && e.altKey) ||
-        (shortcuts.modifier === "Cmd" && e.metaKey) ||
-        (shortcuts.modifier === "Ctrl" && e.ctrlKey) ||
-        (shortcuts.modifier === "Shift" && e.shiftKey);
-
-      if (isModifierPressed && e.key.toUpperCase() === shortcuts.closeTab.toUpperCase()) {
-        e.preventDefault();
-        if (filteredTabs[selectedIndex]) {
-          onCloseTab(filteredTabs[selectedIndex].id);
-        }
-        return;
-      }
-
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          onNavigate('next');
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          onNavigate('prev');
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (filteredTabs[selectedIndex]) {
-            onSelectTab(filteredTabs[selectedIndex].id);
-          }
-          break;
-        case "Escape":
-          e.preventDefault();
-          onClose();
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [isVisible, isSearchFocused, isSettingsOpen, selectedIndex, filteredTabs, onSelectTab, onClose, onNavigate, onCloseTab, shortcuts]);
+    },
+  });
 
   if (!isVisible) return null;
 

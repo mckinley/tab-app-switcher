@@ -6,7 +6,7 @@ import './globals.css';
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(1); // Start with second tab (index 1)
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS);
 
   // Load tabs from background script
@@ -51,13 +51,27 @@ function App() {
 
   const handleNavigate = (direction: 'next' | 'prev') => {
     setSelectedIndex(prev => {
-      if (direction === 'next') {
-        return (prev + 1) % tabs.length;
-      } else {
-        return prev === 0 ? tabs.length - 1 : prev - 1;
-      }
+      const newIndex = direction === 'next'
+        ? (prev + 1) % tabs.length
+        : prev === 0 ? tabs.length - 1 : prev - 1;
+
+      return newIndex;
     });
   };
+
+  // Listen for messages from background script
+  useEffect(() => {
+    const messageListener = (message: any) => {
+      if (message.type === 'ADVANCE_SELECTION') {
+        handleNavigate(message.direction || 'next');
+      }
+    };
+
+    browser.runtime.onMessage.addListener(messageListener);
+    return () => {
+      browser.runtime.onMessage.removeListener(messageListener);
+    };
+  }, [handleNavigate]); // Depend on handleNavigate
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts);
@@ -76,7 +90,7 @@ function App() {
   };
 
   return (
-    <div className="w-[600px] h-[500px] bg-background">
+    <div className="w-[360px] h-[480px] bg-background">
       <TabSwitcher
         tabs={tabs}
         isVisible={true}

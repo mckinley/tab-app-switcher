@@ -141,6 +141,40 @@ export default defineBackground(async () => {
     mruTabOrder = mruTabOrder.map(id => id === removedTabId ? addedTabId : id);
   });
 
+  // Listen for keyboard commands
+  // Note: Stateless approach - we try to advance selection first, and if that fails (popup not open),
+  // we open the popup. Alternative: use browser.runtime.connect() with port.onDisconnect for better performance.
+  browser.commands.onCommand.addListener(async (command) => {
+    if (command === 'tas_activate') {
+      console.log('TAS activate command received');
+
+      // Try to advance selection in existing popup
+      try {
+        await browser.runtime.sendMessage({
+          type: 'ADVANCE_SELECTION',
+          direction: 'next'
+        });
+        console.log('Advanced selection - popup was open');
+      } catch (error) {
+        // Popup not open, so open it
+        console.log('Opening TAS popup - popup was closed');
+        try {
+          await browser.action.openPopup();
+        } catch (openError) {
+          console.error('Error opening popup:', openError);
+          // Fallback: create a popup window
+          const popupUrl = browser.runtime.getURL('/popup.html');
+          await browser.windows.create({
+            url: popupUrl,
+            type: 'popup',
+            width: 360,
+            height: 480,
+          });
+        }
+      }
+    }
+  });
+
   // Handle messages from popup
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'GET_TABS') {

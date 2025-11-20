@@ -24,11 +24,11 @@ export default defineConfig({
       },
     },
     commands: {
-      '_execute_action': {
+      'tas_activate': {
         suggested_key: {
           default: 'Alt+Tab',
         },
-        description: 'Open Tab Application Switcher',
+        description: 'Activate Tab Application Switcher',
       },
     },
   },

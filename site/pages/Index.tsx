@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { TabSwitcher } from "@tas/components/TabSwitcher";
 import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs";
@@ -182,7 +182,6 @@ const Index = () => {
 
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
-  const [isAltHeld, setIsAltHeld] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
@@ -195,7 +194,6 @@ const Index = () => {
     console.log("Selected tab:", tabId);
     activateTab(tabId);
     setIsSwitcherVisible(false);
-    setIsAltHeld(false);
   };
 
   const handleTabClick = (tabId: string) => {
@@ -210,7 +208,7 @@ const Index = () => {
     addTab();
   };
 
-  const handleNavigate = (direction: 'next' | 'prev') => {
+  const handleNavigate = useCallback((direction: 'next' | 'prev') => {
     setSelectedIndex(prev => {
       if (direction === 'next') {
         return (prev + 1) % mruTabs.length;
@@ -218,7 +216,7 @@ const Index = () => {
         return prev === 0 ? mruTabs.length - 1 : prev - 1;
       }
     });
-  };
+  }, [mruTabs.length]);
 
   // Mac-like Application Switcher behavior with configurable modifier key
   useEffect(() => {
@@ -233,14 +231,7 @@ const Index = () => {
         (shortcuts.modifier === "Ctrl" && e.ctrlKey) ||
         (shortcuts.modifier === "Shift" && e.shiftKey);
 
-      // Track modifier key press
-      if (e.key === shortcuts.modifier ||
-          (shortcuts.modifier === "Cmd" && e.key === "Meta") ||
-          (shortcuts.modifier === "Ctrl" && e.key === "Control")) {
-        setIsAltHeld(true);
-      }
-
-      // Modifier+ActivateForward to cycle forward
+      // Modifier+ActivateForward to open switcher or cycle forward
       if (isModifierPressed && e.key === shortcuts.activateForward) {
         e.preventDefault();
         if (!isSwitcherVisible) {
@@ -251,40 +242,13 @@ const Index = () => {
           handleNavigate('next');
         }
       }
-
-      // Modifier+ActivateBackward to cycle backward
-      if (isModifierPressed && e.key === shortcuts.activateBackward) {
-        e.preventDefault();
-        if (isSwitcherVisible) {
-          handleNavigate('prev');
-        }
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Disable all TAS shortcuts when settings panel is open
-      if (isSettingsOpen) return;
-
-      // When modifier is released, activate the selected tab (unless search is focused or settings is open)
-      const isModifierRelease =
-        e.key === shortcuts.modifier ||
-        (shortcuts.modifier === "Cmd" && e.key === "Meta") ||
-        (shortcuts.modifier === "Ctrl" && e.key === "Control") ||
-        (shortcuts.modifier === "Alt" && e.key === "Alt");
-
-      if (isModifierRelease && isAltHeld && isSwitcherVisible && !isSearchFocused && !isSettingsOpen) {
-        setIsAltHeld(false);
-        handleSelectTab(mruTabs[selectedIndex].id);
-      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isSwitcherVisible, isAltHeld, selectedIndex, isSearchFocused, isSettingsOpen, shortcuts]);
+  }, [isSwitcherVisible, selectedIndex, isSettingsOpen, shortcuts, handleNavigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -545,10 +509,7 @@ const Index = () => {
         isVisible={isSwitcherVisible}
         selectedIndex={selectedIndex}
         onSelectTab={handleSelectTab}
-        onClose={() => {
-          setIsSwitcherVisible(false);
-          setIsAltHeld(false);
-        }}
+        onClose={() => setIsSwitcherVisible(false)}
         onNavigate={handleNavigate}
         onSearchFocusChange={setIsSearchFocused}
         onCloseTab={handleCloseTab}
