@@ -39,7 +39,8 @@ interface TabManagementProps {
   onClose: () => void;
   onSelectTab: (tabId: string) => void;
   onCloseTab?: (tabId: string) => void;
-  onReorderTabs?: (tabs: Tab[]) => void;
+  onReorderTabs?: (tabId: string, newIndex: number) => void; // Extension: move tab to new position
+  onSendCollectionToWindow?: (tabUrls: string[]) => void; // Extension: create new window with these URLs
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
   settingsThemeToggle?: ReactNode;
@@ -216,6 +217,7 @@ export const TabManagement = ({
   onSelectTab,
   onCloseTab,
   onReorderTabs,
+  onSendCollectionToWindow,
   shortcuts,
   onShortcutsChange,
   settingsThemeToggle,
@@ -382,7 +384,14 @@ export const TabManagement = ({
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
         const reordered = arrayMove(items, oldIndex, newIndex);
-        onReorderTabs?.(reordered);
+
+        // Notify parent of reorder (for extension to move real browser tabs)
+        // Find the target tab to get its actual browser index
+        const targetTab = items.find(item => item.id === over.id);
+        if (targetTab && targetTab.index !== undefined) {
+          onReorderTabs?.(active.id as string, targetTab.index);
+        }
+
         return reordered;
       });
     }
@@ -422,6 +431,14 @@ export const TabManagement = ({
     const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
     if (collectionTabs.length === 0) return;
 
+    // If callback is provided (extension mode), use it to create real browser window
+    if (onSendCollectionToWindow) {
+      const tabUrls = collectionTabs.map(tab => tab.url);
+      onSendCollectionToWindow(tabUrls);
+      return;
+    }
+
+    // Otherwise, simulate for demo (website mode)
     // Find the highest window number
     const windowNumbers = Object.values(tabWindows)
       .map(name => {

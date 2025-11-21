@@ -56,6 +56,49 @@ function App() {
     browser.storage.local.set({ shortcuts: newShortcuts });
   };
 
+  const handleReorderTabs = async (tabId: string, newIndex: number) => {
+    try {
+      const numericTabId = parseInt(tabId);
+      const tab = await browser.tabs.get(numericTabId);
+
+      // Move the tab to the new index within its window
+      await browser.tabs.move(numericTabId, {
+        windowId: tab.windowId,
+        index: newIndex
+      });
+
+      // Reload tabs to reflect the change
+      loadTabs();
+    } catch (error) {
+      console.error('Error reordering tab:', error);
+    }
+  };
+
+  const handleSendCollectionToWindow = async (tabUrls: string[]) => {
+    try {
+      if (tabUrls.length === 0) return;
+
+      // Create a new window with the first URL
+      const newWindow = await browser.windows.create({
+        url: tabUrls[0],
+        focused: true,
+      });
+
+      // Add remaining URLs as tabs in the new window
+      if (newWindow?.id) {
+        for (let i = 1; i < tabUrls.length; i++) {
+          await browser.tabs.create({
+            windowId: newWindow.id,
+            url: tabUrls[i],
+            active: false,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error creating window from collection:', error);
+    }
+  };
+
   return (
     <TabManagement
       tabs={tabs}
@@ -63,6 +106,8 @@ function App() {
       onClose={() => window.close()}
       onSelectTab={handleSelectTab}
       onCloseTab={handleCloseTab}
+      onReorderTabs={handleReorderTabs}
+      onSendCollectionToWindow={handleSendCollectionToWindow}
       shortcuts={shortcuts}
       onShortcutsChange={handleShortcutsChange}
       settingsThemeToggle={<ThemeToggle />}
