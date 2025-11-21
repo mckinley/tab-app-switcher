@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { KeyboardShortcuts } from '../types/tabs';
 import { getKeyCode } from '../utils/keyCodeMapping';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('use-keyboard-shortcuts');
 
 /**
  * Options for the useKeyboardShortcuts hook
@@ -72,8 +75,7 @@ export function useKeyboardShortcuts({
     if (!enabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      console.log('Key down:', e.key, 'Code:', e.code);
-
+      logger.log('Key down:', e.key, 'Code:', e.code);
       // Don't handle ANY keys when settings dialog or tab management panel is open
       if (isSettingsOpen || isTabManagementOpen) return;
 
@@ -97,8 +99,6 @@ export function useKeyboardShortcuts({
 
       // Check if modifier key is pressed
       const isModifierPressed = checkModifierKeyPressed(e, shortcuts.modifier);
-
-      console.log('isModifierPressed:', isModifierPressed, 'e.code:', e.code);
 
       // Modifier+ActivateBackward to navigate backward
       // Use e.code to detect backtick key regardless of what character it produces
@@ -138,6 +138,7 @@ export function useKeyboardShortcuts({
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      logger.log('Key up:', e.key, 'Code:', e.code);
       // Don't handle when settings dialog or tab management panel is open
       if (isSettingsOpen || isTabManagementOpen) return;
 

@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TabSwitcher } from '@tas/components/TabSwitcher';
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { createLogger } from '@tas/utils/logger';
 import './globals.css';
+
+const logger = createLogger('popup-app');
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
@@ -49,7 +52,7 @@ function App() {
     });
   };
 
-  const handleNavigate = (direction: 'next' | 'prev') => {
+  const handleNavigate = useCallback((direction: 'next' | 'prev') => {
     setSelectedIndex(prev => {
       const newIndex = direction === 'next'
         ? (prev + 1) % tabs.length
@@ -57,11 +60,12 @@ function App() {
 
       return newIndex;
     });
-  };
+  }, [tabs.length]);
 
   // Listen for messages from background script
   useEffect(() => {
     const messageListener = (message: { type: string; direction?: 'next' | 'prev' }) => {
+      logger.log('Received message in popup:', message);
       if (message.type === 'ADVANCE_SELECTION') {
         handleNavigate(message.direction || 'next');
       }
@@ -72,6 +76,22 @@ function App() {
       browser.runtime.onMessage.removeListener(messageListener);
     };
   }, [handleNavigate]); // Depend on handleNavigate
+
+  // Focus management: ensure popup has focus and close if it loses focus
+  useEffect(() => {
+    // Focus the window when popup opens
+    window.focus();
+
+    // Close popup if window loses focus
+    const handleBlur = () => {
+      window.close();
+    };
+
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts);

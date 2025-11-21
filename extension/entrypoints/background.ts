@@ -1,4 +1,5 @@
 import type { Tab } from '@tas/types/tabs';
+import { handleLogMessage } from '@tas/utils/logger';
 
 /**
  * Background service worker for Tab Application Switcher
@@ -240,6 +241,11 @@ export default defineBackground(async () => {
       });
 
       return true; // Will respond asynchronously
+    }
+
+    // Handle log messages from popup and other contexts
+    if (handleLogMessage(message)) {
+      return false; // No response needed
     }
 
     return false;
