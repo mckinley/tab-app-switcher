@@ -1,6 +1,7 @@
 import { cn } from "../lib/utils";
 import { Tab } from "../types/tabs";
 import { X } from "lucide-react";
+import { TabFavicon } from "./TabFavicon";
 
 interface TabItemProps {
   tab: Tab;
@@ -25,15 +26,7 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
       {/* Favicon */}
       <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {tab.favicon ? (
-          <img
-            src={tab.favicon}
-            alt=""
-            className="w-4 h-4 object-contain"
-            onError={(e) => {
-              // Fallback if favicon fails to load
-              e.currentTarget.style.display = "none";
-            }}
-          />
+          <TabFavicon src={tab.favicon} className="w-4 h-4 object-contain" />
         ) : (
           <div className="w-4 h-4 rounded bg-muted" />
         )}

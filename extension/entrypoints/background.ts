@@ -189,6 +189,8 @@ export default defineBackground(async () => {
               title: tab.title || 'Untitled',
               url: tab.url || '',
               favicon: tab.favIconUrl || '',
+              windowId: tab.windowId,
+              index: tab.index,
             } as Tab
           ])
         );

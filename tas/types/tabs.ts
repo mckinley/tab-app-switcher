@@ -8,6 +8,8 @@ export interface Tab {
   title: string;
   url: string;
   favicon: string;
+  windowId?: number; // Optional: browser window ID (extension only)
+  index?: number; // Optional: tab position within window (extension only)
 }
 
 export interface KeyboardShortcuts {

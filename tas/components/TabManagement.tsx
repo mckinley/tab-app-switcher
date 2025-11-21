@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { Search, X, Clock, Link as LinkIcon, Type, Settings, User, ArrowUpDown, Plus, Trash2, ExternalLink } from "lucide-react";
 import { Tab, KeyboardShortcuts } from "../types/tabs";
 import { cn } from "../lib/utils";
@@ -31,6 +31,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ScrollArea } from "./ui/scroll-area";
+import { TabFavicon } from "./TabFavicon";
 
 interface TabManagementProps {
   tabs: Tab[];
@@ -98,14 +99,7 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
       {...attributes}
       {...listeners}
     >
-      <img
-        src={tab.favicon}
-        alt=""
-        className="w-4 h-4 flex-shrink-0"
-        onError={(e) => {
-          e.currentTarget.src = '/favicon.png';
-        }}
-      />
+      <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -205,14 +199,7 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
         <div className="space-y-1 mt-3 pt-3 border-t">
           {collectionTabs.map(tab => (
             <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-              <img
-                src={tab.favicon}
-                alt=""
-                className="w-4 h-4 flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.src = '/favicon.png';
-                }}
-              />
+              <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
               <span className="text-xs truncate flex-1">{tab.title}</span>
             </div>
           ))}
@@ -271,7 +258,37 @@ export const TabManagement = ({
     })
   );
 
-  // Group tabs by window
+  // Sync currentTabs with tabs prop when it changes
+  useEffect(() => {
+    setCurrentTabs(tabs);
+
+    // Create friendly window names based on window ID order
+    const uniqueWindowIds = Array.from(new Set(
+      tabs.map(tab => tab.windowId).filter((id): id is number => id !== undefined)
+    )).sort((a, b) => a - b); // Sort by window ID to get consistent ordering
+
+    const windowIdToName = new Map<number, string>();
+    uniqueWindowIds.forEach((windowId, index) => {
+      windowIdToName.set(windowId, `Window ${index + 1}`);
+    });
+
+    // Update tabWindows with friendly names
+    setTabWindows(prev => {
+      const updated = { ...prev };
+      tabs.forEach(tab => {
+        if (tab.windowId !== undefined) {
+          // Use friendly window name (Window 1, Window 2, etc.)
+          updated[tab.id] = windowIdToName.get(tab.windowId) || "Window 1";
+        } else if (!updated[tab.id]) {
+          // Fallback for tabs without windowId (e.g., demo site)
+          updated[tab.id] = "Window 1";
+        }
+      });
+      return updated;
+    });
+  }, [tabs]);
+
+  // Group tabs by window and sort by index within each window
   const tabsByWindow = useMemo(() => {
     const grouped: Record<string, Tab[]> = {};
     currentTabs.forEach(tab => {
@@ -281,6 +298,16 @@ export const TabManagement = ({
       }
       grouped[windowName].push(tab);
     });
+
+    // Sort tabs within each window by their index
+    Object.keys(grouped).forEach(windowName => {
+      grouped[windowName].sort((a, b) => {
+        const indexA = a.index ?? 0;
+        const indexB = b.index ?? 0;
+        return indexA - indexB;
+      });
+    });
+
     return grouped;
   }, [currentTabs, tabWindows]);
 
@@ -607,14 +634,7 @@ export const TabManagement = ({
                         className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
                       >
                         <div className="flex items-start gap-3">
-                          <img
-                            src={tab.favicon}
-                            alt=""
-                            className="w-5 h-5 mt-0.5 flex-shrink-0"
-                            onError={(e) => {
-                              e.currentTarget.src = '/favicon.png';
-                            }}
-                          />
+                          <TabFavicon src={tab.favicon} className="w-5 h-5 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">
                               {tab.title}
@@ -776,14 +796,7 @@ export const TabManagement = ({
         <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
           {activeTab && (
             <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
-              <img
-                src={activeTab.favicon}
-                alt=""
-                className="w-4 h-4 flex-shrink-0"
-                onError={(e) => {
-                  e.currentTarget.src = '/favicon.png';
-                }}
-              />
+              <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
               <span className="text-xs truncate">{activeTab.title}</span>
             </div>
           )}
