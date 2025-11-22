@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Settings } from "lucide-react";
 import {
   Dialog,
@@ -20,27 +20,11 @@ interface TasSettingsProps {
 }
 
 export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange, themeToggle, onOpenSettingsPage }: TasSettingsProps) => {
-  const [localShortcuts, setLocalShortcuts] = useState(shortcuts);
   const [open, setOpen] = useState(false);
-
-  // Sync localShortcuts when shortcuts prop changes
-  useEffect(() => {
-    setLocalShortcuts(shortcuts);
-  }, [shortcuts]);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     onOpenChange?.(newOpen);
-  };
-
-  const handleSave = () => {
-    onShortcutsChange(localShortcuts);
-    handleOpenChange(false);
-  };
-
-  const handleCancel = () => {
-    setLocalShortcuts(shortcuts);
-    handleOpenChange(false);
   };
 
   // If onOpenSettingsPage is provided, use a simple button instead of Dialog
@@ -82,11 +66,8 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange, themeT
         </DialogHeader>
 
         <SettingsContent
-          shortcuts={localShortcuts}
-          onShortcutsChange={setLocalShortcuts}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          showActions={true}
+          shortcuts={shortcuts}
+          onShortcutsChange={onShortcutsChange}
           themeToggle={themeToggle}
         />
       </DialogContent>

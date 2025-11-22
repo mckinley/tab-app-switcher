@@ -84,7 +84,8 @@ function App() {
 
     // Close popup if window loses focus
     const handleBlur = () => {
-      window.close();
+      // DEV: leave open for inspector while in development
+      // window.close();
     };
 
     window.addEventListener('blur', handleBlur);

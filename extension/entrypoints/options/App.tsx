@@ -18,20 +18,8 @@ function App() {
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts);
-    // Save to storage
+    // Save to storage - auto-save on every change
     browser.storage.local.set({ shortcuts: newShortcuts });
-  };
-
-  const handleSave = () => {
-    // Already saved on change, just show feedback
-    const saveButton = document.querySelector('[data-save-button]') as HTMLButtonElement;
-    if (saveButton) {
-      const originalText = saveButton.textContent;
-      saveButton.textContent = 'Saved!';
-      setTimeout(() => {
-        saveButton.textContent = originalText;
-      }, 1500);
-    }
   };
 
   return (
@@ -41,13 +29,11 @@ function App() {
           <h1 className="text-3xl font-bold mb-2">Tab Application Switcher</h1>
           <p className="text-muted-foreground">Configure your extension settings</p>
         </div>
-        
+
         <div className="bg-card border rounded-lg p-6">
           <SettingsContent
             shortcuts={shortcuts}
             onShortcutsChange={handleShortcutsChange}
-            onSave={handleSave}
-            showActions={true}
             themeToggle={<ThemeToggle />}
           />
         </div>

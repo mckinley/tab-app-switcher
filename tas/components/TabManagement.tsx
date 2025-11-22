@@ -763,7 +763,6 @@ export const TabManagement = ({
                 <SettingsContent
                   shortcuts={shortcuts}
                   onShortcutsChange={onShortcutsChange}
-                  showActions={false}
                   themeToggle={settingsThemeToggle}
                 />
               )}

@@ -2,36 +2,23 @@ import { useState } from "react";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { KeyButton } from "./KeyButton";
-import { KeyboardShortcuts } from "../types/tabs";
+import { KeyboardShortcuts, DEFAULT_SHORTCUTS } from "../types/tabs";
 
 interface SettingsContentProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
-  onSave?: () => void;
-  onCancel?: () => void;
-  showActions?: boolean;
   themeToggle?: React.ReactNode;
 }
 
 export const SettingsContent = ({
   shortcuts,
   onShortcutsChange,
-  onSave,
-  onCancel,
-  showActions = true,
   themeToggle
 }: SettingsContentProps) => {
   const [capturingKey, setCapturingKey] = useState<string | null>(null);
 
   const handleReset = () => {
-    const defaultShortcuts = {
-      modifier: "Alt",
-      activateForward: "Tab",
-      activateBackward: "`",
-      search: "F",
-      closeTab: "W",
-    };
-    onShortcutsChange(defaultShortcuts);
+    onShortcutsChange(DEFAULT_SHORTCUTS);
   };
 
   return (
@@ -190,25 +177,11 @@ export const SettingsContent = ({
         </div>
       </div>
 
-      {showActions && (
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-4 border-t mt-4">
-          <Button variant="outline" size="sm" onClick={handleReset} className="w-full sm:w-auto">
-            Reset to Defaults
-          </Button>
-          <div className="flex gap-2">
-            {onCancel && (
-              <Button variant="outline" size="sm" onClick={onCancel} className="flex-1 sm:flex-none">
-                Cancel
-              </Button>
-            )}
-            {onSave && (
-              <Button size="sm" onClick={onSave} className="flex-1 sm:flex-none">
-                Save Changes
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+      <div className="flex justify-start pt-4 border-t mt-4">
+        <Button variant="outline" size="sm" onClick={handleReset}>
+          Reset to Defaults
+        </Button>
+      </div>
     </div>
   );
 };
