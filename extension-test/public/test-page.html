@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Script Test Page</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 40px;
+      background: #1a1a1a;
+      color: #fff;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #10b981;
+    }
+    .instructions {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #10b981;
+    }
+    .instructions ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin: 8px 0;
+    }
+    .note {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #f59e0b;
+    }
+    .success {
+      color: #10b981;
+      font-weight: bold;
+    }
+    code {
+      background: #3a3a3a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #8b9cff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Content Script Test Page</h1>
+  
+  <div class="instructions">
+    <h2>Testing Instructions:</h2>
+    <ol>
+      <li>Make sure this page is the <strong>active tab</strong></li>
+      <li>Open the browser console (F12) and look for <code>[CONTENT SCRIPT]</code> messages</li>
+      <li>You should see: <code>[CONTENT SCRIPT] Loaded on: ...</code></li>
+      <li>Press Alt+Tab to open the extension popup</li>
+      <li>Press Tab again while holding Alt</li>
+      <li>Release Alt</li>
+      <li>Check the popup logs for <span class="success">GREEN</span> content script events</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <h3>⚠️ Important Notes:</h3>
+    <ul>
+      <li>Content scripts <strong>only work on regular web pages</strong></li>
+      <li>They <strong>do NOT work</strong> on:
+        <ul>
+          <li><code>chrome://</code> pages (like chrome://extensions)</li>
+          <li><code>chrome-extension://</code> pages</li>
+          <li>Chrome Web Store pages</li>
+          <li>Some new tab pages</li>
+        </ul>
+      </li>
+      <li>If you don't see content script events, make sure you're on a regular web page like this one</li>
+    </ul>
+  </div>
+
+  <div class="instructions">
+    <h2>What You Should See:</h2>
+    <p><strong>In the browser console (this page):</strong></p>
+    <ul>
+      <li><code>[CONTENT SCRIPT] Loaded on: ...</code></li>
+      <li><code>[CONTENT SCRIPT] keydown: Alt AltLeft</code></li>
+      <li><code>[CONTENT SCRIPT] keydown: Tab Tab</code></li>
+      <li><code>[CONTENT SCRIPT] keyup: Tab Tab</code></li>
+      <li><code>[CONTENT SCRIPT] keydown: Tab Tab</code> (second press)</li>
+      <li><code>[CONTENT SCRIPT] keyup: Tab Tab</code></li>
+      <li><code>[CONTENT SCRIPT] keyup: Alt AltLeft</code> ← <span class="success">This is the missing event!</span></li>
+    </ul>
+
+    <p><strong>In the extension popup:</strong></p>
+    <ul>
+      <li><span class="success">GREEN</span> <code>content-keydown</code> events</li>
+      <li><span class="success">GREEN</span> <code>content-keyup</code> events (including Alt!)</li>
+      <li>Blue/Gray popup events (may be missing Alt keyup)</li>
+    </ul>
+  </div>
+
+  <script>
+    // Log page events too for comparison
+    document.addEventListener('keydown', (e) => {
+      console.log('[PAGE] keydown:', e.key, e.code);
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      console.log('[PAGE] keyup:', e.key, e.code);
+    });
+    
+    console.log('✅ Test page loaded. Content script should also be loaded.');
+    console.log('👉 Look for [CONTENT SCRIPT] messages above.');
+  </script>
+</body>
+</html>
+

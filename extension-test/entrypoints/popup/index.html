@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keyboard Event Logger</title>
+    <meta name="manifest.type" content="browser_action" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>Keyboard Event Test</h1>
+      <p id="shortcuts-info">Loading shortcuts...</p>
+      <div class="button-group">
+        <button id="clear-btn">Clear</button>
+        <button id="copy-btn">Copy</button>
+      </div>
+      <div id="event-list"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
