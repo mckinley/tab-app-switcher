@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import { Search, LayoutGrid } from "lucide-react";
+import { Search, LayoutGrid, Settings } from "lucide-react";
 import { TabItem } from "./TabItem";
-import { TasSettings } from "./TasSettings";
-import { TabManagement } from "./TabManagement";
 import { cn } from "../lib/utils";
 import { Tab, KeyboardShortcuts } from "../types/tabs";
 import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
@@ -14,15 +12,14 @@ interface TabSwitcherProps {
   onSelectTab: (tabId: string) => void;
   onClose: () => void;
   onNavigate: (direction: 'next' | 'prev') => void;
-  onSearchFocusChange?: (isFocused: boolean) => void;
   onCloseTab: (tabId: string) => void;
-  onSettingsOpenChange?: (isOpen: boolean) => void;
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
   settingsThemeToggle?: ReactNode;
   variant?: 'overlay' | 'popup'; // 'overlay' for website (fixed positioned), 'popup' for extension (fills container)
-  onOpenSettingsPage?: () => void; // Optional callback to open settings in a new tab (extension only)
-  onOpenTabManagementPage?: () => void; // Optional callback to open tab management in a new tab (extension only)
+  onOpenSettings: () => void; // Called when user clicks settings button
+  onOpenTabManagement: () => void; // Called when user clicks tab management button
+  isPanelOpen?: boolean; // Optional: Whether any panel (settings/tab management) is open - disables keyboard shortcuts when true
 }
 
 export const TabSwitcher = ({
@@ -32,28 +29,20 @@ export const TabSwitcher = ({
   onSelectTab,
   onClose,
   onNavigate,
-  onSearchFocusChange,
   onCloseTab,
-  onSettingsOpenChange,
   shortcuts,
   onShortcutsChange,
   settingsThemeToggle,
   variant = 'overlay',
-  onOpenSettingsPage,
-  onOpenTabManagementPage,
+  onOpenSettings,
+  onOpenTabManagement,
+  isPanelOpen = false,
 }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isTabManagementOpen, setIsTabManagementOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
-
-  const handleSettingsOpenChange = (open: boolean) => {
-    setIsSettingsOpen(open);
-    onSettingsOpenChange?.(open);
-  };
 
   const filteredTabs = tabs.filter(tab =>
     tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,12 +68,14 @@ export const TabSwitcher = ({
   }, [selectedIndex]);
 
   // Use the keyboard shortcuts hook to handle all keyboard events
+  // Disable keyboard shortcuts when any panel is open
   useKeyboardShortcuts({
-    enabled: isVisible,
+    enabled: isVisible && !isPanelOpen,
     shortcuts,
     isSearchFocused,
-    isSettingsOpen,
-    isTabManagementOpen,
+    // Panel state is managed by parent, but we still need to pass these for the hook
+    isSettingsOpen: false,
+    isTabManagementOpen: false,
     onNavigateNext: () => onNavigate('next'),
     onNavigatePrev: () => onNavigate('prev'),
     onActivateSelected: () => {
@@ -95,12 +86,10 @@ export const TabSwitcher = ({
     onClose,
     onFocusSearch: () => {
       setIsSearchFocused(true);
-      onSearchFocusChange?.(true);
       searchInputRef.current?.focus();
     },
     onBlurSearch: () => {
       setIsSearchFocused(false);
-      onSearchFocusChange?.(false);
       searchInputRef.current?.blur();
     },
     onCloseTab: () => {
@@ -114,15 +103,6 @@ export const TabSwitcher = ({
 
   return (
     <>
-      <TabManagement
-        tabs={tabs}
-        isOpen={isTabManagementOpen}
-        onClose={() => setIsTabManagementOpen(false)}
-        onSelectTab={onSelectTab}
-        shortcuts={shortcuts}
-        onShortcutsChange={onShortcutsChange}
-        settingsThemeToggle={settingsThemeToggle}
-      />
       {/* Backdrop - only show for overlay variant */}
       {variant === 'overlay' && (
         <div
@@ -162,14 +142,8 @@ export const TabSwitcher = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  setIsSearchFocused(true);
-                  onSearchFocusChange?.(true);
-                }}
-                onBlur={() => {
-                  setIsSearchFocused(false);
-                  onSearchFocusChange?.(false);
-                }}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
                 placeholder={`Press '${shortcuts.search}' to search tabs...`}
                 className={cn(
                   "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
@@ -183,26 +157,20 @@ export const TabSwitcher = ({
             {/* Action Icons */}
             <div className="flex flex-col gap-1">
               <button
-                onClick={() => {
-                  if (onOpenTabManagementPage) {
-                    onOpenTabManagementPage();
-                  } else {
-                    setIsTabManagementOpen(true);
-                  }
-                }}
+                onClick={onOpenTabManagement}
                 className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Advanced tab management"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
 
-              <TasSettings
-                shortcuts={shortcuts}
-                onShortcutsChange={onShortcutsChange}
-                onOpenChange={handleSettingsOpenChange}
-                themeToggle={settingsThemeToggle}
-                onOpenSettingsPage={onOpenSettingsPage}
-              />
+              <button
+                onClick={onOpenSettings}
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>

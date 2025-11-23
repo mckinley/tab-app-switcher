@@ -96,7 +96,6 @@ function App() {
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts);
-    // Save to storage
     browser.storage.local.set({ shortcuts: newShortcuts });
   };
 
@@ -124,8 +123,8 @@ function App() {
         onShortcutsChange={handleShortcutsChange}
         settingsThemeToggle={<ThemeToggle />}
         variant="popup"
-        onOpenSettingsPage={handleOpenSettingsPage}
-        onOpenTabManagementPage={handleOpenTabManagementPage}
+        onOpenSettings={handleOpenSettingsPage}
+        onOpenTabManagement={handleOpenTabManagementPage}
       />
     </div>
   );

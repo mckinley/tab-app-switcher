@@ -34,9 +34,30 @@ export interface LogMessage {
 }
 
 /**
+ * Check if we're running in an extension context (not a regular webpage)
+ */
+function isExtensionContext(): boolean {
+  // Check if we have a valid extension ID
+  // In a real extension, chrome.runtime.id will be set
+  // In a webpage, it will be undefined even if chrome.runtime exists
+  if (typeof globalThis.chrome !== 'undefined' && globalThis.chrome.runtime?.id) {
+    return true;
+  }
+  if (typeof globalThis.browser !== 'undefined' && globalThis.browser.runtime?.id) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Get the browser runtime API (works with both browser and chrome namespaces)
+ * Only returns runtime if we're actually in an extension context
  */
 function getBrowserRuntime() {
+  if (!isExtensionContext()) {
+    return null;
+  }
+
   if (typeof globalThis.browser !== 'undefined' && globalThis.browser.runtime) {
     return globalThis.browser.runtime;
   }

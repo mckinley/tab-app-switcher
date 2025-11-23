@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { TabSwitcher } from "@tas/components/TabSwitcher";
+import { TasSettings } from "@tas/components/TasSettings";
+import { TabManagement } from "@tas/components/TabManagement";
 import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -182,10 +184,11 @@ const Index = () => {
 
   const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(true);
-  const [hasUsedTAS, setHasUsedTAS] = useState(false);
+  const [isTabManagementOpen, setIsTabManagementOpen] = useState(false);
+
+  // Track if any panel is open for keyboard event blocking
+  const isPanelOpen = isSettingsOpen || isTabManagementOpen;
 
   // Get tabs in MRU order for the switcher
   const mruTabs = getTabsInMruOrder();
@@ -219,10 +222,11 @@ const Index = () => {
   }, [mruTabs.length]);
 
   // Mac-like Application Switcher behavior with configurable modifier key
+  // Note: When switcher is visible, all keyboard handling (including panels) is done by TabSwitcher
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Disable all TAS shortcuts when settings panel is open
-      if (isSettingsOpen) return;
+      // Don't handle keyboard events when a panel is open
+      if (isPanelOpen) return;
 
       // Check if modifier key is pressed
       const isModifierPressed =
@@ -237,7 +241,6 @@ const Index = () => {
         if (!isSwitcherVisible) {
           setIsSwitcherVisible(true);
           setSelectedIndex(1); // Start with second tab selected
-          setHasUsedTAS(true); // Mark that TAS has been used
         } else {
           handleNavigate('next');
         }
@@ -248,7 +251,7 @@ const Index = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSwitcherVisible, selectedIndex, isSettingsOpen, shortcuts, handleNavigate]);
+  }, [isSwitcherVisible, selectedIndex, isPanelOpen, shortcuts, handleNavigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -262,23 +265,22 @@ const Index = () => {
         canAddTab={tabs.length < 8}
       />
 
+      {/* Header - positioned below tabs with help button on left, downloads and theme toggle on right */}
       <div className="relative">
-        {/* Tooltip */}
-        <TabsTooltip
-          isVisible={showTooltip && !isSwitcherVisible}
-          onDismiss={() => setShowTooltip(false)}
-          hasBeenUsed={hasUsedTAS}
-        />
-      </div>
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center gap-2 pt-4 pb-8">
+          {/* Left side - Help button */}
+          <TabsTooltip hideTooltip={isSwitcherVisible} />
 
-      {/* Header - positioned below tabs */}
-      <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-2 pt-4 pb-8">
-        <Link to="/downloads">
-          <Button variant="ghost">
-            Downloads
-          </Button>
-        </Link>
-        <ThemeToggle />
+          {/* Right side - Downloads and Theme Toggle */}
+          <div className="flex items-center gap-2">
+            <Link to="/downloads">
+              <Button variant="ghost">
+                Downloads
+              </Button>
+            </Link>
+            <ThemeToggle />
+          </div>
+        </div>
       </div>
 
       {/* Hero Section */}
@@ -511,9 +513,28 @@ const Index = () => {
         onSelectTab={handleSelectTab}
         onClose={() => setIsSwitcherVisible(false)}
         onNavigate={handleNavigate}
-        onSearchFocusChange={setIsSearchFocused}
         onCloseTab={handleCloseTab}
-        onSettingsOpenChange={setIsSettingsOpen}
+        shortcuts={shortcuts}
+        onShortcutsChange={setShortcuts}
+        settingsThemeToggle={<ThemeToggle />}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenTabManagement={() => setIsTabManagementOpen(true)}
+        isPanelOpen={isPanelOpen}
+      />
+
+      <TasSettings
+        shortcuts={shortcuts}
+        onShortcutsChange={setShortcuts}
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        themeToggle={<ThemeToggle />}
+      />
+
+      <TabManagement
+        tabs={mruTabs}
+        isOpen={isTabManagementOpen}
+        onClose={() => setIsTabManagementOpen(false)}
+        onSelectTab={handleSelectTab}
         shortcuts={shortcuts}
         onShortcutsChange={setShortcuts}
         settingsThemeToggle={<ThemeToggle />}

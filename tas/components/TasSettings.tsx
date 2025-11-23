@@ -14,16 +14,23 @@ import { KeyboardShortcuts } from "../types/tabs";
 interface TasSettingsProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
+  open?: boolean; // Controlled mode: if provided, component is controlled by parent
   onOpenChange?: (open: boolean) => void;
   themeToggle?: ReactNode;
   onOpenSettingsPage?: () => void; // Optional callback to open settings in a new tab (extension only)
 }
 
-export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange, themeToggle, onOpenSettingsPage }: TasSettingsProps) => {
-  const [open, setOpen] = useState(false);
+export const TasSettings = ({ shortcuts, onShortcutsChange, open: controlledOpen, onOpenChange, themeToggle, onOpenSettingsPage }: TasSettingsProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
+    if (controlledOpen === undefined) {
+      // Uncontrolled mode
+      setInternalOpen(newOpen);
+    }
     onOpenChange?.(newOpen);
   };
 
@@ -41,7 +48,7 @@ export const TasSettings = ({ shortcuts, onShortcutsChange, onOpenChange, themeT
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button
           className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
