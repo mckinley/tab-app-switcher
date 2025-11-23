@@ -1,89 +1,89 @@
-import { useState, useEffect } from 'react';
-import { TabManagement } from '@tas/components/TabManagement';
-import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
-import { ThemeToggle } from '../../components/ThemeToggle';
-import { Container } from '../../components/Container';
-import './globals.css';
+import { useState, useEffect } from "react"
+import { TabManagement } from "@tas/components/TabManagement"
+import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
+import { ThemeToggle } from "../../components/ThemeToggle"
+import { Container } from "../../components/Container"
+import "./globals.css"
 
 function App() {
-  const [tabs, setTabs] = useState<Tab[]>([]);
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS);
+  const [tabs, setTabs] = useState<Tab[]>([])
+  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
   const loadTabs = () => {
-    browser.runtime.sendMessage({ type: 'GET_TABS' }).then((response) => {
+    browser.runtime.sendMessage({ type: "GET_TABS" }).then((response) => {
       if (response?.tabs) {
-        setTabs(response.tabs);
+        setTabs(response.tabs)
       }
-    });
-  };
+    })
+  }
 
   useEffect(() => {
-    loadTabs();
+    loadTabs()
 
     // Load shortcuts from storage
-    browser.storage.local.get('shortcuts').then((result) => {
+    browser.storage.local.get("shortcuts").then((result) => {
       if (result.shortcuts) {
-        setShortcuts(result.shortcuts);
+        setShortcuts(result.shortcuts)
       }
-    });
+    })
 
     const handleTabUpdate = () => {
-      loadTabs();
-    };
+      loadTabs()
+    }
 
-    browser.tabs.onUpdated.addListener(handleTabUpdate);
-    browser.tabs.onRemoved.addListener(handleTabUpdate);
-    browser.tabs.onCreated.addListener(handleTabUpdate);
-    browser.tabs.onActivated.addListener(handleTabUpdate);
+    browser.tabs.onUpdated.addListener(handleTabUpdate)
+    browser.tabs.onRemoved.addListener(handleTabUpdate)
+    browser.tabs.onCreated.addListener(handleTabUpdate)
+    browser.tabs.onActivated.addListener(handleTabUpdate)
 
     return () => {
-      browser.tabs.onUpdated.removeListener(handleTabUpdate);
-      browser.tabs.onRemoved.removeListener(handleTabUpdate);
-      browser.tabs.onCreated.removeListener(handleTabUpdate);
-      browser.tabs.onActivated.removeListener(handleTabUpdate);
-    };
-  }, []);
+      browser.tabs.onUpdated.removeListener(handleTabUpdate)
+      browser.tabs.onRemoved.removeListener(handleTabUpdate)
+      browser.tabs.onCreated.removeListener(handleTabUpdate)
+      browser.tabs.onActivated.removeListener(handleTabUpdate)
+    }
+  }, [])
 
   const handleSelectTab = (tabId: string) => {
-    browser.tabs.update(parseInt(tabId), { active: true });
-  };
+    browser.tabs.update(parseInt(tabId), { active: true })
+  }
 
   const handleCloseTab = (tabId: string) => {
-    browser.tabs.remove(parseInt(tabId));
-  };
+    browser.tabs.remove(parseInt(tabId))
+  }
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
-    setShortcuts(newShortcuts);
-    browser.storage.local.set({ shortcuts: newShortcuts });
-  };
+    setShortcuts(newShortcuts)
+    browser.storage.local.set({ shortcuts: newShortcuts })
+  }
 
   const handleReorderTabs = async (tabId: string, newIndex: number) => {
     try {
-      const numericTabId = parseInt(tabId);
-      const tab = await browser.tabs.get(numericTabId);
+      const numericTabId = parseInt(tabId)
+      const tab = await browser.tabs.get(numericTabId)
 
       // Move the tab to the new index within its window
       await browser.tabs.move(numericTabId, {
         windowId: tab.windowId,
-        index: newIndex
-      });
+        index: newIndex,
+      })
 
       // Reload tabs to reflect the change
-      loadTabs();
+      loadTabs()
     } catch (error) {
-      console.error('Error reordering tab:', error);
+      console.error("Error reordering tab:", error)
     }
-  };
+  }
 
   const handleSendCollectionToWindow = async (tabUrls: string[]) => {
     try {
-      if (tabUrls.length === 0) return;
+      if (tabUrls.length === 0) return
 
       // Create a new window with the first URL
       const newWindow = await browser.windows.create({
         url: tabUrls[0],
         focused: true,
-      });
+      })
 
       // Add remaining URLs as tabs in the new window
       if (newWindow?.id) {
@@ -92,13 +92,13 @@ function App() {
             windowId: newWindow.id,
             url: tabUrls[i],
             active: false,
-          });
+          })
         }
       }
     } catch (error) {
-      console.error('Error creating window from collection:', error);
+      console.error("Error creating window from collection:", error)
     }
-  };
+  }
 
   return (
     <Container variant="screen" onClose={() => window.close()}>
@@ -114,8 +114,7 @@ function App() {
         settingsThemeToggle={<ThemeToggle />}
       />
     </Container>
-  );
+  )
 }
 
-export default App;
-
+export default App

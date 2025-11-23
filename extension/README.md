@@ -47,8 +47,8 @@ npm run zip
 The extension imports shared components from `../shared/`:
 
 ```typescript
-import { TabSwitcher } from '@shared/components/TabSwitcher';
-import { Tab, DEFAULT_SHORTCUTS } from '@shared/types/tabs';
+import { TabSwitcher } from "@shared/components/TabSwitcher"
+import { Tab, DEFAULT_SHORTCUTS } from "@shared/types/tabs"
 ```
 
 See `../shared/README.md` for more information.

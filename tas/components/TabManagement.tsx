@@ -1,17 +1,23 @@
-import { useState, useMemo, useEffect, type ReactNode } from "react";
-import { Search, X, Clock, Link as LinkIcon, Type, Settings as SettingsIcon, User, ArrowUpDown, Plus, Trash2, ExternalLink } from "lucide-react";
-import { Tab, KeyboardShortcuts } from "../types/tabs";
-import { cn } from "../lib/utils";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Settings } from "./Settings";
+import { useState, useMemo, useEffect, type ReactNode } from "react"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+  Search,
+  X,
+  Clock,
+  Link as LinkIcon,
+  Type,
+  Settings as SettingsIcon,
+  User,
+  ArrowUpDown,
+  Plus,
+  Trash2,
+  ExternalLink,
+} from "lucide-react"
+import { Tab, KeyboardShortcuts } from "../types/tabs"
+import { cn } from "../lib/utils"
+import { Input } from "./ui/input"
+import { Button } from "./ui/button"
+import { Settings } from "./Settings"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import {
   DndContext,
   DragEndEvent,
@@ -22,70 +28,58 @@ import {
   useSensor,
   useSensors,
   useDroppable,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { ScrollArea } from "./ui/scroll-area";
-import { TabFavicon } from "./TabFavicon";
+} from "@dnd-kit/core"
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { ScrollArea } from "./ui/scroll-area"
+import { TabFavicon } from "./TabFavicon"
 
 interface TabManagementProps {
-  tabs: Tab[];
-  onClose: () => void;
-  onSelectTab: (tabId: string) => void;
-  onCloseTab?: (tabId: string) => void;
-  onReorderTabs?: (tabId: string, newIndex: number) => void; // Extension: move tab to new position
-  onSendCollectionToWindow?: (tabUrls: string[]) => void; // Extension: create new window with these URLs
-  shortcuts: KeyboardShortcuts;
-  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
-  settingsThemeToggle?: ReactNode;
+  tabs: Tab[]
+  onClose: () => void
+  onSelectTab: (tabId: string) => void
+  onCloseTab?: (tabId: string) => void
+  onReorderTabs?: (tabId: string, newIndex: number) => void // Extension: move tab to new position
+  onSendCollectionToWindow?: (tabUrls: string[]) => void // Extension: create new window with these URLs
+  shortcuts: KeyboardShortcuts
+  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void
+  settingsThemeToggle?: ReactNode
 }
 
-type SortOption = "mru" | "url" | "title";
-type ViewMode = "search" | "collections" | "account" | "settings";
+type SortOption = "mru" | "url" | "title"
+type ViewMode = "search" | "collections" | "account" | "settings"
 
 interface Collection {
-  id: string;
-  name: string;
-  tabIds: string[];
+  id: string
+  name: string
+  tabIds: string[]
 }
 
 interface SortableTabProps {
-  tab: Tab;
-  onSelect: () => void;
-  onClose?: () => void;
-  showClose?: boolean;
+  tab: Tab
+  onSelect: () => void
+  onClose?: () => void
+  showClose?: boolean
 }
 
 interface DroppableCollectionProps {
-  collection: Collection;
-  isSelected: boolean;
-  tabs: Tab[];
-  onSelect: () => void;
-  onDelete: () => void;
-  onRename: (newName: string) => void;
-  onSendToWindow: () => void;
+  collection: Collection
+  isSelected: boolean
+  tabs: Tab[]
+  onSelect: () => void
+  onDelete: () => void
+  onRename: (newName: string) => void
+  onSendToWindow: () => void
 }
 
 const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: tab.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
+  }
 
   return (
     <div
@@ -93,7 +87,7 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
       style={style}
       className={cn(
         "group flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors cursor-grab active:cursor-grabbing",
-        isDragging && "z-50"
+        isDragging && "z-50",
       )}
       {...attributes}
       {...listeners}
@@ -101,8 +95,8 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
       <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
       <button
         onClick={(e) => {
-          e.stopPropagation();
-          onSelect();
+          e.stopPropagation()
+          onSelect()
         }}
         className="flex-1 text-left text-xs truncate"
       >
@@ -111,8 +105,8 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
       {showClose && onClose && (
         <button
           onClick={(e) => {
-            e.stopPropagation();
-            onClose();
+            e.stopPropagation()
+            onClose()
           }}
           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded"
         >
@@ -120,22 +114,30 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
         </button>
       )}
     </div>
-  );
-};
+  )
+}
 
-const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete, onRename, onSendToWindow }: DroppableCollectionProps) => {
+const DroppableCollection = ({
+  collection,
+  isSelected,
+  tabs,
+  onSelect,
+  onDelete,
+  onRename,
+  onSendToWindow,
+}: DroppableCollectionProps) => {
   const { setNodeRef, isOver } = useDroppable({
     id: collection.id,
-  });
+  })
 
-  const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
+  const collectionTabs = tabs.filter((tab) => collection.tabIds.includes(tab.id))
 
   const handleNameEdit = (e: React.FormEvent<HTMLHeadingElement>) => {
-    const newName = e.currentTarget.textContent?.trim() || collection.name;
+    const newName = e.currentTarget.textContent?.trim() || collection.name
     if (newName !== collection.name) {
-      onRename(newName);
+      onRename(newName)
     }
-  };
+  }
 
   return (
     <div
@@ -144,7 +146,7 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
         "p-4 rounded-lg border cursor-pointer transition-all",
         isSelected && "bg-primary/10 border-primary",
         isOver && "bg-primary/5 border-primary ring-2 ring-primary/20",
-        !isSelected && !isOver && "hover:bg-muted/50"
+        !isSelected && !isOver && "hover:bg-muted/50",
       )}
       onClick={onSelect}
     >
@@ -157,25 +159,23 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
             onBlur={handleNameEdit}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.currentTarget.blur();
+              if (e.key === "Enter") {
+                e.preventDefault()
+                e.currentTarget.blur()
               }
             }}
           >
             {collection.name}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            {collection.tabIds.length} tabs
-          </p>
+          <p className="text-xs text-muted-foreground">{collection.tabIds.length} tabs</p>
         </div>
         <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={(e) => {
-              e.stopPropagation();
-              onSendToWindow();
+              e.stopPropagation()
+              onSendToWindow()
             }}
           >
             <ExternalLink className="h-4 w-4" />
@@ -184,8 +184,8 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
             variant="ghost"
             size="icon"
             onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
+              e.stopPropagation()
+              onDelete()
             }}
           >
             <Trash2 className="h-4 w-4" />
@@ -196,7 +196,7 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
       {/* Show tabs in collection */}
       {collectionTabs.length > 0 && (
         <div className="space-y-1 mt-3 pt-3 border-t">
-          {collectionTabs.map(tab => (
+          {collectionTabs.map((tab) => (
             <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
               <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
               <span className="text-xs truncate flex-1">{tab.title}</span>
@@ -205,8 +205,8 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 export const TabManagement = ({
   tabs,
@@ -219,263 +219,259 @@ export const TabManagement = ({
   onShortcutsChange,
   settingsThemeToggle,
 }: TabManagementProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("mru");
-  const [reverseSort, setReverseSort] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("search");
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortBy, setSortBy] = useState<SortOption>("mru")
+  const [reverseSort, setReverseSort] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>("search")
   const [collections, setCollections] = useState<Collection[]>(() => {
-    const saved = localStorage.getItem('tab-collections');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
-  const [newCollectionName, setNewCollectionName] = useState("");
-  const [isSignedIn, setIsSignedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab | null>(null);
-  const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs);
-  const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false);
+    const saved = localStorage.getItem("tab-collections")
+    return saved ? JSON.parse(saved) : []
+  })
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
+  const [newCollectionName, setNewCollectionName] = useState("")
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab | null>(null)
+  const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs)
+  const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false)
   const [tabWindows, setTabWindows] = useState<Record<string, string>>(() => {
     // Initialize all tabs to Window 1
-    const windows: Record<string, string> = {};
-    tabs.forEach(tab => {
-      windows[tab.id] = "Window 1";
-    });
-    return windows;
-  });
+    const windows: Record<string, string> = {}
+    tabs.forEach((tab) => {
+      windows[tab.id] = "Window 1"
+    })
+    return windows
+  })
 
   // Save collections to localStorage whenever they change
   const updateCollections = (newCollections: Collection[]) => {
-    setCollections(newCollections);
-    localStorage.setItem('tab-collections', JSON.stringify(newCollections));
-  };
+    setCollections(newCollections)
+    localStorage.setItem("tab-collections", JSON.stringify(newCollections))
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
-    })
-  );
+    }),
+  )
 
   // Sync currentTabs with tabs prop when it changes
   useEffect(() => {
-    setCurrentTabs(tabs);
+    setCurrentTabs(tabs)
 
     // Create friendly window names based on window ID order
-    const uniqueWindowIds = Array.from(new Set(
-      tabs.map(tab => tab.windowId).filter((id): id is number => id !== undefined)
-    )).sort((a, b) => a - b); // Sort by window ID to get consistent ordering
+    const uniqueWindowIds = Array.from(
+      new Set(tabs.map((tab) => tab.windowId).filter((id): id is number => id !== undefined)),
+    ).sort((a, b) => a - b) // Sort by window ID to get consistent ordering
 
-    const windowIdToName = new Map<number, string>();
+    const windowIdToName = new Map<number, string>()
     uniqueWindowIds.forEach((windowId, index) => {
-      windowIdToName.set(windowId, `Window ${index + 1}`);
-    });
+      windowIdToName.set(windowId, `Window ${index + 1}`)
+    })
 
     // Update tabWindows with friendly names
-    setTabWindows(prev => {
-      const updated = { ...prev };
-      tabs.forEach(tab => {
+    setTabWindows((prev) => {
+      const updated = { ...prev }
+      tabs.forEach((tab) => {
         if (tab.windowId !== undefined) {
           // Use friendly window name (Window 1, Window 2, etc.)
-          updated[tab.id] = windowIdToName.get(tab.windowId) || "Window 1";
+          updated[tab.id] = windowIdToName.get(tab.windowId) || "Window 1"
         } else if (!updated[tab.id]) {
           // Fallback for tabs without windowId (e.g., demo site)
-          updated[tab.id] = "Window 1";
+          updated[tab.id] = "Window 1"
         }
-      });
-      return updated;
-    });
-  }, [tabs]);
+      })
+      return updated
+    })
+  }, [tabs])
 
   // Group tabs by window and sort by index within each window
   const tabsByWindow = useMemo(() => {
-    const grouped: Record<string, Tab[]> = {};
-    currentTabs.forEach(tab => {
-      const windowName = tabWindows[tab.id] || "Window 1";
+    const grouped: Record<string, Tab[]> = {}
+    currentTabs.forEach((tab) => {
+      const windowName = tabWindows[tab.id] || "Window 1"
       if (!grouped[windowName]) {
-        grouped[windowName] = [];
+        grouped[windowName] = []
       }
-      grouped[windowName].push(tab);
-    });
+      grouped[windowName].push(tab)
+    })
 
     // Sort tabs within each window by their index
-    Object.keys(grouped).forEach(windowName => {
+    Object.keys(grouped).forEach((windowName) => {
       grouped[windowName].sort((a, b) => {
-        const indexA = a.index ?? 0;
-        const indexB = b.index ?? 0;
-        return indexA - indexB;
-      });
-    });
+        const indexA = a.index ?? 0
+        const indexB = b.index ?? 0
+        return indexA - indexB
+      })
+    })
 
-    return grouped;
-  }, [currentTabs, tabWindows]);
+    return grouped
+  }, [currentTabs, tabWindows])
 
   // Filter and sort tabs
   const filteredAndSortedTabs = useMemo(() => {
-    let result = [...tabs];
+    let result = [...tabs]
 
     // Filter by search query
     if (searchQuery) {
-      result = result.filter(tab =>
-        tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tab.url.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      result = result.filter(
+        (tab) =>
+          tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          tab.url.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     }
 
     // Sort
     switch (sortBy) {
       case "mru":
         // Most recently used (current order)
-        break;
+        break
       case "url":
-        result.sort((a, b) => a.url.localeCompare(b.url));
-        break;
+        result.sort((a, b) => a.url.localeCompare(b.url))
+        break
       case "title":
-        result.sort((a, b) => a.title.localeCompare(b.title));
-        break;
+        result.sort((a, b) => a.title.localeCompare(b.title))
+        break
     }
 
     if (reverseSort) {
-      result.reverse();
+      result.reverse()
     }
 
-    return result;
-  }, [tabs, searchQuery, sortBy, reverseSort]);
+    return result
+  }, [tabs, searchQuery, sortBy, reverseSort])
 
   const handleDragStart = (event: DragStartEvent) => {
-    const tab = currentTabs.find(t => t.id === event.active.id);
+    const tab = currentTabs.find((t) => t.id === event.active.id)
     if (tab) {
-      setActiveTab(tab);
-      setIsDroppedOnCollection(false);
+      setActiveTab(tab)
+      setIsDroppedOnCollection(false)
     }
-  };
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over } = event
 
     if (!over) {
-      setActiveTab(null);
-      return;
+      setActiveTab(null)
+      return
     }
 
     // Check if dropping into a collection
-    const collection = collections.find(c => c.id === over.id);
+    const collection = collections.find((c) => c.id === over.id)
     if (collection) {
       // Add tab to collection if not already there
       if (!collection.tabIds.includes(active.id as string)) {
-        updateCollections(collections.map(c =>
-          c.id === collection.id
-            ? { ...c, tabIds: [...c.tabIds, active.id as string] }
-            : c
-        ));
+        updateCollections(
+          collections.map((c) => (c.id === collection.id ? { ...c, tabIds: [...c.tabIds, active.id as string] } : c)),
+        )
       }
       // Mark as dropped on collection so drag overlay disappears
-      setIsDroppedOnCollection(true);
-      setActiveTab(null);
-      return;
+      setIsDroppedOnCollection(true)
+      setActiveTab(null)
+      return
     }
 
     // Otherwise, handle reordering within current tabs
     if (active.id !== over.id) {
       setCurrentTabs((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const reordered = arrayMove(items, oldIndex, newIndex);
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        const reordered = arrayMove(items, oldIndex, newIndex)
 
         // Notify parent of reorder (for extension to move real browser tabs)
         // Find the target tab to get its actual browser index
-        const targetTab = items.find(item => item.id === over.id);
+        const targetTab = items.find((item) => item.id === over.id)
         if (targetTab && targetTab.index !== undefined) {
-          onReorderTabs?.(active.id as string, targetTab.index);
+          onReorderTabs?.(active.id as string, targetTab.index)
         }
 
-        return reordered;
-      });
+        return reordered
+      })
     }
 
-    setActiveTab(null);
-  };
+    setActiveTab(null)
+  }
 
   const handleCreateCollection = () => {
-    if (!newCollectionName.trim()) return;
+    if (!newCollectionName.trim()) return
     const newCollection: Collection = {
       id: Date.now().toString(),
       name: newCollectionName,
       tabIds: [],
-    };
-    updateCollections([...collections, newCollection]);
-    setNewCollectionName("");
-  };
+    }
+    updateCollections([...collections, newCollection])
+    setNewCollectionName("")
+  }
 
   const handleDeleteCollection = (collectionId: string) => {
-    updateCollections(collections.filter(c => c.id !== collectionId));
+    updateCollections(collections.filter((c) => c.id !== collectionId))
     if (selectedCollection === collectionId) {
-      setSelectedCollection(null);
+      setSelectedCollection(null)
     }
-  };
+  }
 
   const handleRenameCollection = (id: string, newName: string) => {
-    updateCollections(collections.map(c =>
-      c.id === id ? { ...c, name: newName } : c
-    ));
-  };
+    updateCollections(collections.map((c) => (c.id === id ? { ...c, name: newName } : c)))
+  }
 
   const handleSendCollectionToWindow = (collectionId: string) => {
-    const collection = collections.find(c => c.id === collectionId);
-    if (!collection) return;
+    const collection = collections.find((c) => c.id === collectionId)
+    if (!collection) return
 
     // Get tabs from the collection
-    const collectionTabs = tabs.filter(tab => collection.tabIds.includes(tab.id));
-    if (collectionTabs.length === 0) return;
+    const collectionTabs = tabs.filter((tab) => collection.tabIds.includes(tab.id))
+    if (collectionTabs.length === 0) return
 
     // If callback is provided (extension mode), use it to create real browser window
     if (onSendCollectionToWindow) {
-      const tabUrls = collectionTabs.map(tab => tab.url);
-      onSendCollectionToWindow(tabUrls);
-      return;
+      const tabUrls = collectionTabs.map((tab) => tab.url)
+      onSendCollectionToWindow(tabUrls)
+      return
     }
 
     // Otherwise, simulate for demo (website mode)
     // Find the highest window number
-    const windowNumbers = Object.values(tabWindows)
-      .map(name => {
-        const match = name.match(/Window (\d+)/);
-        return match ? parseInt(match[1]) : 0;
-      });
-    const maxWindowNumber = Math.max(0, ...windowNumbers);
-    const newWindowName = `Window ${maxWindowNumber + 1}`;
+    const windowNumbers = Object.values(tabWindows).map((name) => {
+      const match = name.match(/Window (\d+)/)
+      return match ? parseInt(match[1]) : 0
+    })
+    const maxWindowNumber = Math.max(0, ...windowNumbers)
+    const newWindowName = `Window ${maxWindowNumber + 1}`
 
     // Create duplicate tabs with new IDs for the new window
-    const newTabWindows = { ...tabWindows };
-    const duplicateTabs: Tab[] = [];
+    const newTabWindows = { ...tabWindows }
+    const duplicateTabs: Tab[] = []
 
-    collectionTabs.forEach(tab => {
+    collectionTabs.forEach((tab) => {
       // Create a duplicate tab with a new unique ID
       const duplicateTab: Tab = {
         ...tab,
         id: `${tab.id}-${Date.now()}-${Math.random()}`,
-      };
-      duplicateTabs.push(duplicateTab);
-      newTabWindows[duplicateTab.id] = newWindowName;
-    });
+      }
+      duplicateTabs.push(duplicateTab)
+      newTabWindows[duplicateTab.id] = newWindowName
+    })
 
-    setCurrentTabs([...currentTabs, ...duplicateTabs]);
-    setTabWindows(newTabWindows);
-  };
+    setCurrentTabs([...currentTabs, ...duplicateTabs])
+    setTabWindows(newTabWindows)
+  }
 
   const handleCloseTab = (tabId: string) => {
-    setCurrentTabs(currentTabs.filter(t => t.id !== tabId));
-    onCloseTab?.(tabId);
-  };
+    setCurrentTabs(currentTabs.filter((t) => t.id !== tabId))
+    onCloseTab?.(tabId)
+  }
 
   return (
     <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        {/* Tab Management Panel */}
-        <div className="w-full h-full flex overflow-hidden">
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {/* Tab Management Panel */}
+      <div className="w-full h-full flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-40 border-r bg-muted/30 flex flex-col">
           <div className="p-4 border-b">
@@ -488,9 +484,7 @@ export const TabManagement = ({
               onClick={() => setViewMode("search")}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "search"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                viewMode === "search" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
               )}
             >
               <Search className="inline-block w-4 h-4 mr-2" />
@@ -500,9 +494,7 @@ export const TabManagement = ({
               onClick={() => setViewMode("collections")}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors mt-1",
-                viewMode === "collections"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                viewMode === "collections" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
               )}
             >
               <LinkIcon className="inline-block w-4 h-4 mr-2" />
@@ -516,9 +508,7 @@ export const TabManagement = ({
               onClick={() => setViewMode("account")}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "account"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                viewMode === "account" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
               )}
             >
               <User className="inline-block w-4 h-4 mr-2" />
@@ -528,9 +518,7 @@ export const TabManagement = ({
               onClick={() => setViewMode("settings")}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "settings"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                viewMode === "settings" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
               )}
             >
               <SettingsIcon className="inline-block w-4 h-4 mr-2" />
@@ -612,28 +600,22 @@ export const TabManagement = ({
               {viewMode === "search" && (
                 <div className="space-y-2">
                   {filteredAndSortedTabs.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No tabs found
-                    </div>
+                    <div className="text-center py-12 text-muted-foreground">No tabs found</div>
                   ) : (
                     filteredAndSortedTabs.map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => {
-                          onSelectTab(tab.id);
-                          onClose();
+                          onSelectTab(tab.id)
+                          onClose()
                         }}
                         className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
                       >
                         <div className="flex items-start gap-3">
                           <TabFavicon src={tab.favicon} className="w-5 h-5 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">
-                              {tab.title}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {tab.url}
-                            </div>
+                            <div className="font-medium text-sm truncate">{tab.title}</div>
+                            <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
                           </div>
                         </div>
                       </button>
@@ -652,8 +634,8 @@ export const TabManagement = ({
                       onChange={(e) => setNewCollectionName(e.target.value)}
                       placeholder="New collection name..."
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateCollection();
+                        if (e.key === "Enter") {
+                          handleCreateCollection()
                         }
                       }}
                     />
@@ -676,9 +658,9 @@ export const TabManagement = ({
                           collection={collection}
                           isSelected={selectedCollection === collection.id}
                           tabs={tabs}
-                          onSelect={() => setSelectedCollection(
-                            selectedCollection === collection.id ? null : collection.id
-                          )}
+                          onSelect={() =>
+                            setSelectedCollection(selectedCollection === collection.id ? null : collection.id)
+                          }
                           onDelete={() => handleDeleteCollection(collection.id)}
                           onRename={(newName) => handleRenameCollection(collection.id, newName)}
                           onSendToWindow={() => handleSendCollectionToWindow(collection.id)}
@@ -693,9 +675,7 @@ export const TabManagement = ({
                 <div className="py-12">
                   {!isSignedIn ? (
                     <div className="text-center space-y-4">
-                      <p className="text-muted-foreground mb-4">
-                        Sign in to sync your tabs across devices
-                      </p>
+                      <p className="text-muted-foreground mb-4">Sign in to sync your tabs across devices</p>
                       <Button onClick={() => setIsSignedIn(true)}>
                         <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                           <path
@@ -722,9 +702,7 @@ export const TabManagement = ({
                     <div className="space-y-4">
                       <div className="p-4 rounded-lg border">
                         <h3 className="font-medium mb-2">Account Information</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Signed in with Google
-                        </p>
+                        <p className="text-sm text-muted-foreground">Signed in with Google</p>
                       </div>
                       <Button variant="outline" onClick={() => setIsSignedIn(false)}>
                         Sign Out
@@ -754,44 +732,41 @@ export const TabManagement = ({
           <ScrollArea className="flex-1">
             <div className="p-2">
               {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
-                  <div key={windowName} className="mb-4">
-                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                      {windowName} ({windowTabs.length})
-                    </div>
-                    <SortableContext
-                      items={windowTabs.map(t => t.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-1">
-                        {windowTabs.map((tab) => (
-                          <SortableTab
-                            key={tab.id}
-                            tab={tab}
-                            onSelect={() => {
-                              onSelectTab(tab.id);
-                              onClose();
-                            }}
-                            onClose={() => handleCloseTab(tab.id)}
-                            showClose={true}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
+                <div key={windowName} className="mb-4">
+                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                    {windowName} ({windowTabs.length})
                   </div>
-                ))}
+                  <SortableContext items={windowTabs.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-1">
+                      {windowTabs.map((tab) => (
+                        <SortableTab
+                          key={tab.id}
+                          tab={tab}
+                          onSelect={() => {
+                            onSelectTab(tab.id)
+                            onClose()
+                          }}
+                          onClose={() => handleCloseTab(tab.id)}
+                          showClose={true}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </div>
+              ))}
             </div>
           </ScrollArea>
         </div>
       </div>
 
-        <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
-          {activeTab && (
-            <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
-              <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs truncate">{activeTab.title}</span>
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
-  );
-};
+      <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
+        {activeTab && (
+          <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
+            <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs truncate">{activeTab.title}</span>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  )
+}

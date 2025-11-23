@@ -5,7 +5,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 13px;
   background: #ffffff;
   color: #1a1a1a;
@@ -78,7 +78,7 @@ button:active {
   background: #ffffff;
   border-left: 3px solid #d4d4d4;
   border-radius: 2px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-family: "SF Mono", "Monaco", "Consolas", monospace;
   font-size: 11px;
   line-height: 1.4;
 }

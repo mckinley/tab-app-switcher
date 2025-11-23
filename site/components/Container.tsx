@@ -1,14 +1,14 @@
-import { type ReactNode, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { type ReactNode, useEffect } from "react"
+import { cn } from "@/lib/utils"
+import { X } from "lucide-react"
 
 interface ContainerProps {
-  children: ReactNode;
-  variant: 'modal' | 'full-screen' | 'panel-right';
-  isVisible: boolean;
-  onClose?: () => void;
-  enabled?: boolean;
-  className?: string;
+  children: ReactNode
+  variant: "modal" | "full-screen" | "panel-right"
+  isVisible: boolean
+  onClose?: () => void
+  enabled?: boolean
+  className?: string
 }
 
 /**
@@ -20,31 +20,24 @@ interface ContainerProps {
  * - 'full-screen': Full-screen dialog with backdrop (e.g., TabManagement)
  * - 'modal': Centered modal dialog (e.g., Settings)
  */
-export const Container = ({
-  children,
-  variant,
-  isVisible,
-  onClose,
-  enabled = true,
-  className,
-}: ContainerProps) => {
+export const Container = ({ children, variant, isVisible, onClose, enabled = true, className }: ContainerProps) => {
   // Handle escape key to close
   useEffect(() => {
-    if (!isVisible || !enabled || !onClose) return;
+    if (!isVisible || !enabled || !onClose) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown, { capture: true });
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
-  }, [isVisible, enabled, onClose]);
+    window.addEventListener("keydown", handleKeyDown, { capture: true })
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true })
+  }, [isVisible, enabled, onClose])
 
-  if (!isVisible) return null;
+  if (!isVisible) return null
 
   return (
     <>
@@ -52,8 +45,8 @@ export const Container = ({
       <div
         className={cn(
           "fixed inset-0 backdrop-blur-sm",
-          variant === 'panel-right' && "z-50 bg-[hsl(var(--switcher-backdrop))]/20",
-          (variant === 'full-screen' || variant === 'modal') && "z-[60] bg-background/80"
+          variant === "panel-right" && "z-50 bg-[hsl(var(--switcher-backdrop))]/20",
+          (variant === "full-screen" || variant === "modal") && "z-[60] bg-background/80",
         )}
         onClick={enabled ? onClose : undefined}
       />
@@ -64,16 +57,10 @@ export const Container = ({
           "fixed",
 
           // Variant-specific positioning and z-index
-          variant === 'panel-right' && [
-            "z-50",
-            "top-4 bottom-4",
-            "left-2 right-2 sm:left-auto sm:right-4",
-          ],
-          (variant === 'full-screen' || variant === 'modal') && "z-[61]",
-          variant === 'full-screen' && [
-            "inset-2",
-          ],
-          variant === 'modal' && [
+          variant === "panel-right" && ["z-50", "top-4 bottom-4", "left-2 right-2 sm:left-auto sm:right-4"],
+          (variant === "full-screen" || variant === "modal") && "z-[61]",
+          variant === "full-screen" && ["inset-2"],
+          variant === "modal" && [
             "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
             "max-h-[90vh]",
             "flex items-start gap-3",
@@ -90,27 +77,20 @@ export const Container = ({
             "flex flex-col overflow-hidden",
 
             // Variant-specific sizing
-            variant === 'panel-right' && [
-              "w-auto sm:w-[360px]",
-              "max-w-[360px]",
-              "h-full",
-            ],
-            variant === 'full-screen' && [
+            variant === "panel-right" && ["w-auto sm:w-[360px]", "max-w-[360px]", "h-full"],
+            variant === "full-screen" && [
               "w-full h-full",
               "relative", // For absolute positioning of close button
             ],
-            variant === 'modal' && [
-              "w-[90vw] max-w-2xl",
-              "max-h-full",
-            ],
+            variant === "modal" && ["w-[90vw] max-w-2xl", "max-h-full"],
 
-            className
+            className,
           )}
         >
           {children}
 
           {/* Close button for full-screen - inside panel at top right */}
-          {onClose && enabled && variant === 'full-screen' && (
+          {onClose && enabled && variant === "full-screen" && (
             <button
               onClick={onClose}
               className={cn(
@@ -132,7 +112,7 @@ export const Container = ({
         </div>
 
         {/* Close button for modal - positioned next to panel */}
-        {onClose && enabled && variant === 'modal' && (
+        {onClose && enabled && variant === "modal" && (
           <button
             onClick={onClose}
             className={cn(
@@ -151,6 +131,5 @@ export const Container = ({
         )}
       </div>
     </>
-  );
-};
-
+  )
+}

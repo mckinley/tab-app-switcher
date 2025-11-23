@@ -4,21 +4,21 @@
  */
 
 export interface Tab {
-  id: string;
-  title: string;
-  url: string;
-  favicon: string;
-  windowId?: number; // Optional: browser window ID (extension only)
-  index?: number; // Optional: tab position within window (extension only)
+  id: string
+  title: string
+  url: string
+  favicon: string
+  windowId?: number // Optional: browser window ID (extension only)
+  index?: number // Optional: tab position within window (extension only)
 }
 
 export interface KeyboardShortcuts {
-  modifier: string;
-  activateForward: string;
-  activateBackward: string;
-  closeTab: string;
-  search: string;
-  tabManagement?: string;
+  modifier: string
+  activateForward: string
+  activateBackward: string
+  closeTab: string
+  search: string
+  tabManagement?: string
 }
 
 export const DEFAULT_SHORTCUTS: KeyboardShortcuts = {
@@ -27,4 +27,4 @@ export const DEFAULT_SHORTCUTS: KeyboardShortcuts = {
   activateBackward: "`",
   search: "F",
   closeTab: "W",
-};
+}

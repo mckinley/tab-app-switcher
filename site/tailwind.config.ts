@@ -1,5 +1,5 @@
-import type { Config } from "tailwindcss";
-import sharedPreset from "../tas/tailwind.preset";
+import type { Config } from "tailwindcss"
+import sharedPreset from "../tas/tailwind.preset"
 
 const config = {
   presets: [sharedPreset],
@@ -20,6 +20,6 @@ const config = {
       },
     },
   },
-} satisfies Config;
+} satisfies Config
 
-export default config;
+export default config

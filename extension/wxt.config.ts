@@ -1,47 +1,47 @@
-import { defineConfig } from 'wxt';
-import path from 'path';
+import { defineConfig } from "wxt"
+import path from "path"
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  modules: ['@wxt-dev/module-react'],
+  modules: ["@wxt-dev/module-react"],
   manifest: {
-    name: 'Tab Application Switcher',
-    description: 'Switch between browser tabs like you switch between applications',
-    version: '0.1.0',
-    permissions: ['tabs', 'storage'],
+    name: "Tab Application Switcher",
+    description: "Switch between browser tabs like you switch between applications",
+    version: "0.1.0",
+    permissions: ["tabs", "storage"],
     icons: {
-      16: '/icon/16.png',
-      32: '/icon/32.png',
-      48: '/icon/48.png',
-      96: '/icon/96.png',
-      128: '/icon/128.png',
+      16: "/icon/16.png",
+      32: "/icon/32.png",
+      48: "/icon/48.png",
+      96: "/icon/96.png",
+      128: "/icon/128.png",
     },
     action: {
-      default_title: 'Tab Application Switcher',
+      default_title: "Tab Application Switcher",
       default_icon: {
-        16: '/icon/16.png',
-        32: '/icon/32.png',
+        16: "/icon/16.png",
+        32: "/icon/32.png",
       },
     },
     commands: {
-      'tas_activate': {
+      tas_activate: {
         suggested_key: {
-          default: 'Alt+Tab',
+          default: "Alt+Tab",
         },
-        description: 'Activate Tab Application Switcher',
+        description: "Activate Tab Application Switcher",
       },
     },
     chrome_url_overrides: {
-      newtab: '/tabs.html',
+      newtab: "/tabs.html",
     },
   },
   vite: () => ({
     resolve: {
       alias: {
-        '@tas': path.resolve(__dirname, '../tas'),
-        '@': path.resolve(__dirname, '.'),
+        "@tas": path.resolve(__dirname, "../tas"),
+        "@": path.resolve(__dirname, "."),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: ["react", "react-dom"],
     },
   }),
-});
+})

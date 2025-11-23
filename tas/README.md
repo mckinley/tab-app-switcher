@@ -39,15 +39,15 @@ tas/
 ### In the Website
 
 ```typescript
-import { TabSwitcher } from '@tas/components/TabSwitcher';
-import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from '@tas/types/tabs';
+import { TabSwitcher } from "@tas/components/TabSwitcher"
+import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
 ```
 
 ### In the Extension
 
 ```typescript
-import { TabSwitcher } from '@tas/components/TabSwitcher';
-import { Tab, DEFAULT_SHORTCUTS } from '@tas/types/tabs';
+import { TabSwitcher } from "@tas/components/TabSwitcher"
+import { Tab, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
 ```
 
 ## Key Components
@@ -57,6 +57,7 @@ import { Tab, DEFAULT_SHORTCUTS } from '@tas/types/tabs';
 The main tab switcher interface that displays tabs in MRU (Most Recently Used) order.
 
 **Props:**
+
 - `tabs: Tab[]` - Array of tabs to display
 - `isVisible: boolean` - Whether the switcher is visible
 - `selectedIndex: number` - Currently selected tab index
@@ -73,6 +74,7 @@ The main tab switcher interface that displays tabs in MRU (Most Recently Used) o
 Settings dialog for customizing keyboard shortcuts.
 
 **Props:**
+
 - `shortcuts: KeyboardShortcuts` - Current shortcuts
 - `onShortcutsChange: (shortcuts: KeyboardShortcuts) => void` - Update shortcuts
 - `onOpenChange?: (open: boolean) => void` - Dialog open state callback
@@ -88,10 +90,10 @@ Advanced tab management interface with search, sorting, and bulk actions.
 
 ```typescript
 interface Tab {
-  id: string;
-  title: string;
-  url: string;
-  favicon: string;
+  id: string
+  title: string
+  url: string
+  favicon: string
 }
 ```
 
@@ -99,12 +101,12 @@ interface Tab {
 
 ```typescript
 interface KeyboardShortcuts {
-  modifier: string;
-  activateForward: string;
-  activateBackward: string;
-  closeTab: string;
-  search: string;
-  tabManagement?: string;
+  modifier: string
+  activateForward: string
+  activateBackward: string
+  closeTab: string
+  search: string
+  tabManagement?: string
 }
 ```
 
@@ -136,6 +138,7 @@ Both projects are configured to resolve `@shared/*` imports:
 ## Dependencies
 
 Shared components depend on:
+
 - React
 - Tailwind CSS
 - shadcn/ui components (Radix UI)
@@ -143,4 +146,3 @@ Shared components depend on:
 - @dnd-kit (for drag and drop)
 
 These dependencies must be installed in both the website and extension projects.
-

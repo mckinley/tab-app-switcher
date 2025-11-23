@@ -83,11 +83,13 @@ This project uses npm workspaces for monorepo management:
 The site can be deployed to any static hosting platform (Vercel, Netlify, etc.).
 
 **For Vercel:**
+
 - Root Directory: `site`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
 **For other platforms:**
+
 - Navigate to the `site/` directory
 - Run `npm install` and `npm run build`
 - Deploy the `dist/` folder
@@ -105,6 +107,7 @@ See [`extension/README.md`](extension/README.md) for Chrome Web Store packaging 
 ## Contributing
 
 Contributions are welcome! You can:
+
 - Edit files directly in your IDE and push changes
 - Edit files in GitHub's web interface
 - Use GitHub Codespaces

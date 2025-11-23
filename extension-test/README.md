@@ -7,10 +7,12 @@ This test extension demonstrates a critical behavior in Chrome's keyboard comman
 When using Chrome extension keyboard shortcuts with the default "In Chrome" scope:
 
 **✅ Modifier keyup IS captured when:**
+
 - The command key is pressed only once, then the modifier is released
 - The command key is pressed multiple times, then another key is pressed, then the modifier is released
 
 **❌ Modifier keyup is NOT captured when:**
+
 - The command key is pressed multiple times, then the modifier is immediately released (no other keys pressed)
 
 ### Example with Alt+Tab
@@ -42,14 +44,17 @@ When using Chrome extension keyboard shortcuts with the default "In Chrome" scop
 ## Quick Start
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Build and run the extension:**
+
    ```bash
    npm run dev
    ```
+
    The extension will automatically load in Chrome.
 
 3. **Navigate to any regular web page** (not `chrome://` pages)
@@ -69,6 +74,7 @@ The extension supports up to 4 keyboard shortcuts at a time (Chrome's limit).
 **The popup will automatically display your currently configured shortcuts.**
 
 Default shortcuts (can be modified in `wxt.config.ts`):
+
 - Alt+Tab
 - Alt+Q
 - Ctrl+Tab
@@ -114,16 +120,20 @@ All commands exhibit the same behavior regardless of which keys are used.
 The popup displays all keyboard events:
 
 **Command Events:**
+
 - Dark border - Command triggered by your shortcut
 
 **Popup Events:**
+
 - Medium gray border - Keydown events
 - Light gray border - Keyup events
 
 **Content Script Events:**
+
 - Gray background - Events captured from the page (before popup opens)
 
 **What to Look For:**
+
 - After a double-press test, check if you see a **KEYUP** event for the modifier key (Alt or Ctrl)
 - If missing, the issue is reproduced
 - If present, the modifier keyup was captured successfully
@@ -142,6 +152,7 @@ This appears to be a sequence-based state machine issue in Chrome's command hand
 4. Chrome's command system consumes the modifier keyup event
 
 This behavior is consistent across:
+
 - All modifier keys (Alt, Ctrl)
 - All command keys (Tab, Q, and others)
 - All combinations tested
@@ -182,4 +193,3 @@ extension-test/
    - Content scripts only receive events when the page has focus
    - When the popup opens, it steals focus from the page
    - Content scripts stop receiving events after the popup opens
-

@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss"
 
 const sharedPreset = {
   darkMode: ["class"],
@@ -110,7 +110,6 @@ const sharedPreset = {
   },
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   plugins: [require("tailwindcss-animate")],
-} satisfies Partial<Config>;
+} satisfies Partial<Config>
 
-export default sharedPreset;
-
+export default sharedPreset

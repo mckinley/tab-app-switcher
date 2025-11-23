@@ -1,13 +1,13 @@
-import { cn } from "../lib/utils";
-import { Tab } from "../types/tabs";
-import { X } from "lucide-react";
-import { TabFavicon } from "./TabFavicon";
+import { cn } from "../lib/utils"
+import { Tab } from "../types/tabs"
+import { X } from "lucide-react"
+import { TabFavicon } from "./TabFavicon"
 
 interface TabItemProps {
-  tab: Tab;
-  isSelected: boolean;
-  onClick: () => void;
-  onClose?: (e: React.MouseEvent) => void;
+  tab: Tab
+  isSelected: boolean
+  onClick: () => void
+  onClose?: (e: React.MouseEvent) => void
 }
 
 export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => {
@@ -20,7 +20,7 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
         "text-left group",
         isSelected
           ? "bg-[hsl(var(--switcher-item-selected))]/10 ring-1 ring-[hsl(var(--switcher-item-selected))]/30"
-          : "hover:bg-[hsl(var(--switcher-item-hover))]"
+          : "hover:bg-[hsl(var(--switcher-item-hover))]",
       )}
     >
       {/* Favicon */}
@@ -34,12 +34,8 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
 
       {/* Title and URL */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground truncate">
-          {tab.title || "Untitled"}
-        </div>
-        <div className="text-xs text-muted-foreground truncate">
-          {tab.url}
-        </div>
+        <div className="text-sm font-medium text-foreground truncate">{tab.title || "Untitled"}</div>
+        <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
       </div>
 
       {/* Close Button */}
@@ -50,8 +46,8 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onClose(e as unknown as React.MouseEvent);
+              e.preventDefault()
+              onClose(e as unknown as React.MouseEvent)
             }
           }}
           className="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
@@ -61,5 +57,5 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
         </div>
       )}
     </button>
-  );
-};
+  )
+}

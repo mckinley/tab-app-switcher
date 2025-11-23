@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react-swc"
+import path from "path"
+import { componentTagger } from "lovable-tagger"
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     watch: {
       // Explicitly watch the tas directory for changes
-      ignored: ['!**/tas/**'],
+      ignored: ["!**/tas/**"],
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
@@ -21,4 +21,4 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom"],
   },
-}));
+}))

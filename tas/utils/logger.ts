@@ -22,44 +22,44 @@
 
 // Type for browser runtime API
 interface BrowserRuntime {
-  id?: string;
-  sendMessage?: (message: unknown) => Promise<unknown> | void;
+  id?: string
+  sendMessage?: (message: unknown) => Promise<unknown> | void
 }
 
 // Type helper to access browser APIs safely
 type GlobalWithBrowser = typeof globalThis & {
-  chrome?: { runtime?: BrowserRuntime };
-  browser?: { runtime?: BrowserRuntime };
-};
+  chrome?: { runtime?: BrowserRuntime }
+  browser?: { runtime?: BrowserRuntime }
+}
 
-type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
+type LogLevel = "log" | "info" | "warn" | "error" | "debug"
 
 /**
  * Type for log messages sent between contexts
  */
 export interface LogMessage {
-  type: 'LOG';
-  level: LogLevel;
-  message: string;
-  timestamp: string;
-  source: string;
+  type: "LOG"
+  level: LogLevel
+  message: string
+  timestamp: string
+  source: string
 }
 
 /**
  * Check if we're running in an extension context (not a regular webpage)
  */
 function isExtensionContext(): boolean {
-  const global = globalThis as GlobalWithBrowser;
+  const global = globalThis as GlobalWithBrowser
   // Check if we have a valid extension ID
   // In a real extension, chrome.runtime.id will be set
   // In a webpage, it will be undefined even if chrome.runtime exists
-  if (typeof global.chrome !== 'undefined' && global.chrome.runtime?.id) {
-    return true;
+  if (typeof global.chrome !== "undefined" && global.chrome.runtime?.id) {
+    return true
   }
-  if (typeof global.browser !== 'undefined' && global.browser.runtime?.id) {
-    return true;
+  if (typeof global.browser !== "undefined" && global.browser.runtime?.id) {
+    return true
   }
-  return false;
+  return false
 }
 
 /**
@@ -68,17 +68,17 @@ function isExtensionContext(): boolean {
  */
 function getBrowserRuntime(): BrowserRuntime | null {
   if (!isExtensionContext()) {
-    return null;
+    return null
   }
 
-  const global = globalThis as GlobalWithBrowser;
-  if (typeof global.browser !== 'undefined' && global.browser.runtime) {
-    return global.browser.runtime;
+  const global = globalThis as GlobalWithBrowser
+  if (typeof global.browser !== "undefined" && global.browser.runtime) {
+    return global.browser.runtime
   }
-  if (typeof global.chrome !== 'undefined' && global.chrome.runtime) {
-    return global.chrome.runtime;
+  if (typeof global.chrome !== "undefined" && global.chrome.runtime) {
+    return global.chrome.runtime
   }
-  return null;
+  return null
 }
 
 /**
@@ -88,44 +88,46 @@ function getBrowserRuntime(): BrowserRuntime | null {
  * @param args - Arguments to log
  */
 function sendLogToBackground(source: string, level: LogLevel, ...args: unknown[]) {
-  const runtime = getBrowserRuntime();
+  const runtime = getBrowserRuntime()
 
   if (!runtime) {
     // Not in extension context, skip sending to background
-    return;
+    return
   }
 
   try {
     // Convert arguments to strings for message passing
-    const message = args.map(arg => {
-      if (typeof arg === 'string') return arg;
-      if (arg instanceof Error) return `${arg.name}: ${arg.message}\n${arg.stack}`;
-      try {
-        return JSON.stringify(arg, null, 2);
-      } catch {
-        return String(arg);
-      }
-    }).join(' ');
+    const message = args
+      .map((arg) => {
+        if (typeof arg === "string") return arg
+        if (arg instanceof Error) return `${arg.name}: ${arg.message}\n${arg.stack}`
+        try {
+          return JSON.stringify(arg, null, 2)
+        } catch {
+          return String(arg)
+        }
+      })
+      .join(" ")
 
     // Send to background script
     const result = runtime.sendMessage?.({
-      type: 'LOG',
+      type: "LOG",
       level,
       message,
       timestamp: new Date().toISOString(),
-      source
-    });
+      source,
+    })
 
     // Handle promise if sendMessage returns one
-    if (result && typeof result === 'object' && 'catch' in result) {
+    if (result && typeof result === "object" && "catch" in result) {
       result.catch((error: unknown) => {
         // Log error to console for debugging
-        console.error(`[${source}] Failed to send log to background:`, error);
-      });
+        console.error(`[${source}] Failed to send log to background:`, error)
+      })
     }
   } catch (error: unknown) {
     // Log error to console for debugging
-    console.error(`[${source}] Error in sendLogToBackground:`, error);
+    console.error(`[${source}] Error in sendLogToBackground:`, error)
   }
 }
 
@@ -137,26 +139,26 @@ function sendLogToBackground(source: string, level: LogLevel, ...args: unknown[]
 export function createLogger(source: string) {
   return {
     log: (...args: unknown[]) => {
-      console.log(...args);
-      sendLogToBackground(source, 'log', ...args);
+      console.log(...args)
+      sendLogToBackground(source, "log", ...args)
     },
     info: (...args: unknown[]) => {
-      console.info(...args);
-      sendLogToBackground(source, 'info', ...args);
+      console.info(...args)
+      sendLogToBackground(source, "info", ...args)
     },
     warn: (...args: unknown[]) => {
-      console.warn(...args);
-      sendLogToBackground(source, 'warn', ...args);
+      console.warn(...args)
+      sendLogToBackground(source, "warn", ...args)
     },
     error: (...args: unknown[]) => {
-      console.error(...args);
-      sendLogToBackground(source, 'error', ...args);
+      console.error(...args)
+      sendLogToBackground(source, "error", ...args)
     },
     debug: (...args: unknown[]) => {
-      console.debug(...args);
-      sendLogToBackground(source, 'debug', ...args);
-    }
-  };
+      console.debug(...args)
+      sendLogToBackground(source, "debug", ...args)
+    },
+  }
 }
 
 /**
@@ -181,42 +183,36 @@ export function createLogger(source: string) {
  */
 export function handleLogMessage(message: unknown): boolean {
   // Type guard to check if message is a LogMessage
-  if (
-    typeof message !== 'object' ||
-    message === null ||
-    !('type' in message) ||
-    message.type !== 'LOG'
-  ) {
-    return false;
+  if (typeof message !== "object" || message === null || !("type" in message) || message.type !== "LOG") {
+    return false
   }
 
-  const logMessage = message as LogMessage;
-  const { level, message: logText, timestamp, source } = logMessage;
-  const prefix = `[${source}] [${timestamp}]`;
+  const logMessage = message as LogMessage
+  const { level, message: logText, timestamp, source } = logMessage
+  const prefix = `[${source}] [${timestamp}]`
 
   switch (level) {
-    case 'error':
-      console.error(prefix, logText);
-      break;
-    case 'warn':
-      console.warn(prefix, logText);
-      break;
-    case 'info':
-      console.info(prefix, logText);
-      break;
-    case 'debug':
-      console.debug(prefix, logText);
-      break;
+    case "error":
+      console.error(prefix, logText)
+      break
+    case "warn":
+      console.warn(prefix, logText)
+      break
+    case "info":
+      console.info(prefix, logText)
+      break
+    case "debug":
+      console.debug(prefix, logText)
+      break
     default:
-      console.log(prefix, logText);
+      console.log(prefix, logText)
   }
 
-  return true;
+  return true
 }
 
 /**
  * Default logger for backward compatibility
  * @deprecated Use createLogger('your-source-name') instead
  */
-export const logger = createLogger('tas');
-
+export const logger = createLogger("tas")

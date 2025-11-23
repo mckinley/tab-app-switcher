@@ -1,16 +1,23 @@
-import { Tab } from "@tas/types/tabs";
-import { cn } from "@/lib/utils";
+import { Tab } from "@tas/types/tabs"
+import { cn } from "@/lib/utils"
 
 interface ChromeTabsPreviewProps {
-  tabs: Tab[];
-  activeTabId: string;
-  onTabClick: (tabId: string) => void;
-  onCloseTab: (tabId: string) => void;
-  onAddTab: () => void;
-  canAddTab: boolean;
+  tabs: Tab[]
+  activeTabId: string
+  onTabClick: (tabId: string) => void
+  onCloseTab: (tabId: string) => void
+  onAddTab: () => void
+  canAddTab: boolean
 }
 
-export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, onAddTab, canAddTab }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({
+  tabs,
+  activeTabId,
+  onTabClick,
+  onCloseTab,
+  onAddTab,
+  canAddTab,
+}: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
@@ -29,7 +36,10 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
           </div>
         ) : (
           <div className="relative">
-            <div className="flex gap-0 overflow-x-auto scrollbar-hide" style={{ paddingRight: canAddTab ? '48px' : '0' }}>
+            <div
+              className="flex gap-0 overflow-x-auto scrollbar-hide"
+              style={{ paddingRight: canAddTab ? "48px" : "0" }}
+            >
               <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
                   display: none;
@@ -40,7 +50,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                 }
               `}</style>
               {tabs.map((tab) => {
-                const isActive = tab.id === activeTabId;
+                const isActive = tab.id === activeTabId
                 return (
                   <div
                     key={tab.id}
@@ -51,9 +61,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                       "transition-all duration-150",
                       "border-b-2 border-r border-border/10",
                       "cursor-pointer",
-                      isActive
-                        ? "border-b-foreground"
-                        : "border-b-transparent hover:border-b-muted-foreground/30"
+                      isActive ? "border-b-foreground" : "border-b-transparent hover:border-b-muted-foreground/30",
                     )}
                     onClick={() => onTabClick(tab.id)}
                   >
@@ -63,7 +71,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                       alt=""
                       className="w-[18px] h-[18px] flex-shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23999' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E";
+                        e.currentTarget.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23999' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E"
                       }}
                     />
 
@@ -72,11 +81,12 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                       <span
                         className={cn(
                           "block text-sm text-left overflow-hidden whitespace-nowrap",
-                          isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                          isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground",
                         )}
                         style={{
-                          maskImage: 'linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)',
-                          WebkitMaskImage: 'linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)'
+                          maskImage: "linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)",
+                          WebkitMaskImage:
+                            "linear-gradient(to right, black 0%, black calc(100% - 20px), transparent 100%)",
                         }}
                       >
                         {tab.title}
@@ -86,8 +96,8 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                     {/* Close Button */}
                     <button
                       onClick={(e) => {
-                        e.stopPropagation();
-                        onCloseTab(tab.id);
+                        e.stopPropagation()
+                        onCloseTab(tab.id)
                       }}
                       className="absolute right-1 flex-shrink-0 w-4 h-4 rounded-sm flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all z-20"
                       aria-label="Close tab"
@@ -95,7 +105,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
                       <span className="text-xs text-muted-foreground hover:text-foreground">×</span>
                     </button>
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -113,5 +123,5 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, o
         )}
       </div>
     </div>
-  );
-};
+  )
+}

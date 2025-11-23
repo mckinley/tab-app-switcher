@@ -13,7 +13,9 @@
     "test:run": "vitest run",
     "tc": "tsc --noEmit",
     "lint:eslint": "eslint .",
-    "lint": "npm run tc && npm run lint:eslint"
+    "lint": "npm run tc && npm run lint:eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@tab-app-switcher/tas": "*",

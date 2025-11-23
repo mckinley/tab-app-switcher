@@ -1,26 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Settings } from '@tas/components/Settings';
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
-import { ThemeToggle } from '../../components/ThemeToggle';
-import './globals.css';
+import { useState, useEffect } from "react"
+import { Settings } from "@tas/components/Settings"
+import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
+import { ThemeToggle } from "../../components/ThemeToggle"
+import "./globals.css"
 
 function App() {
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS);
+  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
   useEffect(() => {
     // Load shortcuts from storage
-    browser.storage.local.get('shortcuts').then((result) => {
+    browser.storage.local.get("shortcuts").then((result) => {
       if (result.shortcuts) {
-        setShortcuts(result.shortcuts);
+        setShortcuts(result.shortcuts)
       }
-    });
-  }, []);
+    })
+  }, [])
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
-    setShortcuts(newShortcuts);
+    setShortcuts(newShortcuts)
     // Save to storage - auto-save on every change
-    browser.storage.local.set({ shortcuts: newShortcuts });
-  };
+    browser.storage.local.set({ shortcuts: newShortcuts })
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,16 +31,11 @@ function App() {
         </div>
 
         <div className="bg-card border rounded-lg p-6">
-          <Settings
-            shortcuts={shortcuts}
-            onShortcutsChange={handleShortcutsChange}
-            themeToggle={<ThemeToggle />}
-          />
+          <Settings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} themeToggle={<ThemeToggle />} />
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
-
+export default App
