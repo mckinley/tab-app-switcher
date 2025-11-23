@@ -20,6 +20,18 @@
  * ```
  */
 
+// Type for browser runtime API
+interface BrowserRuntime {
+  id?: string;
+  sendMessage?: (message: unknown) => Promise<unknown> | void;
+}
+
+// Type helper to access browser APIs safely
+type GlobalWithBrowser = typeof globalThis & {
+  chrome?: { runtime?: BrowserRuntime };
+  browser?: { runtime?: BrowserRuntime };
+};
+
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
 /**
@@ -37,13 +49,14 @@ export interface LogMessage {
  * Check if we're running in an extension context (not a regular webpage)
  */
 function isExtensionContext(): boolean {
+  const global = globalThis as GlobalWithBrowser;
   // Check if we have a valid extension ID
   // In a real extension, chrome.runtime.id will be set
   // In a webpage, it will be undefined even if chrome.runtime exists
-  if (typeof globalThis.chrome !== 'undefined' && globalThis.chrome.runtime?.id) {
+  if (typeof global.chrome !== 'undefined' && global.chrome.runtime?.id) {
     return true;
   }
-  if (typeof globalThis.browser !== 'undefined' && globalThis.browser.runtime?.id) {
+  if (typeof global.browser !== 'undefined' && global.browser.runtime?.id) {
     return true;
   }
   return false;
@@ -53,16 +66,17 @@ function isExtensionContext(): boolean {
  * Get the browser runtime API (works with both browser and chrome namespaces)
  * Only returns runtime if we're actually in an extension context
  */
-function getBrowserRuntime() {
+function getBrowserRuntime(): BrowserRuntime | null {
   if (!isExtensionContext()) {
     return null;
   }
 
-  if (typeof globalThis.browser !== 'undefined' && globalThis.browser.runtime) {
-    return globalThis.browser.runtime;
+  const global = globalThis as GlobalWithBrowser;
+  if (typeof global.browser !== 'undefined' && global.browser.runtime) {
+    return global.browser.runtime;
   }
-  if (typeof globalThis.chrome !== 'undefined' && globalThis.chrome.runtime) {
-    return globalThis.chrome.runtime;
+  if (typeof global.chrome !== 'undefined' && global.chrome.runtime) {
+    return global.chrome.runtime;
   }
   return null;
 }
@@ -94,16 +108,21 @@ function sendLogToBackground(source: string, level: LogLevel, ...args: unknown[]
     }).join(' ');
 
     // Send to background script
-    runtime.sendMessage({
+    const result = runtime.sendMessage?.({
       type: 'LOG',
       level,
       message,
       timestamp: new Date().toISOString(),
       source
-    }).catch((error: unknown) => {
-      // Log error to console for debugging
-      console.error(`[${source}] Failed to send log to background:`, error);
     });
+
+    // Handle promise if sendMessage returns one
+    if (result && typeof result === 'object' && 'catch' in result) {
+      result.catch((error: unknown) => {
+        // Log error to console for debugging
+        console.error(`[${source}] Failed to send log to background:`, error);
+      });
+    }
   } catch (error: unknown) {
     // Log error to console for debugging
     console.error(`[${source}] Error in sendLogToBackground:`, error);

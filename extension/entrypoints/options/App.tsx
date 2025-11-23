@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SettingsContent } from '@tas/components/SettingsContent';
+import { Settings } from '@tas/components/Settings';
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import './globals.css';
@@ -31,7 +31,7 @@ function App() {
         </div>
 
         <div className="bg-card border rounded-lg p-6">
-          <SettingsContent
+          <Settings
             shortcuts={shortcuts}
             onShortcutsChange={handleShortcutsChange}
             themeToggle={<ThemeToggle />}

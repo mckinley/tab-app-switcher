@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { detectOS, detectBrowser, getBrowserDisplayName, getOSDisplayName } from './detectPlatform';
+import { detectOS, getBrowserDisplayName, getOSDisplayName } from './detectPlatform';
 
 describe('detectPlatform', () => {
   beforeEach(() => {

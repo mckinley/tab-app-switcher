@@ -156,7 +156,7 @@ export default defineBackground(async () => {
           direction: 'next'
         });
         console.log('Advanced selection - popup was open');
-      } catch (error) {
+      } catch (_error) {
         // Popup not open, so open it
         console.log('Opening TAS popup - popup was closed');
         try {

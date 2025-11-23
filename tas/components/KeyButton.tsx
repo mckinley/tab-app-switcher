@@ -4,7 +4,6 @@ import { cn } from "../lib/utils";
 interface KeyButtonProps {
   value: string;
   onKeyCapture: (key: string) => void;
-  label?: string;
   disabled?: boolean;
   isCapturing?: boolean;
   onCaptureStart?: () => void;
@@ -14,7 +13,6 @@ interface KeyButtonProps {
 export const KeyButton = ({
   value,
   onKeyCapture,
-  label,
   disabled = false,
   isCapturing: externalIsCapturing = false,
   onCaptureStart,

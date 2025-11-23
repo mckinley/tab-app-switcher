@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, type ReactNode } from "react";
-import { Search, X, Clock, Link as LinkIcon, Type, Settings, User, ArrowUpDown, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Search, X, Clock, Link as LinkIcon, Type, Settings as SettingsIcon, User, ArrowUpDown, Plus, Trash2, ExternalLink } from "lucide-react";
 import { Tab, KeyboardShortcuts } from "../types/tabs";
 import { cn } from "../lib/utils";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { SettingsContent } from "./SettingsContent";
+import { Settings } from "./Settings";
 import {
   Select,
   SelectContent,
@@ -35,7 +35,6 @@ import { TabFavicon } from "./TabFavicon";
 
 interface TabManagementProps {
   tabs: Tab[];
-  isOpen: boolean;
   onClose: () => void;
   onSelectTab: (tabId: string) => void;
   onCloseTab?: (tabId: string) => void;
@@ -44,7 +43,6 @@ interface TabManagementProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
   settingsThemeToggle?: ReactNode;
-  variant?: 'dialog' | 'fullpage'; // 'dialog' for overlay mode (default), 'fullpage' for full-page mode
 }
 
 type SortOption = "mru" | "url" | "title";
@@ -212,7 +210,6 @@ const DroppableCollection = ({ collection, isSelected, tabs, onSelect, onDelete,
 
 export const TabManagement = ({
   tabs,
-  isOpen,
   onClose,
   onSelectTab,
   onCloseTab,
@@ -221,7 +218,6 @@ export const TabManagement = ({
   shortcuts,
   onShortcutsChange,
   settingsThemeToggle,
-  variant = 'dialog',
 }: TabManagementProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("mru");
@@ -471,32 +467,15 @@ export const TabManagement = ({
     onCloseTab?.(tabId);
   };
 
-  if (!isOpen) return null;
-
-  if (!isOpen) return null;
-
-  const containerClasses = variant === 'fullpage'
-    ? "h-screen bg-background flex overflow-hidden"
-    : "fixed inset-2 z-[61] bg-background rounded-lg border shadow-2xl flex overflow-hidden";
-
   return (
-    <>
-      {/* Backdrop - only show for dialog variant */}
-      {variant === 'dialog' && (
-        <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
-          onClick={onClose}
-        />
-      )}
-
-      <DndContext
+    <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         {/* Tab Management Panel */}
-        <div className={containerClasses}>
+        <div className="w-full h-full flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-40 border-r bg-muted/30 flex flex-col">
           <div className="p-4 border-b">
@@ -554,7 +533,7 @@ export const TabManagement = ({
                   : "hover:bg-muted"
               )}
             >
-              <Settings className="inline-block w-4 h-4 mr-2" />
+              <SettingsIcon className="inline-block w-4 h-4 mr-2" />
               Settings
             </button>
           </div>
@@ -625,10 +604,6 @@ export const TabManagement = ({
                 <h2 className="text-lg font-semibold">Settings</h2>
               </div>
             )}
-
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
           </div>
 
           {/* Content */}
@@ -760,7 +735,7 @@ export const TabManagement = ({
               )}
 
               {viewMode === "settings" && (
-                <SettingsContent
+                <Settings
                   shortcuts={shortcuts}
                   onShortcutsChange={onShortcutsChange}
                   themeToggle={settingsThemeToggle}
@@ -818,6 +793,5 @@ export const TabManagement = ({
           )}
         </DragOverlay>
       </DndContext>
-    </>
   );
 };

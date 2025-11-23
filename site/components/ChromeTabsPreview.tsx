@@ -1,17 +1,16 @@
-import { Tab } from "./TabSwitcher";
+import { Tab } from "@tas/types/tabs";
 import { cn } from "@/lib/utils";
 
 interface ChromeTabsPreviewProps {
   tabs: Tab[];
   activeTabId: string;
-  isVisible: boolean;
   onTabClick: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onAddTab: () => void;
   canAddTab: boolean;
 }
 
-export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, onCloseTab, onAddTab, canAddTab }: ChromeTabsPreviewProps) => {
+export const ChromeTabsPreview = ({ tabs, activeTabId, onTabClick, onCloseTab, onAddTab, canAddTab }: ChromeTabsPreviewProps) => {
   return (
     <div className="w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4">
@@ -41,7 +40,7 @@ export const ChromeTabsPreview = ({ tabs, activeTabId, isVisible, onTabClick, on
                 }
               `}</style>
               {tabs.map((tab) => {
-                const isActive = !isVisible && tab.id === activeTabId;
+                const isActive = tab.id === activeTabId;
                 return (
                   <div
                     key={tab.id}

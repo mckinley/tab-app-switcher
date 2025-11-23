@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { TabSwitcher } from "@tas/components/TabSwitcher";
-import { TasSettings } from "@tas/components/TasSettings";
+import { Settings } from "@tas/components/Settings";
 import { TabManagement } from "@tas/components/TabManagement";
 import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs";
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TabsTooltip } from "@/components/TabsTooltip";
 import { Button } from "@/components/ui/button";
+import { Container } from "@/components/Container";
 
 import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react";
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform";
@@ -182,7 +183,7 @@ const Index = () => {
     localStorage.setItem('tas-shortcuts', JSON.stringify(shortcuts));
   }, [shortcuts]);
 
-  const [isSwitcherVisible, setIsSwitcherVisible] = useState(false);
+  const [isSwitcherActive, setIsSwitcherActive] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTabManagementOpen, setIsTabManagementOpen] = useState(false);
@@ -196,7 +197,7 @@ const Index = () => {
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId);
     activateTab(tabId);
-    setIsSwitcherVisible(false);
+    setIsSwitcherActive(false);
   };
 
   const handleTabClick = (tabId: string) => {
@@ -222,7 +223,6 @@ const Index = () => {
   }, [mruTabs.length]);
 
   // Mac-like Application Switcher behavior with configurable modifier key
-  // Note: When switcher is visible, all keyboard handling (including panels) is done by TabSwitcher
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle keyboard events when a panel is open
@@ -238,8 +238,8 @@ const Index = () => {
       // Modifier+ActivateForward to open switcher or cycle forward
       if (isModifierPressed && e.key === shortcuts.activateForward) {
         e.preventDefault();
-        if (!isSwitcherVisible) {
-          setIsSwitcherVisible(true);
+        if (!isSwitcherActive) {
+          setIsSwitcherActive(true);
           setSelectedIndex(1); // Start with second tab selected
         } else {
           handleNavigate('next');
@@ -251,14 +251,13 @@ const Index = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSwitcherVisible, selectedIndex, isPanelOpen, shortcuts, handleNavigate]);
+  }, [isSwitcherActive, selectedIndex, isPanelOpen, shortcuts, handleNavigate]);
 
   return (
     <div className="min-h-screen bg-background">
       <ChromeTabsPreview
         tabs={tabs}
         activeTabId={activeTabId}
-        isVisible={isSwitcherVisible}
         onTabClick={handleTabClick}
         onCloseTab={handleCloseTab}
         onAddTab={handleAddTab}
@@ -269,7 +268,7 @@ const Index = () => {
       <div className="relative">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center gap-2 pt-4 pb-8">
           {/* Left side - Help button */}
-          <TabsTooltip hideTooltip={isSwitcherVisible} />
+          <TabsTooltip hideTooltip={isSwitcherActive} />
 
           {/* Right side - Downloads and Theme Toggle */}
           <div className="flex items-center gap-2">
@@ -319,7 +318,7 @@ const Index = () => {
 
           <div className="pt-8">
             <Button
-              onClick={() => setIsSwitcherVisible(true)}
+              onClick={() => setIsSwitcherActive(true)}
               variant="secondary"
               size="lg"
               className="gap-2"
@@ -506,39 +505,63 @@ const Index = () => {
         </div>
       </div>
 
-      <TabSwitcher
-        tabs={mruTabs}
-        isVisible={isSwitcherVisible}
-        selectedIndex={selectedIndex}
-        onSelectTab={handleSelectTab}
-        onClose={() => setIsSwitcherVisible(false)}
-        onNavigate={handleNavigate}
-        onCloseTab={handleCloseTab}
-        shortcuts={shortcuts}
-        onShortcutsChange={setShortcuts}
-        settingsThemeToggle={<ThemeToggle />}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenTabManagement={() => setIsTabManagementOpen(true)}
-        isPanelOpen={isPanelOpen}
-      />
+      {/* TabSwitcher in panel-right container */}
+      <Container
+        variant="panel-right"
+        isVisible={isSwitcherActive}
+        onClose={() => setIsSwitcherActive(false)}
+        enabled={!isPanelOpen}
+      >
+        <TabSwitcher
+          tabs={mruTabs}
+          selectedIndex={selectedIndex}
+          onSelectTab={handleSelectTab}
+          onClose={() => setIsSwitcherActive(false)}
+          onNavigate={handleNavigate}
+          onCloseTab={handleCloseTab}
+          shortcuts={shortcuts}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenTabManagement={() => setIsTabManagementOpen(true)}
+          isEnabled={!isPanelOpen}
+        />
+      </Container>
 
-      <TasSettings
-        shortcuts={shortcuts}
-        onShortcutsChange={setShortcuts}
-        open={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        themeToggle={<ThemeToggle />}
-      />
+      {/* Settings in modal container */}
+      <Container
+        variant="modal"
+        isVisible={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      >
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold">TAS Settings</h2>
+            <p className="text-sm text-muted-foreground">
+              Customize keyboard shortcuts and appearance
+            </p>
+          </div>
+          <Settings
+            shortcuts={shortcuts}
+            onShortcutsChange={setShortcuts}
+            themeToggle={<ThemeToggle />}
+          />
+        </div>
+      </Container>
 
-      <TabManagement
-        tabs={mruTabs}
-        isOpen={isTabManagementOpen}
+      {/* TabManagement in full-screen container */}
+      <Container
+        variant="full-screen"
+        isVisible={isTabManagementOpen}
         onClose={() => setIsTabManagementOpen(false)}
-        onSelectTab={handleSelectTab}
-        shortcuts={shortcuts}
-        onShortcutsChange={setShortcuts}
-        settingsThemeToggle={<ThemeToggle />}
-      />
+      >
+        <TabManagement
+          tabs={mruTabs}
+          onClose={() => setIsTabManagementOpen(false)}
+          onSelectTab={handleSelectTab}
+          shortcuts={shortcuts}
+          onShortcutsChange={setShortcuts}
+          settingsThemeToggle={<ThemeToggle />}
+        />
+      </Container>
     </div>
   );
 };

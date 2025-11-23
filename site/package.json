@@ -11,7 +11,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "lint": "eslint ."
+    "tc": "tsc --noEmit",
+    "lint:eslint": "eslint .",
+    "lint": "npm run tc && npm run lint:eslint"
   },
   "dependencies": {
     "@tab-app-switcher/tas": "*",

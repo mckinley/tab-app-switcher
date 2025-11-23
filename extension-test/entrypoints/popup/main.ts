@@ -40,7 +40,7 @@ async function loadShortcuts() {
     } else {
       shortcutsInfo.textContent = 'No shortcuts configured';
     }
-  } catch (error) {
+  } catch (_error) {
     shortcutsInfo.textContent = 'Unable to load shortcuts';
   }
 }

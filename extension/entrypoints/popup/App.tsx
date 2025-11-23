@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TabSwitcher } from '@tas/components/TabSwitcher';
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
-import { ThemeToggle } from '../../components/ThemeToggle';
+import { Container } from '../../components/Container';
 import { createLogger } from '@tas/utils/logger';
 import './globals.css';
 
@@ -94,11 +94,6 @@ function App() {
     };
   }, []);
 
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
-    setShortcuts(newShortcuts);
-    browser.storage.local.set({ shortcuts: newShortcuts });
-  };
-
   const handleOpenSettingsPage = () => {
     browser.tabs.create({ url: browser.runtime.getURL('/options.html') });
     window.close();
@@ -111,21 +106,19 @@ function App() {
 
   return (
     <div className="w-[360px] h-[480px] bg-background">
-      <TabSwitcher
-        tabs={tabs}
-        isVisible={true}
-        selectedIndex={selectedIndex}
-        onSelectTab={handleSelectTab}
-        onClose={() => window.close()}
-        onNavigate={handleNavigate}
-        onCloseTab={handleCloseTab}
-        shortcuts={shortcuts}
-        onShortcutsChange={handleShortcutsChange}
-        settingsThemeToggle={<ThemeToggle />}
-        variant="popup"
-        onOpenSettings={handleOpenSettingsPage}
-        onOpenTabManagement={handleOpenTabManagementPage}
-      />
+      <Container variant="fill" onClose={() => window.close()}>
+        <TabSwitcher
+          tabs={tabs}
+          selectedIndex={selectedIndex}
+          onSelectTab={handleSelectTab}
+          onClose={() => window.close()}
+          onNavigate={handleNavigate}
+          onCloseTab={handleCloseTab}
+          shortcuts={shortcuts}
+          onOpenSettings={handleOpenSettingsPage}
+          onOpenTabManagement={handleOpenTabManagementPage}
+        />
+      </Container>
     </div>
   );
 }

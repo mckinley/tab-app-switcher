@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TabManagement } from '@tas/components/TabManagement';
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { Container } from '../../components/Container';
 import './globals.css';
 
 function App() {
@@ -100,19 +101,19 @@ function App() {
   };
 
   return (
-    <TabManagement
-      tabs={tabs}
-      isOpen={true}
-      onClose={() => window.close()}
-      onSelectTab={handleSelectTab}
-      onCloseTab={handleCloseTab}
-      onReorderTabs={handleReorderTabs}
-      onSendCollectionToWindow={handleSendCollectionToWindow}
-      shortcuts={shortcuts}
-      onShortcutsChange={handleShortcutsChange}
-      settingsThemeToggle={<ThemeToggle />}
-      variant="fullpage"
-    />
+    <Container variant="screen" onClose={() => window.close()}>
+      <TabManagement
+        tabs={tabs}
+        onClose={() => window.close()}
+        onSelectTab={handleSelectTab}
+        onCloseTab={handleCloseTab}
+        onReorderTabs={handleReorderTabs}
+        onSendCollectionToWindow={handleSendCollectionToWindow}
+        shortcuts={shortcuts}
+        onShortcutsChange={handleShortcutsChange}
+        settingsThemeToggle={<ThemeToggle />}
+      />
+    </Container>
   );
 }
 

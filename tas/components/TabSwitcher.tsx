@@ -1,42 +1,33 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
-import { Search, LayoutGrid, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, LayoutGrid, Settings as SettingsIcon } from "lucide-react";
 import { TabItem } from "./TabItem";
-import { cn } from "../lib/utils";
 import { Tab, KeyboardShortcuts } from "../types/tabs";
 import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
 
 interface TabSwitcherProps {
   tabs: Tab[];
-  isVisible: boolean;
   selectedIndex: number;
   onSelectTab: (tabId: string) => void;
   onClose: () => void;
   onNavigate: (direction: 'next' | 'prev') => void;
   onCloseTab: (tabId: string) => void;
   shortcuts: KeyboardShortcuts;
-  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
-  settingsThemeToggle?: ReactNode;
-  variant?: 'overlay' | 'popup'; // 'overlay' for website (fixed positioned), 'popup' for extension (fills container)
   onOpenSettings: () => void; // Called when user clicks settings button
   onOpenTabManagement: () => void; // Called when user clicks tab management button
-  isPanelOpen?: boolean; // Optional: Whether any panel (settings/tab management) is open - disables keyboard shortcuts when true
+  isEnabled?: boolean; // Optional: Whether keyboard shortcuts are enabled - defaults to true
 }
 
 export const TabSwitcher = ({
   tabs,
-  isVisible,
   selectedIndex,
   onSelectTab,
   onClose,
   onNavigate,
   onCloseTab,
   shortcuts,
-  onShortcutsChange,
-  settingsThemeToggle,
-  variant = 'overlay',
   onOpenSettings,
   onOpenTabManagement,
-  isPanelOpen = false,
+  isEnabled = true,
 }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -49,13 +40,11 @@ export const TabSwitcher = ({
     tab.url.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Reset search when switcher opens
+  // Reset search when component mounts
   useEffect(() => {
-    if (isVisible) {
-      setSearchQuery("");
-      setIsSearchFocused(false);
-    }
-  }, [isVisible]);
+    setSearchQuery("");
+    setIsSearchFocused(false);
+  }, []);
 
   // Auto-scroll selected item into view
   useEffect(() => {
@@ -68,9 +57,8 @@ export const TabSwitcher = ({
   }, [selectedIndex]);
 
   // Use the keyboard shortcuts hook to handle all keyboard events
-  // Disable keyboard shortcuts when any panel is open
   useKeyboardShortcuts({
-    enabled: isVisible && !isPanelOpen,
+    enabled: isEnabled,
     shortcuts,
     isSearchFocused,
     // Panel state is managed by parent, but we still need to pass these for the hook
@@ -99,39 +87,12 @@ export const TabSwitcher = ({
     },
   });
 
-  if (!isVisible) return null;
-
   return (
-    <>
-      {/* Backdrop - only show for overlay variant */}
-      {variant === 'overlay' && (
-        <div
-          className="fixed inset-0 bg-[hsl(var(--switcher-backdrop))]/20 backdrop-blur-sm z-50"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Tab Switcher Panel */}
-      <div
-        ref={containerRef}
-        className={cn(
-          variant === 'overlay' && [
-            "fixed z-50",
-            "top-4 bottom-4",
-            "left-2 right-2 sm:left-auto sm:right-4",
-            "w-auto sm:w-[360px]",
-            "max-w-[360px]",
-          ],
-          variant === 'popup' && [
-            "w-full h-full",
-          ],
-          "bg-[hsl(var(--switcher-bg))] rounded-xl",
-          "shadow-[0_8px_32px_-8px_hsl(var(--switcher-shadow))]",
-          "border border-border/50",
-          "flex flex-col overflow-hidden"
-        )}
-        style={{ isolation: 'isolate' }}
-      >
+    <div
+      ref={containerRef}
+      className="w-full h-full flex flex-col overflow-hidden"
+      style={{ isolation: 'isolate' }}
+    >
         {/* Search Bar */}
         <div className="p-3 border-b border-border/50">
           <div className="relative flex items-center gap-2">
@@ -145,12 +106,7 @@ export const TabSwitcher = ({
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 placeholder={`Press '${shortcuts.search}' to search tabs...`}
-                className={cn(
-                  "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
-                  "bg-input text-foreground placeholder:text-muted-foreground",
-                  "border border-transparent focus:border-ring/30",
-                  "outline-none transition-colors"
-                )}
+                className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-input text-foreground placeholder:text-muted-foreground border border-transparent focus:border-ring/30 outline-none transition-colors"
               />
             </div>
 
@@ -169,7 +125,7 @@ export const TabSwitcher = ({
                 className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Settings"
               >
-                <Settings className="h-4 w-4" />
+                <SettingsIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -231,7 +187,6 @@ export const TabSwitcher = ({
             </div>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 };

@@ -4,17 +4,17 @@ import { Button } from "./ui/button";
 import { KeyButton } from "./KeyButton";
 import { KeyboardShortcuts, DEFAULT_SHORTCUTS } from "../types/tabs";
 
-interface SettingsContentProps {
+interface SettingsProps {
   shortcuts: KeyboardShortcuts;
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void;
   themeToggle?: React.ReactNode;
 }
 
-export const SettingsContent = ({
+export const Settings = ({
   shortcuts,
   onShortcutsChange,
   themeToggle
-}: SettingsContentProps) => {
+}: SettingsProps) => {
   const [capturingKey, setCapturingKey] = useState<string | null>(null);
 
   const handleReset = () => {
