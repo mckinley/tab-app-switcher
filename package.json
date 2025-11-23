@@ -6,29 +6,33 @@
   "workspaces": [
     "site",
     "extension",
-    "tas"
+    "tas",
+    "native"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=site",
     "dev:site": "npm run dev --workspace=site",
     "dev:extension": "npm run dev --workspace=extension",
+    "dev:native": "npm run dev --workspace=native",
     "dev:all": "npm run dev --workspace=site & npm run dev --workspace=extension",
     "build": "npm run build --workspace=site",
     "build:site": "npm run build --workspace=site",
     "build:extension": "npm run build --workspace=extension",
-    "build:all": "npm run build --workspace=site && npm run build --workspace=extension",
+    "build:native": "npm run build --workspace=native",
+    "build:all": "npm run build --workspace=site && npm run build --workspace=extension && npm run build --workspace=native",
     "test": "npm run test --workspace=site",
     "test:site": "npm run test --workspace=site",
     "test:extension": "npm run test --workspace=extension",
     "test:tas": "npm run test --workspace=tas",
     "test:all": "npm run test:run --workspace=site && npm run test:run --workspace=extension && npm run test:run --workspace=tas",
-    "tc": "tsc --noEmit && npm run tc --workspace=site && npm run tc --workspace=extension",
+    "tc": "tsc --noEmit && npm run tc --workspace=site && npm run tc --workspace=extension && npm run typecheck --workspace=native",
     "lint:eslint": "eslint .",
     "lint": "npm run tc && npm run lint:eslint",
     "lint:site": "npm run lint --workspace=site",
     "lint:extension": "npm run lint --workspace=extension",
     "lint:tas": "npm run lint --workspace=tas",
-    "lint:all": "npm run tc && npm run lint:eslint && npm run lint --workspace=site && npm run lint --workspace=extension && npm run lint --workspace=tas",
+    "lint:native": "npm run lint --workspace=native",
+    "lint:all": "npm run tc && npm run lint:eslint && npm run lint --workspace=site && npm run lint --workspace=extension && npm run lint --workspace=tas && npm run lint --workspace=native",
     "preview": "npm run preview --workspace=site"
   },
   "dependencies": {
