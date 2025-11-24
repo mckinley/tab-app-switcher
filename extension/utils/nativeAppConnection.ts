@@ -1,4 +1,5 @@
 import { Tab } from "@tas/types/tabs"
+import { getFaviconDataUrl } from "./faviconCache"
 
 const WS_URL = "ws://localhost:48125"
 const RECONNECT_DELAY = 5000 // 5 seconds
@@ -9,25 +10,29 @@ let updateTimeout: ReturnType<typeof setTimeout> | null = null
 let browserInstance: any = null
 
 /**
- * Get tabs in MRU (Most Recently Used) order
+ * Get tabs in MRU (Most Recently Used) order with favicon data URLs
  */
 async function getTabsInMruOrder(mruTabOrder: number[]): Promise<Tab[]> {
   if (!browserInstance) throw new Error("Browser instance not initialized")
 
   const browserTabs = await browserInstance.tabs.query({})
-  const tabsById = new Map(
-    browserTabs.map((tab) => [
-      tab.id!,
-      {
-        id: String(tab.id),
-        title: tab.title || "Untitled",
-        url: tab.url || "",
-        favicon: tab.favIconUrl || "",
-        windowId: tab.windowId,
-        index: tab.index,
-      } as Tab,
-    ]),
-  )
+
+  // Convert tabs to our format and fetch favicon data URLs in parallel
+  const tabPromises = browserTabs.map(async (tab: any) => {
+    const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
+
+    return {
+      id: String(tab.id),
+      title: tab.title || "Untitled",
+      url: tab.url || "",
+      favicon: faviconDataUrl,
+      windowId: tab.windowId,
+      index: tab.index,
+    } as Tab
+  })
+
+  const allTabs = await Promise.all(tabPromises)
+  const tabsById = new Map(allTabs.map((tab) => [Number(tab.id), tab]))
 
   const tabsInMruOrder = mruTabOrder.map((id) => tabsById.get(id)).filter((tab): tab is Tab => tab !== undefined)
 
@@ -74,7 +79,7 @@ function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder
     browserInstance.tabs
       .update(tabId, { active: true })
       .then(() => browserInstance!.tabs.get(tabId))
-      .then((tab) => {
+      .then((tab: any) => {
         if (tab.windowId) {
           return browserInstance!.windows.update(tab.windowId, { focused: true })
         }
@@ -82,12 +87,12 @@ function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder
       .then(() => {
         updateMruOrder(tabId)
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error("Error activating tab:", error)
       })
   } else if (message.type === "CLOSE_TAB") {
     const tabId = Number(message.tabId)
-    browserInstance.tabs.remove(tabId).catch((error) => {
+    browserInstance.tabs.remove(tabId).catch((error: any) => {
       console.error("Error closing tab:", error)
     })
   }

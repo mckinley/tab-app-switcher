@@ -9,6 +9,7 @@ export default defineConfig({
     description: "Switch between browser tabs like you switch between applications",
     version: "0.1.0",
     permissions: ["tabs", "storage"],
+    host_permissions: ["<all_urls>"],
     icons: {
       16: "/icon/16.png",
       32: "/icon/32.png",

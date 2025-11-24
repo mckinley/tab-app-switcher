@@ -1,6 +1,7 @@
 import type { Tab } from "@tas/types/tabs"
 import { handleLogMessage } from "@tas/utils/logger"
 import { connectToNativeApp, notifyNativeApp } from "../utils/nativeAppConnection"
+import { getFaviconDataUrl } from "../utils/faviconCache"
 
 /**
  * Background service worker for Tab Application Switcher
@@ -24,61 +25,64 @@ interface MruHistoryEntry {
   lastAccessed: number
 }
 
-export default defineBackground(async () => {
+export default defineBackground(() => {
   console.log("Tab Application Switcher background service started", { id: browser.runtime.id })
 
-  // Load persisted MRU history from storage
-  const storedHistory = await loadMruHistory()
+  // Initialize MRU order asynchronously (don't block background script startup)
+  ;(async () => {
+    // Load persisted MRU history from storage
+    const storedHistory = await loadMruHistory()
 
-  // Initialize MRU order with current tabs
-  // Get all tabs across all windows
-  const allTabs = await browser.tabs.query({})
+    // Initialize MRU order with current tabs
+    // Get all tabs across all windows
+    const allTabs = await browser.tabs.query({})
 
-  // Create a map of URL to tab for matching
-  const urlToTab = new Map<string, (typeof allTabs)[0]>()
-  allTabs.forEach((tab) => {
-    if (tab.url) {
-      urlToTab.set(tab.url, tab)
-    }
-  })
-
-  // First, add tabs that match stored history (in history order)
-  const matchedTabIds = new Set<number>()
-  const initialMruOrder: number[] = []
-
-  for (const entry of storedHistory) {
-    const matchingTab = urlToTab.get(entry.url)
-    if (matchingTab && matchingTab.id && !matchedTabIds.has(matchingTab.id)) {
-      initialMruOrder.push(matchingTab.id)
-      matchedTabIds.add(matchingTab.id)
-    }
-  }
-
-  // Then add remaining tabs sorted by lastAccessed and active status
-  const unmatchedTabs = allTabs
-    .filter((tab) => tab.id && !matchedTabIds.has(tab.id))
-    .sort((a, b) => {
-      // Prioritize active tabs
-      if (a.active && !b.active) return -1
-      if (!a.active && b.active) return 1
-
-      // Otherwise sort by lastAccessed
-      const aTime = a.lastAccessed || 0
-      const bTime = b.lastAccessed || 0
-      return bTime - aTime
+    // Create a map of URL to tab for matching
+    const urlToTab = new Map<string, (typeof allTabs)[0]>()
+    allTabs.forEach((tab) => {
+      if (tab.url) {
+        urlToTab.set(tab.url, tab)
+      }
     })
 
-  mruTabOrder = [...initialMruOrder, ...unmatchedTabs.map((tab) => tab.id!).filter((id) => id !== undefined)]
+    // First, add tabs that match stored history (in history order)
+    const matchedTabIds = new Set<number>()
+    const initialMruOrder: number[] = []
 
-  console.log(
-    "Initialized MRU order with",
-    mruTabOrder.length,
-    "tabs",
-    `(${matchedTabIds.size} from history, ${unmatchedTabs.length} new)`,
-  )
+    for (const entry of storedHistory) {
+      const matchingTab = urlToTab.get(entry.url)
+      if (matchingTab && matchingTab.id && !matchedTabIds.has(matchingTab.id)) {
+        initialMruOrder.push(matchingTab.id)
+        matchedTabIds.add(matchingTab.id)
+      }
+    }
 
-  // Save initial state to storage
-  await saveMruHistory()
+    // Then add remaining tabs sorted by lastAccessed and active status
+    const unmatchedTabs = allTabs
+      .filter((tab) => tab.id && !matchedTabIds.has(tab.id))
+      .sort((a, b) => {
+        // Prioritize active tabs
+        if (a.active && !b.active) return -1
+        if (!a.active && b.active) return 1
+
+        // Otherwise sort by lastAccessed
+        const aTime = a.lastAccessed || 0
+        const bTime = b.lastAccessed || 0
+        return bTime - aTime
+      })
+
+    mruTabOrder = [...initialMruOrder, ...unmatchedTabs.map((tab) => tab.id!).filter((id) => id !== undefined)]
+
+    console.log(
+      "Initialized MRU order with",
+      mruTabOrder.length,
+      "tabs",
+      `(${matchedTabIds.size} from history, ${unmatchedTabs.length} new)`,
+    )
+
+    // Save initial state to storage
+    await saveMruHistory()
+  })()
 
   // Listen for tab activation
   // This fires when user clicks on a tab or switches tabs via keyboard
@@ -195,21 +199,23 @@ export default defineBackground(async () => {
       // Get all real browser tabs
       browser.tabs
         .query({})
-        .then((browserTabs) => {
-          // Convert to our Tab format and sort by MRU order
-          const tabsById = new Map(
-            browserTabs.map((tab) => [
-              tab.id!,
-              {
-                id: String(tab.id),
-                title: tab.title || "Untitled",
-                url: tab.url || "",
-                favicon: tab.favIconUrl || "",
-                windowId: tab.windowId,
-                index: tab.index,
-              } as Tab,
-            ]),
-          )
+        .then(async (browserTabs) => {
+          // Convert to our Tab format with favicon data URLs
+          const tabPromises = browserTabs.map(async (tab) => {
+            const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
+
+            return {
+              id: String(tab.id),
+              title: tab.title || "Untitled",
+              url: tab.url || "",
+              favicon: faviconDataUrl,
+              windowId: tab.windowId,
+              index: tab.index,
+            } as Tab
+          })
+
+          const allTabs = await Promise.all(tabPromises)
+          const tabsById = new Map(allTabs.map((tab) => [Number(tab.id), tab]))
 
           // Return tabs in MRU order, filtering out any that no longer exist
           const tabsInMruOrder = mruTabOrder
