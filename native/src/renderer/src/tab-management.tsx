@@ -4,7 +4,8 @@ import { TabManagement } from '@tas/components/TabManagement'
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
 import './assets/globals.css'
 
-function TabManagementApp() {
+// eslint-disable-next-line react-refresh/only-export-components
+function TabManagementApp(): JSX.Element {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
@@ -27,7 +28,7 @@ function TabManagementApp() {
     // Listen for tab updates from main process
     const unsubscribe = window.electron.ipcRenderer.on(
       'tabs-updated',
-      (_event: any, updatedTabs: Tab[]) => {
+      (_event: unknown, updatedTabs: Tab[]): void => {
         console.log('Tab Management: Received tabs update:', updatedTabs.length, 'tabs')
         setTabs(updatedTabs)
       }
@@ -43,34 +44,34 @@ function TabManagementApp() {
     // Will load from electron store
   }, [])
 
-  const handleSelectTab = (tabId: string) => {
+  const handleSelectTab = (tabId: string): void => {
     // TODO: Send message to extension to activate tab
     console.log('Activate tab:', tabId)
   }
 
-  const handleCloseTab = (tabId: string) => {
+  const handleCloseTab = (tabId: string): void => {
     // TODO: Send message to extension to close tab
     console.log('Close tab:', tabId)
     setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
   }
 
-  const handleReorderTabs = async (tabId: string, newIndex: number) => {
+  const handleReorderTabs = async (tabId: string, newIndex: number): Promise<void> => {
     // TODO: Send message to extension to reorder tab
     console.log('Reorder tab:', tabId, 'to index:', newIndex)
   }
 
-  const handleSendCollectionToWindow = async (tabUrls: string[]) => {
+  const handleSendCollectionToWindow = async (tabUrls: string[]): Promise<void> => {
     // TODO: Send message to extension to create new window with tabs
     console.log('Create window with tabs:', tabUrls)
   }
 
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
+  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts): void => {
     setShortcuts(newShortcuts)
     // TODO: Save to electron store
     console.log('Shortcuts changed:', newShortcuts)
   }
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     window.close()
   }
 

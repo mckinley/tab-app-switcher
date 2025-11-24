@@ -6,10 +6,16 @@
     "src/renderer/src/**/*.tsx",
     "src/preload/*.d.ts"
   ],
+  "references": [
+    {
+      "path": "../tas"
+    }
+  ],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "skipLibCheck": true,
     "paths": {
       "@renderer/*": [
         "src/renderer/src/*"

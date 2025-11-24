@@ -4,7 +4,8 @@ import { TabSwitcher } from '@tas/components/TabSwitcher'
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
 import './assets/tas.css'
 
-function TasApp() {
+// eslint-disable-next-line react-refresh/only-export-components
+function TasApp(): JSX.Element {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [shortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
@@ -21,7 +22,7 @@ function TasApp() {
 
   // Load tabs from extension
   useEffect(() => {
-    const handleTabsUpdated = (_event: unknown, tabsData: Tab[]) => {
+    const handleTabsUpdated = (_event: unknown, tabsData: Tab[]): void => {
       if (tabsData && tabsData.length > 0) {
         setTabs(tabsData)
         // Reset selection to second tab (index 1) when tabs update
@@ -36,19 +37,19 @@ function TasApp() {
     }
   }, [])
 
-  const handleSelectTab = (tabId: string) => {
+  const handleSelectTab = (tabId: string): void => {
     window.electron.ipcRenderer.send('activate-tab', tabId)
     window.electron.ipcRenderer.send('hide-tas')
   }
 
-  const handleCloseTab = (tabId: string) => {
+  const handleCloseTab = (tabId: string): void => {
     window.electron.ipcRenderer.send('close-tab', tabId)
     // Optimistically update UI
     setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
   }
 
   const handleNavigate = useCallback(
-    (direction: 'next' | 'prev') => {
+    (direction: 'next' | 'prev'): void => {
       setSelectedIndex((prev) => {
         const newIndex =
           direction === 'next' ? (prev + 1) % tabs.length : prev === 0 ? tabs.length - 1 : prev - 1
@@ -58,16 +59,16 @@ function TasApp() {
     [tabs.length]
   )
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     window.electron.ipcRenderer.send('hide-tas')
   }
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = (): void => {
     window.electron.ipcRenderer.send('show-settings')
     window.electron.ipcRenderer.send('hide-tas')
   }
 
-  const handleOpenTabManagement = () => {
+  const handleOpenTabManagement = (): void => {
     window.electron.ipcRenderer.send('show-tab-management')
     window.electron.ipcRenderer.send('hide-tas')
   }

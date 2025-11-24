@@ -4,7 +4,8 @@ import { Settings } from '@tas/components/Settings'
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
 import './assets/globals.css'
 
-function SettingsApp() {
+// eslint-disable-next-line react-refresh/only-export-components
+function SettingsApp(): JSX.Element {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
   // Apply system theme on mount
@@ -22,7 +23,7 @@ function SettingsApp() {
     // Will load from electron store
   }, [])
 
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
+  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts): void => {
     setShortcuts(newShortcuts)
     // TODO: Save to electron store and update global shortcuts
     console.log('Shortcuts changed:', newShortcuts)

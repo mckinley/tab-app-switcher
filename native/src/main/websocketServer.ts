@@ -5,7 +5,7 @@ const PORT = 48125
 let wss: WebSocketServer | null = null
 const clients: Set<WebSocket> = new Set()
 
-export type MessageHandler = (message: any) => void
+export type MessageHandler = (message: { type: string; tabs?: unknown[] }) => void
 
 export function startWebSocketServer(messageHandler: MessageHandler): void {
   if (wss) {
@@ -48,7 +48,7 @@ export function startWebSocketServer(messageHandler: MessageHandler): void {
   })
 }
 
-export function sendMessageToExtension(message: any): void {
+export function sendMessageToExtension(message: { type: string; tabId?: string }): void {
   const messageStr = JSON.stringify(message)
   clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {

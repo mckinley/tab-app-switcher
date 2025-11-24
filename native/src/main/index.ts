@@ -17,7 +17,7 @@ import { startWebSocketServer, sendMessageToExtension } from './websocketServer'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
-let cachedTabs: any[] = []
+let cachedTabs: unknown[] = []
 let settingsWindow: BrowserWindow | null = null
 let tabManagementWindow: BrowserWindow | null = null
 
@@ -239,7 +239,7 @@ function createTray(): void {
 }
 
 // Message handler for WebSocket messages from extension
-function handleExtensionMessage(msg: any): void {
+function handleExtensionMessage(msg: { type: string; tabs?: unknown[] }): void {
   if (msg.type === 'TABS_UPDATED') {
     // Extension is pushing updated tab list
     cachedTabs = msg.tabs || []
