@@ -1,4 +1,14 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, screen, nativeImage } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  globalShortcut,
+  screen,
+  nativeImage
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -239,6 +249,11 @@ function handleExtensionMessage(msg: any): void {
     if (tasWindow && !tasWindow.isDestroyed()) {
       tasWindow.webContents.send('tabs-updated', cachedTabs)
     }
+
+    // If Tab Management window is open, send updated tabs to it
+    if (tabManagementWindow && !tabManagementWindow.isDestroyed()) {
+      tabManagementWindow.webContents.send('tabs-updated', cachedTabs)
+    }
   }
 }
 
@@ -286,6 +301,12 @@ app.whenReady().then(() => {
 
   ipcMain.on('close-tab', (_event, tabId: string) => {
     sendMessageToExtension({ type: 'CLOSE_TAB', tabId })
+  })
+
+  // Send cached tabs to tab management window when requested
+  ipcMain.on('request-tabs', (event) => {
+    console.log('Tab Management requested tabs, sending:', cachedTabs.length, 'tabs')
+    event.sender.send('tabs-updated', cachedTabs)
   })
 })
 

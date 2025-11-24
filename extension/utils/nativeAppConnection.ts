@@ -56,11 +56,7 @@ export function notifyNativeApp(mruTabOrder: number[]): void {
 /**
  * Handle messages from native app
  */
-function handleNativeMessage(
-  message: any,
-  mruTabOrder: number[],
-  updateMruOrder: (tabId: number) => void,
-): void {
+function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder: (tabId: number) => void): void {
   if (!browserInstance) return
 
   console.log("Message from native app:", message)
@@ -100,11 +96,7 @@ function handleNativeMessage(
 /**
  * Connect to native app via WebSocket
  */
-export function connectToNativeApp(
-  browser: any,
-  mruTabOrder: number[],
-  updateMruOrder: (tabId: number) => void,
-): void {
+export function connectToNativeApp(browser: any, mruTabOrder: number[], updateMruOrder: (tabId: number) => void): void {
   browserInstance = browser
 
   try {
@@ -143,4 +135,3 @@ export function connectToNativeApp(
     setTimeout(() => connectToNativeApp(browser, mruTabOrder, updateMruOrder), RECONNECT_DELAY)
   }
 }
-

@@ -2,10 +2,16 @@ import { useState, useEffect } from "react"
 import { Settings } from "@tas/components/Settings"
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
 import { ThemeToggle } from "../../components/ThemeToggle"
+import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
 function App() {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Apply theme on mount
+  useEffect(() => {
+    loadAndApplyTheme()
+  }, [])
 
   useEffect(() => {
     // Load shortcuts from storage

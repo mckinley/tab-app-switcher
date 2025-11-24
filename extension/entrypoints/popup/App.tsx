@@ -3,6 +3,7 @@ import { TabSwitcher } from "@tas/components/TabSwitcher"
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
 import { Container } from "../../components/Container"
 import { createLogger } from "@tas/utils/logger"
+import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
 const logger = createLogger("popup-app")
@@ -11,6 +12,11 @@ function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIndex, setSelectedIndex] = useState(1) // Start with second tab (index 1)
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Apply theme on mount
+  useEffect(() => {
+    loadAndApplyTheme()
+  }, [])
 
   // Load tabs from background script
   useEffect(() => {

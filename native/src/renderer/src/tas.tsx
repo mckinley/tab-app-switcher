@@ -1,13 +1,23 @@
-import { StrictMode, useState, useEffect, useCallback } from "react"
-import { createRoot } from "react-dom/client"
-import { TabSwitcher } from "@tas/components/TabSwitcher"
-import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
-import "./assets/tas.css"
+import { StrictMode, useState, useEffect, useCallback } from 'react'
+import { createRoot } from 'react-dom/client'
+import { TabSwitcher } from '@tas/components/TabSwitcher'
+import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
+import './assets/tas.css'
 
 function TasApp() {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [shortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Apply system theme on mount
+  useEffect(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    if (prefersDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
 
   // Load tabs from extension
   useEffect(() => {
@@ -19,29 +29,29 @@ function TasApp() {
       }
     }
 
-    window.electron.ipcRenderer.on("tabs-updated", handleTabsUpdated)
+    window.electron.ipcRenderer.on('tabs-updated', handleTabsUpdated)
 
     return () => {
-      window.electron.ipcRenderer.removeListener("tabs-updated", handleTabsUpdated)
+      window.electron.ipcRenderer.removeListener('tabs-updated', handleTabsUpdated)
     }
   }, [])
 
   const handleSelectTab = (tabId: string) => {
-    window.electron.ipcRenderer.send("activate-tab", tabId)
-    window.electron.ipcRenderer.send("hide-tas")
+    window.electron.ipcRenderer.send('activate-tab', tabId)
+    window.electron.ipcRenderer.send('hide-tas')
   }
 
   const handleCloseTab = (tabId: string) => {
-    window.electron.ipcRenderer.send("close-tab", tabId)
+    window.electron.ipcRenderer.send('close-tab', tabId)
     // Optimistically update UI
     setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
   }
 
   const handleNavigate = useCallback(
-    (direction: "next" | "prev") => {
+    (direction: 'next' | 'prev') => {
       setSelectedIndex((prev) => {
         const newIndex =
-          direction === "next" ? (prev + 1) % tabs.length : prev === 0 ? tabs.length - 1 : prev - 1
+          direction === 'next' ? (prev + 1) % tabs.length : prev === 0 ? tabs.length - 1 : prev - 1
         return newIndex
       })
     },
@@ -49,41 +59,38 @@ function TasApp() {
   )
 
   const handleClose = () => {
-    window.electron.ipcRenderer.send("hide-tas")
+    window.electron.ipcRenderer.send('hide-tas')
   }
 
   const handleOpenSettings = () => {
-    window.electron.ipcRenderer.send("show-settings")
-    window.electron.ipcRenderer.send("hide-tas")
+    window.electron.ipcRenderer.send('show-settings')
+    window.electron.ipcRenderer.send('hide-tas')
   }
 
   const handleOpenTabManagement = () => {
-    window.electron.ipcRenderer.send("show-tab-management")
-    window.electron.ipcRenderer.send("hide-tas")
+    window.electron.ipcRenderer.send('show-tab-management')
+    window.electron.ipcRenderer.send('hide-tas')
   }
 
   return (
-    <div className="dark">
-      <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
-        <TabSwitcher
-          tabs={tabs}
-          selectedIndex={selectedIndex}
-          onSelectTab={handleSelectTab}
-          onClose={handleClose}
-          onNavigate={handleNavigate}
-          onCloseTab={handleCloseTab}
-          shortcuts={shortcuts}
-          onOpenSettings={handleOpenSettings}
-          onOpenTabManagement={handleOpenTabManagement}
-        />
-      </div>
+    <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
+      <TabSwitcher
+        tabs={tabs}
+        selectedIndex={selectedIndex}
+        onSelectTab={handleSelectTab}
+        onClose={handleClose}
+        onNavigate={handleNavigate}
+        onCloseTab={handleCloseTab}
+        shortcuts={shortcuts}
+        onOpenSettings={handleOpenSettings}
+        onOpenTabManagement={handleOpenTabManagement}
+      />
     </div>
   )
 }
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <TasApp />
   </StrictMode>
 )
-

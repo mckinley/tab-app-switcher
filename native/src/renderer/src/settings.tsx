@@ -1,11 +1,21 @@
-import { StrictMode, useState, useEffect } from "react"
-import { createRoot } from "react-dom/client"
-import { Settings } from "@tas/components/Settings"
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
-import "./assets/globals.css"
+import { StrictMode, useState, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
+import { Settings } from '@tas/components/Settings'
+import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
+import './assets/globals.css'
 
 function SettingsApp() {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Apply system theme on mount
+  useEffect(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    if (prefersDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
 
   // TODO: Load shortcuts from electron store
   useEffect(() => {
@@ -15,19 +25,18 @@ function SettingsApp() {
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts)
     // TODO: Save to electron store and update global shortcuts
-    console.log("Shortcuts changed:", newShortcuts)
+    console.log('Shortcuts changed:', newShortcuts)
   }
 
   return (
-    <div className="dark w-full h-full bg-background">
+    <div className="w-full h-full bg-background">
       <Settings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
     </div>
   )
 }
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SettingsApp />
   </StrictMode>
 )
-

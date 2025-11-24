@@ -2,32 +2,11 @@ import { useEffect, useState } from "react"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { Button } from "./ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { applyTheme } from "../utils/theme"
 
 const THEME_STORAGE_KEY = "theme"
 
 type ThemeOption = "light" | "dark" | "system"
-
-function applyTheme(theme: ThemeOption) {
-  if (typeof document === "undefined" || typeof window === "undefined") return
-
-  const root = document.documentElement
-  if (!root) return
-
-  let resolvedTheme: "light" | "dark"
-
-  if (theme === "system") {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    resolvedTheme = prefersDark ? "dark" : "light"
-  } else {
-    resolvedTheme = theme
-  }
-
-  if (resolvedTheme === "dark") {
-    root.classList.add("dark")
-  } else {
-    root.classList.remove("dark")
-  }
-}
 
 export const ThemeToggle = () => {
   const [theme, setThemeState] = useState<ThemeOption>("system")

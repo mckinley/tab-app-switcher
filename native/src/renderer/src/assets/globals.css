@@ -1,10 +1,15 @@
-@import "../../../../../tas/styles/tokens.css";
+@import '../../../../../tas/styles/tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
   * {
     @apply border-border;
   }
@@ -12,4 +17,3 @@
     @apply bg-background text-foreground;
   }
 }
-

@@ -3,11 +3,17 @@ import { TabManagement } from "@tas/components/TabManagement"
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { Container } from "../../components/Container"
+import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Apply theme on mount
+  useEffect(() => {
+    loadAndApplyTheme()
+  }, [])
 
   const loadTabs = () => {
     browser.runtime.sendMessage({ type: "GET_TABS" }).then((response) => {
