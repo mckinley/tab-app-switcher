@@ -100,10 +100,20 @@ export function useKeyboardShortcuts({
       // Check if modifier key is pressed
       const isModifierPressed = checkModifierKeyPressed(e, shortcuts.modifier)
 
+      // Modifier+ActivateForward to navigate forward
+      // Use e.code to detect Tab key regardless of what character it produces
+      if (isModifierPressed && e.code === getKeyCode(shortcuts.activateForward)) {
+        e.preventDefault()
+        e.stopPropagation()
+        onNavigateNext()
+        return
+      }
+
       // Modifier+ActivateBackward to navigate backward
       // Use e.code to detect backtick key regardless of what character it produces
       if (isModifierPressed && e.code === getKeyCode(shortcuts.activateBackward)) {
         e.preventDefault()
+        e.stopPropagation()
         onNavigatePrev()
         return
       }
@@ -112,6 +122,7 @@ export function useKeyboardShortcuts({
       // Use e.code to detect W key regardless of what character it produces (e.g., ∑ on macOS)
       if (isModifierPressed && e.code === getKeyCode(shortcuts.closeTab)) {
         e.preventDefault()
+        e.stopPropagation()
         onCloseTab()
         return
       }

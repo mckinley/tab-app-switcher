@@ -1,5 +1,6 @@
 import type { Tab } from "@tas/types/tabs"
 import { handleLogMessage } from "@tas/utils/logger"
+import { connectToNativeApp, notifyNativeApp } from "../utils/nativeAppConnection"
 
 /**
  * Background service worker for Tab Application Switcher
@@ -166,8 +167,7 @@ export default defineBackground(async () => {
         try {
           await browser.action.openPopup()
         } catch (openError) {
-          console.error("Error opening popup:", openError)
-          // Fallback: create a popup window
+          console.log("Error opening popup:", openError, "Opening fallback window...")
           const popupUrl = browser.runtime.getURL("/popup.html")
           await browser.windows.create({
             url: popupUrl,
@@ -179,6 +179,15 @@ export default defineBackground(async () => {
       }
     }
   })
+
+  // Connect to native app via WebSocket
+  connectToNativeApp(browser, mruTabOrder, updateMruOrder)
+
+  // Listen for tab changes and notify native app
+  browser.tabs.onCreated.addListener(() => notifyNativeApp(mruTabOrder))
+  browser.tabs.onRemoved.addListener(() => notifyNativeApp(mruTabOrder))
+  browser.tabs.onUpdated.addListener(() => notifyNativeApp(mruTabOrder))
+  browser.tabs.onActivated.addListener(() => notifyNativeApp(mruTabOrder))
 
   // Handle messages from popup
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {

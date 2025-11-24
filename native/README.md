@@ -1,34 +1,25 @@
-# native
+# Tab Application Switcher - Native App
 
-An Electron application with React and TypeScript
+macOS menu bar app for switching browser tabs with Alt+Tab. Built with Electron, React, and TypeScript.
 
-## Recommended IDE Setup
+## Features
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+- Menu bar app (no dock icon)
+- Global Alt+Tab keyboard shortcut
+- Connects to browser extension via WebSocket (port 48125)
+- Displays tabs in MRU (Most Recently Used) order
+- Settings and tab management windows
 
-## Project Setup
-
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
+## Development
 
 ```bash
-$ npm run dev
+npm run dev    # Start in development mode
+npm run build  # Build for production
+npm start      # Run built app
 ```
 
-### Build
+## Architecture
 
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+- **Main Process**: Menu bar app, WebSocket server, global shortcuts
+- **Renderer**: TAS overlay, Settings, Tab Management windows
+- **Communication**: WebSocket server on localhost:48125 for extension connection

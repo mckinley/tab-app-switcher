@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint"
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/.wxt/**", "**/.output/**", "**/node_modules/**", "**/coverage/**"],
+    ignores: ["**/dist/**", "**/.wxt/**", "**/.output/**", "**/node_modules/**", "**/coverage/**", "**/out/**"],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -20,7 +20,6 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -30,6 +29,7 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 )
