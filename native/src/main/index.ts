@@ -123,9 +123,9 @@ function createSettingsWindow(): void {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 800,
+    width: 650,
     height: 600,
-    title: 'Tab Application Switcher - Settings',
+    title: 'Settings - Tab Application Switcher',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -158,9 +158,11 @@ function createTabManagementWindow(): void {
   }
 
   tabManagementWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    title: 'Tab Application Switcher - Tab Management',
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    title: 'Tab Management - Tab Application Switcher',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {

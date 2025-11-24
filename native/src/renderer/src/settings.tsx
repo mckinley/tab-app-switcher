@@ -30,7 +30,7 @@ function SettingsApp(): JSX.Element {
   }
 
   return (
-    <div className="w-full h-full bg-background">
+    <div className="w-full h-full bg-background p-6">
       <Settings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
     </div>
   )
