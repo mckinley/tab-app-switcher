@@ -9,6 +9,8 @@ function TasApp(): JSX.Element {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [shortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+  // Key to force TabSwitcher remount when window is shown
+  const [switcherKey, setSwitcherKey] = useState(0)
 
   // Apply system theme on mount
   useEffect(() => {
@@ -30,12 +32,32 @@ function TasApp(): JSX.Element {
       }
     }
 
-    window.electron.ipcRenderer.on('tabs-updated', handleTabsUpdated)
+    const handleResetSelection = (): void => {
+      // Reset selection to second tab when window is shown
+      setSelectedIndex((prev) => {
+        // Only reset if we have tabs
+        if (tabs.length > 1) {
+          return 1
+        } else if (tabs.length === 1) {
+          return 0
+        }
+        return prev
+      })
+      // Force TabSwitcher to remount to reset scroll position
+      setSwitcherKey((prev) => prev + 1)
+    }
+
+    const unsubscribeTabsUpdated = window.electron.ipcRenderer.on('tabs-updated', handleTabsUpdated)
+    const unsubscribeResetSelection = window.electron.ipcRenderer.on(
+      'reset-selection',
+      handleResetSelection
+    )
 
     return () => {
-      window.electron.ipcRenderer.removeListener('tabs-updated', handleTabsUpdated)
+      unsubscribeTabsUpdated()
+      unsubscribeResetSelection()
     }
-  }, [])
+  }, [tabs.length])
 
   const handleSelectTab = (tabId: string): void => {
     window.electron.ipcRenderer.send('activate-tab', tabId)
@@ -76,6 +98,7 @@ function TasApp(): JSX.Element {
   return (
     <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
       <TabSwitcher
+        key={switcherKey}
         tabs={tabs}
         selectedIndex={selectedIndex}
         onSelectTab={handleSelectTab}

@@ -41,20 +41,39 @@ export const TabSwitcher = ({
       tab.url.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  // Reset search when component mounts
+  // Track if this is the initial mount to prevent auto-scroll on open
+  const isInitialMount = useRef(true)
+  const previousSelectedIndex = useRef(selectedIndex)
+
+  // Reset search and scroll position when component mounts
   useEffect(() => {
     setSearchQuery("")
     setIsSearchFocused(false)
+    // Reset scroll to top when component mounts
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0
+    }
+    isInitialMount.current = true
   }, [])
 
-  // Auto-scroll selected item into view
+  // Auto-scroll selected item into view (but not on initial mount or reset)
   useEffect(() => {
-    if (selectedItemRef.current) {
+    // Skip scroll if this is initial mount or if selection was just reset to index 1
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      previousSelectedIndex.current = selectedIndex
+      return
+    }
+
+    // Only scroll if user is navigating (not when selection is reset)
+    if (selectedItemRef.current && previousSelectedIndex.current !== selectedIndex) {
       selectedItemRef.current.scrollIntoView({
         behavior: "smooth",
         block: "center",
       })
     }
+
+    previousSelectedIndex.current = selectedIndex
   }, [selectedIndex])
 
   // Use the keyboard shortcuts hook to handle all keyboard events

@@ -26,13 +26,10 @@ function TabManagementApp(): JSX.Element {
     window.electron.ipcRenderer.send('request-tabs')
 
     // Listen for tab updates from main process
-    const unsubscribe = window.electron.ipcRenderer.on(
-      'tabs-updated',
-      (_event: unknown, updatedTabs: Tab[]): void => {
-        console.log('Tab Management: Received tabs update:', updatedTabs.length, 'tabs')
-        setTabs(updatedTabs)
-      }
-    )
+    const unsubscribe = window.electron.ipcRenderer.on('tabs-updated', (_event: unknown, updatedTabs: Tab[]): void => {
+      console.log('Tab Management: Received tabs update:', updatedTabs.length, 'tabs')
+      setTabs(updatedTabs)
+    })
 
     return () => {
       unsubscribe()

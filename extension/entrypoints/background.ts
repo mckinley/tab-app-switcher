@@ -89,6 +89,9 @@ export default defineBackground(() => {
 
     // Save initial state to storage
     await saveMruHistory()
+
+    // Connect to native app after MRU order is initialized
+    connectToNativeApp(browser, mruTabOrder, updateMruOrder)
   })()
 
   // Listen for tab activation
@@ -191,8 +194,6 @@ export default defineBackground(() => {
     }
   })
 
-  // Connect to native app via WebSocket
-  connectToNativeApp(browser, mruTabOrder, updateMruOrder)
 
   // Listen for tab changes and notify native app
   browser.tabs.onCreated.addListener(() => notifyNativeApp(mruTabOrder))

@@ -33,6 +33,14 @@ if (process.platform === 'darwin' && app.dock) {
 
 function createTasOverlay(): void {
   if (tasWindow) {
+    // Send cached tabs immediately so window isn't empty
+    if (cachedTabs.length > 0) {
+      tasWindow.webContents.send('tabs-updated', cachedTabs)
+    }
+    // Request fresh tabs from extension (will update when response arrives)
+    sendMessageToExtension({ type: 'GET_TABS' })
+    // Reset selection to second tab when reopening
+    tasWindow.webContents.send('reset-selection')
     tasWindow.show()
     tasWindow.focus()
     // Unregister global shortcut so the window can handle Alt+Tab
@@ -286,8 +294,8 @@ function showExtensionNotInstalledNotification(): void {
 
 // Message handler for WebSocket messages from extension
 function handleExtensionMessage(msg: { type: string; tabs?: unknown[] }): void {
-  if (msg.type === 'TABS_UPDATED') {
-    // Extension is pushing updated tab list
+  if (msg.type === 'TABS_UPDATED' || msg.type === 'TABS_RESPONSE') {
+    // Extension is pushing updated tab list (or responding to GET_TABS request)
     cachedTabs = msg.tabs || []
     console.log('Updated tab cache:', cachedTabs.length, 'tabs')
 
