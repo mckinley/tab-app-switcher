@@ -264,8 +264,11 @@ const Index = () => {
           {/* Left side - Help button */}
           <TabsTooltip hideTooltip={isSwitcherActive} />
 
-          {/* Right side - Downloads and Theme Toggle */}
+          {/* Right side - Downloads, Getting Started, and Theme Toggle */}
           <div className="flex items-center gap-2">
+            <Link to="/getting-started">
+              <Button variant="ghost">Getting Started</Button>
+            </Link>
             <Link to="/downloads">
               <Button variant="ghost">Downloads</Button>
             </Link>
@@ -459,7 +462,14 @@ const Index = () => {
             </Button>
           </div>
 
-          <div className="pt-6">
+          <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              to="/getting-started"
+              className="text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              Getting Started Guide
+            </Link>
+            <span className="hidden sm:inline text-muted-foreground">•</span>
             <Link to="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
               View all download options
             </Link>

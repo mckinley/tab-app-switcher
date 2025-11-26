@@ -40,6 +40,13 @@ async function getTabsInMruOrder(mruTabOrder: number[]): Promise<Tab[]> {
 }
 
 /**
+ * Check if native app is connected
+ */
+export function isNativeAppConnected(): boolean {
+  return ws !== null && ws.readyState === WebSocket.OPEN
+}
+
+/**
  * Notify native app of tab updates (debounced)
  */
 export function notifyNativeApp(mruTabOrder: number[]): void {

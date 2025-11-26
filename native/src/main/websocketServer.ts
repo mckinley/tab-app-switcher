@@ -4,14 +4,20 @@ const PORT = 48125
 
 let wss: WebSocketServer | null = null
 const clients: Set<WebSocket> = new Set()
+let connectionChangeCallback: (() => void) | null = null
 
 export type MessageHandler = (message: { type: string; tabs?: unknown[] }) => void
 
-export function startWebSocketServer(messageHandler: MessageHandler): void {
+export function startWebSocketServer(
+  messageHandler: MessageHandler,
+  onConnectionChange?: () => void
+): void {
   if (wss) {
     console.log('WebSocket server already running')
     return
   }
+
+  connectionChangeCallback = onConnectionChange || null
 
   wss = new WebSocketServer({ port: PORT })
 
@@ -22,6 +28,7 @@ export function startWebSocketServer(messageHandler: MessageHandler): void {
   wss.on('connection', (ws: WebSocket) => {
     console.log('Extension connected')
     clients.add(ws)
+    connectionChangeCallback?.()
 
     ws.on('message', (data: Buffer) => {
       try {
@@ -35,11 +42,13 @@ export function startWebSocketServer(messageHandler: MessageHandler): void {
     ws.on('close', () => {
       console.log('Extension disconnected')
       clients.delete(ws)
+      connectionChangeCallback?.()
     })
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error)
       clients.delete(ws)
+      connectionChangeCallback?.()
     })
   })
 
@@ -64,4 +73,8 @@ export function stopWebSocketServer(): void {
     clients.clear()
     console.log('WebSocket server stopped')
   }
+}
+
+export function isExtensionConnected(): boolean {
+  return clients.size > 0
 }

@@ -1,0 +1,13 @@
+# Build outputs
+.output
+.wxt
+dist
+build
+coverage
+
+# Dependencies
+node_modules
+
+# Generated files
+*.d.ts
+

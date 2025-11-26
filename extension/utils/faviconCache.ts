@@ -129,4 +129,3 @@ export function getFaviconCacheStats(): { size: number; pending: number } {
     pending: pendingFetches.size,
   }
 }
-

@@ -7,13 +7,18 @@ import {
   Menu,
   globalShortcut,
   screen,
-  nativeImage
+  nativeImage,
+  Notification
 } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import trayIconPath from '../../resources/tas.png?asset'
-import { startWebSocketServer, sendMessageToExtension } from './websocketServer'
+import {
+  startWebSocketServer,
+  sendMessageToExtension,
+  isExtensionConnected
+} from './websocketServer'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
@@ -209,10 +214,25 @@ function createTray(): void {
 
   tray = new Tray(trayImage)
 
+  updateTrayMenu()
+}
+
+function updateTrayMenu(): void {
+  if (!tray) return
+
+  const extensionConnected = isExtensionConnected()
+  const statusLabel = extensionConnected ? '✓ Extension Connected' : '✗ Extension Not Connected'
+
   const contextMenu = Menu.buildFromTemplate([
     {
+      label: statusLabel,
+      enabled: false
+    },
+    { type: 'separator' },
+    {
       label: 'Show Tab Switcher',
-      click: () => createTasOverlay()
+      click: () => createTasOverlay(),
+      enabled: extensionConnected
     },
     {
       label: 'Settings',
@@ -220,7 +240,18 @@ function createTray(): void {
     },
     {
       label: 'Tab Management',
-      click: () => createTabManagementWindow()
+      click: () => createTabManagementWindow(),
+      enabled: extensionConnected
+    },
+    { type: 'separator' },
+    {
+      label: extensionConnected ? 'Extension Connected' : 'Install Extension',
+      click: () => {
+        if (!extensionConnected) {
+          shell.openExternal('https://chrome.google.com/webstore')
+        }
+      },
+      enabled: !extensionConnected
     },
     { type: 'separator' },
     {
@@ -231,13 +262,26 @@ function createTray(): void {
     }
   ])
 
-  tray.setToolTip('Tab Application Switcher')
+  tray.setToolTip(
+    extensionConnected
+      ? 'Tab Application Switcher - Connected'
+      : 'Tab Application Switcher - Extension Not Connected'
+  )
   tray.setContextMenu(contextMenu)
+}
 
-  // Double-click to show TAS overlay
-  tray.on('double-click', () => {
-    createTasOverlay()
+function showExtensionNotInstalledNotification(): void {
+  const notification = new Notification({
+    title: 'Tab Application Switcher',
+    body: 'Chrome extension not detected. Install the extension to use Tab Application Switcher.',
+    silent: false
   })
+
+  notification.on('click', () => {
+    shell.openExternal('https://chrome.google.com/webstore')
+  })
+
+  notification.show()
 }
 
 // Message handler for WebSocket messages from extension
@@ -263,7 +307,7 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.tab-app-switcher')
 
   // Start WebSocket server for extension communication
-  startWebSocketServer(handleExtensionMessage)
+  startWebSocketServer(handleExtensionMessage, updateTrayMenu)
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -280,6 +324,13 @@ app.whenReady().then(() => {
   if (!registered) {
     console.error('Failed to register global shortcut Alt+Tab')
   }
+
+  // Check for extension connection after a delay
+  setTimeout(() => {
+    if (!isExtensionConnected()) {
+      showExtensionNotInstalledNotification()
+    }
+  }, 3000)
 
   // IPC handlers
   ipcMain.on('ping', () => console.log('pong'))

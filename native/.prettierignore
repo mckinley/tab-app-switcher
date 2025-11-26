@@ -1,6 +1,21 @@
+# Build outputs
 out
 dist
+build
+coverage
+
+# Dependencies
+node_modules
+
+# Lock files
 pnpm-lock.yaml
-LICENSE.md
+
+# Config files
 tsconfig.json
 tsconfig.*.json
+
+# Generated files
+*.d.ts
+
+# License
+LICENSE.md

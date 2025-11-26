@@ -146,6 +146,11 @@ const Downloads = () => {
             <p className="pt-4 border-t border-border text-sm">
               You can use the browser extension alone, or combine it with the Native UI for the best experience.
             </p>
+            <div className="pt-4 border-t border-border">
+              <Link to="/getting-started" className="text-primary hover:underline font-medium">
+                View Getting Started Guide →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

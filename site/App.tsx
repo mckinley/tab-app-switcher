@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { ThemeProvider } from "next-themes"
 import Index from "./pages/Index"
 import Downloads from "./pages/Downloads"
+import GettingStarted from "./pages/GettingStarted"
 import NotFound from "./pages/NotFound"
 
 const queryClient = new QueryClient()
@@ -18,6 +19,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/downloads" element={<Downloads />} />
+            <Route path="/getting-started" element={<GettingStarted />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

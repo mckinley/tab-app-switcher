@@ -1,6 +1,6 @@
 import type { Tab } from "@tas/types/tabs"
 import { handleLogMessage } from "@tas/utils/logger"
-import { connectToNativeApp, notifyNativeApp } from "../utils/nativeAppConnection"
+import { connectToNativeApp, notifyNativeApp, isNativeAppConnected } from "../utils/nativeAppConnection"
 import { getFaviconDataUrl } from "../utils/faviconCache"
 
 /**
@@ -27,6 +27,13 @@ interface MruHistoryEntry {
 
 export default defineBackground(() => {
   console.log("Tab Application Switcher background service started", { id: browser.runtime.id })
+
+  // Open welcome page on first install
+  browser.runtime.onInstalled.addListener((details) => {
+    if (details.reason === "install") {
+      browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") })
+    }
+  })
 
   // Initialize MRU order asynchronously (don't block background script startup)
   ;(async () => {
@@ -271,6 +278,11 @@ export default defineBackground(() => {
         })
 
       return true // Will respond asynchronously
+    }
+
+    if (message.type === "CHECK_NATIVE_APP") {
+      sendResponse({ connected: isNativeAppConnected() })
+      return false
     }
 
     // Handle log messages from popup and other contexts
