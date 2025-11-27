@@ -129,6 +129,19 @@ cd native && npm run publish:mac
 
 This will build the app, create a GitHub release, and upload the installer. Users will get automatic updates.
 
+**Installing the app (for users):**
+
+Since the app is not code-signed, macOS will block it with a "damaged" error. Users need to remove the quarantine flag:
+
+```bash
+# After downloading and extracting the ZIP
+xattr -cr ~/Downloads/Tab\ Application\ Switcher.app
+
+# Then move to Applications and open
+mv ~/Downloads/Tab\ Application\ Switcher.app /Applications/
+open /Applications/Tab\ Application\ Switcher.app
+```
+
 ## Project-Specific Documentation
 
 - **Site**: See `site/` directory
