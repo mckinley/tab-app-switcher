@@ -16,7 +16,7 @@ import logo from "@/assets/logo.jpg"
 
 // GitHub release URLs
 const GITHUB_REPO = "mckinley/tab-app-switcher"
-const LATEST_VERSION = "0.1.0"
+const LATEST_VERSION = "0.1.1"
 const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/Tab-Application-Switcher-${LATEST_VERSION}-arm64-mac.zip`
 
 // Chrome Web Store URL
