@@ -61,6 +61,7 @@ You need to set up Chrome Web Store API access. This is a one-time setup.
 ### Step 4: Get Refresh Token
 
 1. Replace `$CLIENT_ID` with your Client ID in this URL and open it in your browser:
+
    ```
    https://accounts.google.com/o/oauth2/auth?response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&client_id=$CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob
    ```
@@ -68,6 +69,7 @@ You need to set up Chrome Web Store API access. This is a one-time setup.
 2. Authorize the app and copy the authorization code
 
 3. Exchange the code for a refresh token (replace `$CLIENT_ID`, `$CLIENT_SECRET`, and `$CODE`):
+
    ```bash
    curl "https://accounts.google.com/o/oauth2/token" -d \
    "client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&code=$CODE&grant_type=authorization_code&redirect_uri=urn:ietf:wg:oauth:2.0:oob"
@@ -98,6 +100,7 @@ npm run publish
 ```
 
 This will:
+
 1. Build the extension
 2. Create the ZIP file
 3. Upload to Chrome Web Store
@@ -110,16 +113,19 @@ This will:
 Before publishing a new version:
 
 1. Update version in `wxt.config.ts`:
+
    ```typescript
    version: "1.0.1",
    ```
 
 2. Update version in `package.json`:
+
    ```json
    "version": "1.0.1",
    ```
 
 3. Commit the changes:
+
    ```bash
    git add .
    git commit -m "Release v1.0.1"
@@ -133,14 +139,17 @@ Before publishing a new version:
 ## Troubleshooting
 
 ### "Invalid refresh token"
+
 - Your refresh token may have expired
 - Re-run Step 4 to get a new refresh token
 
 ### "Extension not found"
+
 - Check that `CHROME_EXTENSION_ID` in `.env` matches your extension ID
 - Extension ID: `mfcjanplaceclfoipcengelejgfngcan`
 
 ### "Unauthorized"
+
 - Make sure you're using the Google account that owns the extension
 - Check that the Chrome Web Store API is enabled in your Google Cloud project
 
@@ -151,4 +160,3 @@ Before publishing a new version:
 - [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
 - [Chrome Web Store Publish API Documentation](https://developer.chrome.com/docs/webstore/using-api)
 - [WXT Documentation](https://wxt.dev/guide/submit.html)
-
