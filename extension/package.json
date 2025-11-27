@@ -1,8 +1,8 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "tab-application-switcher",
+  "description": "Switch between browser tabs like you switch between applications",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -11,6 +11,7 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "publish": "npm run build && npm run zip && wxt submit --chrome-zip .output/tab-application-switcher-1.0.0-chrome.zip",
     "compile": "tsc --noEmit",
     "tc": "tsc --noEmit",
     "postinstall": "wxt prepare",
