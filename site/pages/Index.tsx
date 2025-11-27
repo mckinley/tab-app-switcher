@@ -10,7 +10,7 @@ import { TabsTooltip } from "@/components/TabsTooltip"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/Container"
 
-import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"
+import { Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
 import logo from "@/assets/logo.jpg"
 
@@ -344,8 +344,8 @@ const Index = () => {
 
           <div className="pt-8">
             <Button onClick={() => setIsSwitcherActive(true)} variant="secondary" size="lg" className="gap-2">
-              <Command className="w-4 h-4" />
-              Try Live Demo ({shortcuts.modifier}+{shortcuts.activateForward})
+              <Zap className="w-4 h-4" />
+              Try it live →
             </Button>
             <p className="text-sm text-muted-foreground mt-3">
               Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{shortcuts.modifier}</kbd> +{" "}

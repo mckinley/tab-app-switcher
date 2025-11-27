@@ -166,13 +166,14 @@ const Downloads = () => {
         {/* Browser Extensions Section */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-foreground mb-8 text-center">Browser Extensions</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="grid md:grid-cols-2 gap-6">
             {browserExtensions.map((browser) => (
-              <div key={browser.name} className="relative">
+              <div key={browser.name} className="relative bg-card border border-border rounded-xl overflow-hidden">
                 <a
                   href={browser.available ? browser.url : undefined}
-                  className={`group bg-card border border-border rounded-xl p-8 transition-colors block ${
-                    browser.available ? "hover:border-primary/50" : "pointer-events-none"
+                  className={`group p-8 transition-colors block ${
+                    browser.available ? "hover:bg-accent/5" : "pointer-events-none"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -192,7 +193,7 @@ const Downloads = () => {
 
                 {/* Coming Soon Overlay */}
                 {!browser.available && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="text-center">
                       <Info className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                       <p className="text-lg font-semibold text-foreground">Coming Soon</p>
@@ -202,6 +203,7 @@ const Downloads = () => {
                 )}
               </div>
             ))}
+            </div>
           </div>
         </div>
 
@@ -212,7 +214,8 @@ const Downloads = () => {
             The Native UI provides OS-level keyboard shortcuts and an overlay that appears above all applications, just
             like your system's application switcher.
           </p>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="grid md:grid-cols-3 gap-6">
             {nativeApps.map((app) => (
               <div
                 key={app.name}
@@ -227,7 +230,7 @@ const Downloads = () => {
 
                 {/* Coming Soon Overlay */}
                 {!app.available && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center z-10 rounded-xl">
                     <div className="text-center space-y-2">
                       <Info className="w-12 h-12 text-muted-foreground mx-auto" />
                       <p className="text-lg font-semibold text-foreground">Coming Soon</p>
@@ -271,6 +274,7 @@ const Downloads = () => {
                 )}
               </div>
             ))}
+            </div>
           </div>
         </div>
 
