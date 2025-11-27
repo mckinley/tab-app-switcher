@@ -19,6 +19,7 @@ import {
   sendMessageToExtension,
   isExtensionConnected
 } from './websocketServer'
+import { setupAutoUpdater } from './autoUpdater'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
@@ -340,6 +341,9 @@ app.whenReady().then(() => {
     }
   }, 3000)
 
+  // Setup auto-updater
+  setupAutoUpdater()
+
   // IPC handlers
   ipcMain.on('ping', () => console.log('pong'))
 
@@ -390,4 +394,10 @@ process.on('unhandledRejection', (reason) => {
 app.on('will-quit', () => {
   // Unregister all shortcuts
   globalShortcut.unregisterAll()
+
+  // Destroy tray icon
+  if (tray) {
+    tray.destroy()
+    tray = null
+  }
 })

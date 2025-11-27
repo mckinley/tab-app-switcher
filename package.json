@@ -42,7 +42,11 @@
     "format:native": "npm run format --workspace=native",
     "format:all": "npm run format && npm run format --workspace=site && npm run format --workspace=extension && npm run format --workspace=tas && npm run format --workspace=native",
     "format:check:all": "npm run format:check && npm run format:check --workspace=site && npm run format:check --workspace=extension && npm run format:check --workspace=tas && npm run format:check --workspace=native",
-    "preview": "npm run preview --workspace=site"
+    "preview": "npm run preview --workspace=site",
+    "publish:native": "npm run publish --workspace=native",
+    "publish:native:mac": "npm run publish:mac --workspace=native",
+    "publish:native:win": "npm run publish:win --workspace=native",
+    "publish:native:linux": "npm run publish:linux --workspace=native"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

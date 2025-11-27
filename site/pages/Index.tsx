@@ -14,6 +14,15 @@ import { Command, Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from 
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
 import logo from "@/assets/logo.jpg"
 
+// GitHub release URLs
+const GITHUB_REPO = "mckinley/tab-app-switcher"
+const LATEST_VERSION = "0.1.0"
+const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/Tab-Application-Switcher-${LATEST_VERSION}-arm64-mac.zip`
+
+// Chrome Web Store URL
+const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
+const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTENSION_ID}`
+
 // Demo tab pool - these represent potential tabs that can be opened
 const DEMO_TAB_POOL: Tab[] = [
   {
@@ -294,17 +303,42 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
-              <a href="#chrome-store" target="_blank" rel="noopener noreferrer">
-                <Download className="w-5 h-5" />
-                Install {getBrowserDisplayName(platform.browser)} Extension
-              </a>
+            <Button
+              size="lg"
+              className="gap-2 text-lg px-8 py-6"
+              asChild={platform.browser === "chrome"}
+              disabled={platform.browser !== "chrome"}
+            >
+              {platform.browser === "chrome" ? (
+                <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
+                  <Download className="w-5 h-5" />
+                  Install {getBrowserDisplayName(platform.browser)} Extension
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
+                </>
+              )}
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6" asChild>
-              <a href="#download-native" download>
-                <Download className="w-5 h-5" />
-                Download for {getOSDisplayName(platform.os)}
-              </a>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 text-lg px-8 py-6"
+              asChild={platform.os === "mac"}
+              disabled={platform.os !== "mac"}
+            >
+              {platform.os === "mac" ? (
+                <a href={MACOS_DOWNLOAD_URL} download>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)} (Coming Soon)
+                </>
+              )}
             </Button>
           </div>
 
@@ -448,17 +482,42 @@ const Index = () => {
             Install the browser extension and native UI to get started
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
-              <a href="#chrome-store" target="_blank" rel="noopener noreferrer">
-                <Download className="w-5 h-5" />
-                Install {getBrowserDisplayName(platform.browser)} Extension
-              </a>
+            <Button
+              size="lg"
+              className="gap-2 text-lg px-8 py-6"
+              asChild={platform.browser === "chrome"}
+              disabled={platform.browser !== "chrome"}
+            >
+              {platform.browser === "chrome" ? (
+                <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
+                  <Download className="w-5 h-5" />
+                  Install {getBrowserDisplayName(platform.browser)} Extension
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
+                </>
+              )}
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6" asChild>
-              <a href="#download-native" download>
-                <Download className="w-5 h-5" />
-                Download for {getOSDisplayName(platform.os)}
-              </a>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 text-lg px-8 py-6"
+              asChild={platform.os === "mac"}
+              disabled={platform.os !== "mac"}
+            >
+              {platform.os === "mac" ? (
+                <a href={MACOS_DOWNLOAD_URL} download>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)} (Coming Soon)
+                </>
+              )}
             </Button>
           </div>
 

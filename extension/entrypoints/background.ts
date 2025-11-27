@@ -194,7 +194,6 @@ export default defineBackground(() => {
     }
   })
 
-
   // Listen for tab changes and notify native app
   browser.tabs.onCreated.addListener(() => notifyNativeApp(mruTabOrder))
   browser.tabs.onRemoved.addListener(() => notifyNativeApp(mruTabOrder))

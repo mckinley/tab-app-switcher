@@ -19,7 +19,7 @@ This repository contains multiple projects:
 - **`site/`** - Marketing website showcasing TAS functionality with live demo
 - **`extension/`** - Browser extension that brings TAS to Chrome and Firefox
 - **`tas/`** - Self-contained component library with the core TAS functionality
-- **`native/`** (future) - Desktop app using Electron
+- **`native/`** - Electron desktop app for OS-level keyboard shortcuts
 
 ### Shared Architecture
 
@@ -51,7 +51,10 @@ npm run dev:site
 # Run the browser extension
 npm run dev:extension
 
-# Run both in parallel
+# Run the native app
+npm run dev:native
+
+# Run both site and extension in parallel
 npm run dev:all
 ```
 
@@ -98,10 +101,39 @@ The site can be deployed to any static hosting platform (Vercel, Netlify, etc.).
 
 See [`extension/README.md`](extension/README.md) for Chrome Web Store packaging instructions.
 
+### Native App Releases
+
+The native app uses GitHub Releases for distribution with auto-updates via `electron-updater`.
+
+**Setup:**
+
+1. Create `.env` file in `native/` directory:
+   ```bash
+   cp native/.env.example native/.env
+   ```
+2. Add your GitHub token to `.env`:
+   ```
+   GH_TOKEN=your_github_token_here
+   ```
+3. Get a token from: https://github.com/settings/tokens/new (scope: `repo`)
+
+**Publishing a release:**
+
+```bash
+# From root directory
+npm run publish:native:mac
+
+# Or from native directory
+cd native && npm run publish:mac
+```
+
+This will build the app, create a GitHub release, and upload the installer. Users will get automatic updates.
+
 ## Project-Specific Documentation
 
 - **Site**: See `site/` directory
 - **Extension**: See [`extension/README.md`](extension/README.md)
+- **Native App**: See [`native/RELEASE_SETUP.md`](native/RELEASE_SETUP.md)
 - **TAS Library**: See [`tas/README.md`](tas/README.md)
 
 ## Contributing

@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: native
+appId: com.tabappswitcher.native
+productName: Tab Application Switcher
 directories:
   buildResources: build
 files:
@@ -19,6 +19,8 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  target:
+    - zip
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -26,8 +28,6 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
@@ -39,7 +39,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: mckinley
+  repo: tab-app-switcher
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
