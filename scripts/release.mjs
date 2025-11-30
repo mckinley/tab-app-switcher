@@ -132,11 +132,12 @@ async function main() {
 
   console.log(`\n✅ Release v${newVersion} complete!`)
   console.log(`\n   GitHub Release: https://github.com/mckinley/tab-app-switcher/releases/tag/v${newVersion}`)
-  console.log(`   Chrome Web Store: https://chrome.google.com/webstore/detail/${process.env.CHROME_EXTENSION_ID || "mfcjanplaceclfoipcengelejgfngcan"}`)
+  console.log(
+    `   Chrome Web Store: https://chrome.google.com/webstore/detail/${process.env.CHROME_EXTENSION_ID || "mfcjanplaceclfoipcengelejgfngcan"}`,
+  )
 }
 
 main().catch((error) => {
   console.error("\n❌ Release failed:", error.message)
   process.exit(1)
 })
-

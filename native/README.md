@@ -50,6 +50,7 @@ npm run publish:mac   # Build and publish to GitHub Releases
 ```
 
 Or use the monorepo release command:
+
 ```bash
 npm run release patch   # From root directory
 ```

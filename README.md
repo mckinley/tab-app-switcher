@@ -24,14 +24,14 @@ npm run dev:native      # Run the native app
 
 ## Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev:site` | Start the marketing site |
-| `npm run dev:extension` | Start the browser extension |
-| `npm run dev:native` | Start the native Electron app |
-| `npm run build:all` | Build all projects |
-| `npm run prep` | Format, lint, and test (run before committing) |
-| `npm run release <version>` | Release new version (see below) |
+| Command                     | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `npm run dev:site`          | Start the marketing site                       |
+| `npm run dev:extension`     | Start the browser extension                    |
+| `npm run dev:native`        | Start the native Electron app                  |
+| `npm run build:all`         | Build all projects                             |
+| `npm run prep`              | Format, lint, and test (run before committing) |
+| `npm run release <version>` | Release new version (see below)                |
 
 ## Releasing
 
@@ -44,6 +44,7 @@ npm run release major   # 1.0.0 → 2.0.0
 ```
 
 This will:
+
 1. Bump versions in all projects
 2. Run `npm run prep` (format, lint, test)
 3. Commit and tag
