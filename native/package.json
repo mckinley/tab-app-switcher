@@ -26,10 +26,10 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "publish": "npm run build && dotenv -e .env -- electron-builder -p always",
-    "publish:mac": "npm run build && dotenv -e .env -- electron-builder --mac -p always",
-    "publish:win": "npm run build && dotenv -e .env -- electron-builder --win -p always",
-    "publish:linux": "npm run build && dotenv -e .env -- electron-builder --linux -p always"
+    "publish": "npm run build && electron-builder -p always",
+    "publish:mac": "npm run build && electron-builder --mac -p always",
+    "publish:win": "npm run build && electron-builder --win -p always",
+    "publish:linux": "npm run build && electron-builder --linux -p always"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
