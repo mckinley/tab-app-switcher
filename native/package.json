@@ -1,6 +1,6 @@
 {
   "name": "@tab-app-switcher/native",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Tab Application Switcher - Native desktop application",
   "main": "./out/main/index.js",
   "private": true,
