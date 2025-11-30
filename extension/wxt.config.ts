@@ -7,7 +7,7 @@ export default defineConfig({
   manifest: {
     name: "Tab Application Switcher",
     description: "Switch between browser tabs like you switch between applications",
-    version: "1.0.4",
+    version: "1.0.5",
     permissions: ["tabs", "storage"],
     host_permissions: ["<all_urls>"],
     icons: {
