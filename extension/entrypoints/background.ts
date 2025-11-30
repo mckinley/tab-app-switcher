@@ -91,7 +91,8 @@ export default defineBackground(() => {
     await saveMruHistory()
 
     // Connect to native app after MRU order is initialized
-    connectToNativeApp(browser, mruTabOrder, updateMruOrder)
+    // Pass a getter function to avoid stale closure issues when mruTabOrder is reassigned
+    connectToNativeApp(browser, () => mruTabOrder, updateMruOrder)
   })()
 
   // Listen for tab activation
@@ -195,10 +196,11 @@ export default defineBackground(() => {
   })
 
   // Listen for tab changes and notify native app
-  browser.tabs.onCreated.addListener(() => notifyNativeApp(mruTabOrder))
-  browser.tabs.onRemoved.addListener(() => notifyNativeApp(mruTabOrder))
-  browser.tabs.onUpdated.addListener(() => notifyNativeApp(mruTabOrder))
-  browser.tabs.onActivated.addListener(() => notifyNativeApp(mruTabOrder))
+  browser.tabs.onCreated.addListener(() => notifyNativeApp())
+  browser.tabs.onRemoved.addListener(() => notifyNativeApp())
+  browser.tabs.onUpdated.addListener(() => notifyNativeApp())
+  browser.tabs.onActivated.addListener(() => notifyNativeApp())
+  browser.tabs.onReplaced.addListener(() => notifyNativeApp())
 
   // Handle messages from popup
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {

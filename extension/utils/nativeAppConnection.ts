@@ -8,13 +8,17 @@ const UPDATE_DEBOUNCE = 100 // 100ms
 let ws: WebSocket | null = null
 let updateTimeout: ReturnType<typeof setTimeout> | null = null
 let browserInstance: any = null
+let getMruTabOrder: (() => number[]) | null = null
+let updateMruOrderFn: ((tabId: number) => void) | null = null
 
 /**
  * Get tabs in MRU (Most Recently Used) order with favicon data URLs
  */
-async function getTabsInMruOrder(mruTabOrder: number[]): Promise<Tab[]> {
+async function getTabsInMruOrder(): Promise<Tab[]> {
   if (!browserInstance) throw new Error("Browser instance not initialized")
+  if (!getMruTabOrder) throw new Error("MRU getter not initialized")
 
+  const mruTabOrder = getMruTabOrder()
   const browserTabs = await browserInstance.tabs.query({})
 
   // Convert tabs to our format and fetch favicon data URLs in parallel
@@ -49,14 +53,14 @@ export function isNativeAppConnected(): boolean {
 /**
  * Notify native app of tab updates (debounced)
  */
-export function notifyNativeApp(mruTabOrder: number[]): void {
+export function notifyNativeApp(): void {
   if (!ws || ws.readyState !== WebSocket.OPEN) return
 
   // Debounce updates to avoid flooding the native app
   if (updateTimeout) clearTimeout(updateTimeout)
 
   updateTimeout = setTimeout(() => {
-    getTabsInMruOrder(mruTabOrder).then((tabs) => {
+    getTabsInMruOrder().then((tabs) => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         console.log("Sending TABS_UPDATED to native app:", tabs.length, "tabs")
         ws.send(JSON.stringify({ type: "TABS_UPDATED", tabs }))
@@ -68,14 +72,14 @@ export function notifyNativeApp(mruTabOrder: number[]): void {
 /**
  * Handle messages from native app
  */
-function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder: (tabId: number) => void): void {
+function handleNativeMessage(message: any): void {
   if (!browserInstance) return
 
   console.log("Message from native app:", message)
 
   if (message.type === "GET_TABS") {
     // Native app is requesting fresh tab list
-    getTabsInMruOrder(mruTabOrder).then((tabs) => {
+    getTabsInMruOrder().then((tabs) => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         console.log("Sending TABS_RESPONSE to native app:", tabs.length, "tabs")
         ws.send(JSON.stringify({ type: "TABS_RESPONSE", tabs }))
@@ -92,7 +96,7 @@ function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder
         }
       })
       .then(() => {
-        updateMruOrder(tabId)
+        if (updateMruOrderFn) updateMruOrderFn(tabId)
       })
       .catch((error: any) => {
         console.error("Error activating tab:", error)
@@ -107,43 +111,56 @@ function handleNativeMessage(message: any, mruTabOrder: number[], updateMruOrder
 
 /**
  * Connect to native app via WebSocket
+ * @param browser - Browser API instance
+ * @param getMruOrder - Getter function that returns current MRU tab order (avoids stale closures)
+ * @param updateMruOrder - Function to update MRU order when tab is activated
  */
-export function connectToNativeApp(browser: any, mruTabOrder: number[], updateMruOrder: (tabId: number) => void): void {
+export function connectToNativeApp(
+  browser: any,
+  getMruOrder: () => number[],
+  updateMruOrder: (tabId: number) => void,
+): void {
   browserInstance = browser
+  getMruTabOrder = getMruOrder
+  updateMruOrderFn = updateMruOrder
 
-  try {
-    console.log("Connecting to native app via WebSocket...")
+  function attemptConnection(): void {
+    try {
+      console.log("Connecting to native app via WebSocket...")
 
-    ws = new WebSocket(WS_URL)
+      ws = new WebSocket(WS_URL)
 
-    ws.onopen = () => {
-      console.log("Connected to native app")
-      // Send initial tab list
-      notifyNativeApp(mruTabOrder)
-    }
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data)
-        handleNativeMessage(message, mruTabOrder, updateMruOrder)
-      } catch (error) {
-        console.error("Error parsing message from native app:", error)
+      ws.onopen = () => {
+        console.log("Connected to native app")
+        // Send initial tab list
+        notifyNativeApp()
       }
-    }
 
-    ws.onclose = () => {
-      console.log("Native app disconnected")
-      ws = null
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data)
+          handleNativeMessage(message)
+        } catch (error) {
+          console.error("Error parsing message from native app:", error)
+        }
+      }
+
+      ws.onclose = () => {
+        console.log("Native app disconnected")
+        ws = null
+        // Try to reconnect after delay
+        setTimeout(attemptConnection, RECONNECT_DELAY)
+      }
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error)
+      }
+    } catch (error) {
+      console.error("Failed to connect to native app:", error)
       // Try to reconnect after delay
-      setTimeout(() => connectToNativeApp(browser, mruTabOrder, updateMruOrder), RECONNECT_DELAY)
+      setTimeout(attemptConnection, RECONNECT_DELAY)
     }
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error)
-    }
-  } catch (error) {
-    console.error("Failed to connect to native app:", error)
-    // Try to reconnect after delay
-    setTimeout(() => connectToNativeApp(browser, mruTabOrder, updateMruOrder), RECONNECT_DELAY)
   }
+
+  attemptConnection()
 }

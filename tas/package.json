@@ -9,7 +9,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "lint": "eslint .",
+    "lint:eslint": "eslint .",
+    "lint:eslint:fix": "eslint --fix .",
+    "lint": "npm run lint:eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

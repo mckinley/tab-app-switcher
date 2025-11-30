@@ -17,6 +17,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "tc": "npm run typecheck",
     "lint:eslint": "eslint --cache .",
+    "lint:eslint:fix": "eslint --cache --fix .",
     "lint": "npm run tc && npm run lint:eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

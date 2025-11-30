@@ -13,6 +13,7 @@
     "test:run": "vitest run",
     "tc": "tsc --noEmit",
     "lint:eslint": "eslint .",
+    "lint:eslint:fix": "eslint --fix .",
     "lint": "npm run tc && npm run lint:eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
