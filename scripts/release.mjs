@@ -14,6 +14,7 @@ import { execSync } from "child_process"
 import { readFileSync, writeFileSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
+import dotenv from "dotenv"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(__dirname, "..")
@@ -121,12 +122,20 @@ async function main() {
   // Publish native app
   if (!extensionOnly) {
     console.log(`\n🖥️  Publishing native app to GitHub...`)
+    const nativeEnv = dotenv.config({ path: join(rootDir, "native/.env") })
+    if (nativeEnv.error) {
+      throw new Error(`Failed to load native/.env: ${nativeEnv.error.message}`)
+    }
     run("npm run publish:mac", { cwd: join(rootDir, "native") })
   }
 
   // Publish extension
   if (!nativeOnly) {
     console.log(`\n🧩 Publishing extension to Chrome Web Store...`)
+    const extensionEnv = dotenv.config({ path: join(rootDir, "extension/.env") })
+    if (extensionEnv.error) {
+      throw new Error(`Failed to load extension/.env: ${extensionEnv.error.message}`)
+    }
     run("npm run publish", { cwd: join(rootDir, "extension") })
   }
 
