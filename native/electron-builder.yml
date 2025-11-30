@@ -42,5 +42,6 @@ publish:
   provider: github
   owner: mckinley
   repo: tab-app-switcher
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

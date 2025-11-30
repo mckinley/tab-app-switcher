@@ -45,6 +45,7 @@
     "format:all": "npm run format && npm run format --workspace=site && npm run format --workspace=extension && npm run format --workspace=tas && npm run format --workspace=native",
     "format:check:all": "npm run format:check && npm run format:check --workspace=site && npm run format:check --workspace=extension && npm run format:check --workspace=tas && npm run format:check --workspace=native",
     "prep": "npm run format:all && npm run lint:fix && npm run lint:all && npm run test:all",
+    "release": "node scripts/release.mjs",
     "preview": "npm run preview --workspace=site",
     "publish:native": "npm run publish --workspace=native",
     "publish:native:mac": "npm run publish:mac --workspace=native",
