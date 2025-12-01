@@ -54,6 +54,15 @@ This will:
 
 **Prerequisites:** Set up credentials in `extension/.env` and `native/.env` (see each project's README).
 
+## Other Platforms
+
+The extension supports Firefox, Edge, and Safari. The native app can potentially support Windows and Linux.
+
+| Component | Documentation |
+|-----------|---------------|
+| Extension | [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md) |
+| Native App | [native/CROSS_PLATFORM.md](native/CROSS_PLATFORM.md) |
+
 ## Technologies
 
 - **Build:** Vite, TypeScript

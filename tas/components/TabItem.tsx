@@ -2,15 +2,17 @@ import { cn } from "../lib/utils"
 import { Tab } from "../types/tabs"
 import { X } from "lucide-react"
 import { TabFavicon } from "./TabFavicon"
+import { BrowserIcon } from "./BrowserIcon"
 
 interface TabItemProps {
   tab: Tab
   isSelected: boolean
   onClick: () => void
   onClose?: (e: React.MouseEvent) => void
+  showBrowserIcon?: boolean
 }
 
-export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => {
+export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: TabItemProps) => {
   return (
     <button
       onClick={onClick}
@@ -23,6 +25,13 @@ export const TabItem = ({ tab, isSelected, onClick, onClose }: TabItemProps) => 
           : "hover:bg-[hsl(var(--switcher-item-hover))]",
       )}
     >
+      {/* Browser Icon (shown when multiple browsers connected) */}
+      {showBrowserIcon && tab.browser && (
+        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+          <BrowserIcon browser={tab.browser} className="w-3.5 h-3.5" />
+        </div>
+      )}
+
       {/* Favicon */}
       <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {tab.favicon ? (

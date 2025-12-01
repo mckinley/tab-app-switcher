@@ -4,7 +4,12 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+        '@tas': resolve(__dirname, '../tas')
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

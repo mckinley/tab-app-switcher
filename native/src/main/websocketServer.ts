@@ -1,12 +1,14 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import type { BrowserType } from '@tas/types/tabs'
 
 const PORT = 48125
 
 let wss: WebSocketServer | null = null
-const clients: Set<WebSocket> = new Set()
+// Map of browser type to WebSocket connection
+const browserClients: Map<BrowserType, WebSocket> = new Map()
 let connectionChangeCallback: (() => void) | null = null
 
-export type MessageHandler = (message: { type: string; tabs?: unknown[] }) => void
+export type MessageHandler = (message: { type: string; tabs?: unknown[]; browser?: BrowserType }) => void
 
 export function startWebSocketServer(
   messageHandler: MessageHandler,
@@ -26,13 +28,28 @@ export function startWebSocketServer(
   })
 
   wss.on('connection', (ws: WebSocket) => {
-    console.log('Extension connected')
-    clients.add(ws)
-    connectionChangeCallback?.()
+    console.log('Extension connected (awaiting browser identification)')
+
+    // Temporary storage for unidentified connection
+    let identifiedBrowser: BrowserType | null = null
 
     ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString())
+
+        // Handle browser identification message
+        if (message.type === 'BROWSER_IDENTIFY' && message.browser) {
+          identifiedBrowser = message.browser as BrowserType
+          browserClients.set(identifiedBrowser, ws)
+          console.log(`Browser identified: ${identifiedBrowser}`)
+          connectionChangeCallback?.()
+          return
+        }
+
+        // Attach browser info to message for handler
+        if (identifiedBrowser) {
+          message.browser = identifiedBrowser
+        }
         messageHandler(message)
       } catch (error) {
         console.error('Error parsing message:', error)
@@ -40,14 +57,20 @@ export function startWebSocketServer(
     })
 
     ws.on('close', () => {
-      console.log('Extension disconnected')
-      clients.delete(ws)
+      if (identifiedBrowser) {
+        console.log(`${identifiedBrowser} extension disconnected`)
+        browserClients.delete(identifiedBrowser)
+      } else {
+        console.log('Unidentified extension disconnected')
+      }
       connectionChangeCallback?.()
     })
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error)
-      clients.delete(ws)
+      if (identifiedBrowser) {
+        browserClients.delete(identifiedBrowser)
+      }
       connectionChangeCallback?.()
     })
   })
@@ -57,24 +80,45 @@ export function startWebSocketServer(
   })
 }
 
-export function sendMessageToExtension(message: { type: string; tabId?: string }): void {
+// Send message to a specific browser's extension
+export function sendMessageToBrowser(
+  browser: BrowserType,
+  message: { type: string; tabId?: string }
+): void {
+  const client = browserClients.get(browser)
+  if (client && client.readyState === WebSocket.OPEN) {
+    client.send(JSON.stringify(message))
+  }
+}
+
+// Send message to all connected extensions
+export function sendMessageToAllExtensions(message: { type: string; tabId?: string }): void {
   const messageStr = JSON.stringify(message)
-  clients.forEach((client) => {
+  browserClients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(messageStr)
     }
   })
 }
 
+// Legacy function for backwards compatibility - sends to all extensions
+export function sendMessageToExtension(message: { type: string; tabId?: string }): void {
+  sendMessageToAllExtensions(message)
+}
+
 export function stopWebSocketServer(): void {
   if (wss) {
     wss.close()
     wss = null
-    clients.clear()
+    browserClients.clear()
     console.log('WebSocket server stopped')
   }
 }
 
 export function isExtensionConnected(): boolean {
-  return clients.size > 0
+  return browserClients.size > 0
+}
+
+export function getConnectedBrowsers(): BrowserType[] {
+  return Array.from(browserClients.keys())
 }

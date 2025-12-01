@@ -79,3 +79,7 @@ open /Applications/Tab\ Application\ Switcher.app
 - **"GH_TOKEN not found"**: Ensure `.env` exists with a valid token
 - **Build fails with signing errors**: Run `export CSC_IDENTITY_AUTO_DISCOVERY=false` before building
 - **Auto-update not working**: Ensure the release is published (not draft) on GitHub
+
+## Other Platforms
+
+For Windows and Linux development, see [CROSS_PLATFORM.md](./CROSS_PLATFORM.md).

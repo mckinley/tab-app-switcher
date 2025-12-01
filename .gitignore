@@ -27,3 +27,6 @@ dist-ssr
 *storybook.log
 storybook-static
 .vercel
+
+# Generated Safari Xcode project
+safari-extension/

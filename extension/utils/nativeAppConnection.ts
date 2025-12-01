@@ -1,4 +1,4 @@
-import { Tab } from "@tas/types/tabs"
+import { Tab, BrowserType } from "@tas/types/tabs"
 import { getFaviconDataUrl } from "./faviconCache"
 
 const WS_URL = "ws://localhost:48125"
@@ -10,6 +10,33 @@ let updateTimeout: ReturnType<typeof setTimeout> | null = null
 let browserInstance: any = null
 let getMruTabOrder: (() => number[]) | null = null
 let updateMruOrderFn: ((tabId: number) => void) | null = null
+let currentBrowserType: BrowserType = "unknown"
+
+/**
+ * Detect which browser this extension is running in
+ */
+function detectBrowser(): BrowserType {
+  const userAgent = navigator.userAgent.toLowerCase()
+
+  // Check for Edge first since it also contains "chrome"
+  if (userAgent.includes("edg/")) {
+    return "edge"
+  }
+  // Firefox
+  if (userAgent.includes("firefox")) {
+    return "firefox"
+  }
+  // Safari (check before Chrome since Safari can include "chrome" in some contexts)
+  if (userAgent.includes("safari") && !userAgent.includes("chrome")) {
+    return "safari"
+  }
+  // Chrome (and Chromium-based browsers that aren't Edge)
+  if (userAgent.includes("chrome")) {
+    return "chrome"
+  }
+
+  return "unknown"
+}
 
 /**
  * Get tabs in MRU (Most Recently Used) order with favicon data URLs
@@ -32,6 +59,7 @@ async function getTabsInMruOrder(): Promise<Tab[]> {
       favicon: faviconDataUrl,
       windowId: tab.windowId,
       index: tab.index,
+      browser: currentBrowserType,
     } as Tab
   })
 
@@ -123,6 +151,8 @@ export function connectToNativeApp(
   browserInstance = browser
   getMruTabOrder = getMruOrder
   updateMruOrderFn = updateMruOrder
+  currentBrowserType = detectBrowser()
+  console.log("Detected browser type:", currentBrowserType)
 
   function attemptConnection(): void {
     try {
@@ -132,7 +162,9 @@ export function connectToNativeApp(
 
       ws.onopen = () => {
         console.log("Connected to native app")
-        // Send initial tab list
+        // Send browser identification first
+        ws!.send(JSON.stringify({ type: "BROWSER_IDENTIFY", browser: currentBrowserType }))
+        // Then send initial tab list
         notifyNativeApp()
       }
 

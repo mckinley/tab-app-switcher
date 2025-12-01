@@ -11,21 +11,106 @@ import {
   Notification
 } from 'electron'
 import { join } from 'path'
+import { exec } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import trayIconPath from '../../resources/tas.png?asset'
 import {
   startWebSocketServer,
-  sendMessageToExtension,
-  isExtensionConnected
+  sendMessageToBrowser,
+  sendMessageToAllExtensions,
+  isExtensionConnected,
+  getConnectedBrowsers
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
+import type { BrowserType } from '@tas/types/tabs'
+
+interface CachedTab {
+  id: string
+  title: string
+  url: string
+  favicon: string
+  windowId?: number
+  index?: number
+  browser?: BrowserType
+}
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
-let cachedTabs: unknown[] = []
+// Global MRU list of all tabs across all browsers
+let globalMruTabs: CachedTab[] = []
+// Per-browser tab caches (updated when each browser sends TABS_UPDATED)
+const browserTabCaches: Map<BrowserType, CachedTab[]> = new Map()
 let settingsWindow: BrowserWindow | null = null
 let tabManagementWindow: BrowserWindow | null = null
+
+// Map browser types to application names for AppleScript
+const browserAppNames: Record<BrowserType, string> = {
+  chrome: 'Google Chrome',
+  firefox: 'Firefox',
+  edge: 'Microsoft Edge',
+  safari: 'Safari',
+  unknown: 'Google Chrome'
+}
+
+/**
+ * Activate (focus) a browser application using AppleScript
+ */
+function activateBrowserApp(browser: BrowserType): void {
+  if (process.platform !== 'darwin') return
+
+  const appName = browserAppNames[browser]
+  const script = `tell application "${appName}" to activate`
+
+  exec(`osascript -e '${script}'`, (error) => {
+    if (error) {
+      console.error(`Failed to activate ${appName}:`, error)
+    }
+  })
+}
+
+/**
+ * Merge tabs from all browsers into a single global MRU list
+ * Preserves existing order for tabs that are still present
+ */
+function updateGlobalMruTabs(): void {
+  // Get all current tabs from all browser caches
+  const allCurrentTabs = new Map<string, CachedTab>()
+  browserTabCaches.forEach((tabs, browser) => {
+    tabs.forEach((tab) => {
+      // Create a unique key combining browser and tab ID
+      const key = `${browser}:${tab.id}`
+      allCurrentTabs.set(key, { ...tab, browser })
+    })
+  })
+
+  // Remove tabs from global MRU that no longer exist
+  globalMruTabs = globalMruTabs.filter((tab) => {
+    const key = `${tab.browser}:${tab.id}`
+    return allCurrentTabs.has(key)
+  })
+
+  // Add new tabs to the end of the global MRU (they'll move up when accessed)
+  const existingKeys = new Set(globalMruTabs.map((tab) => `${tab.browser}:${tab.id}`))
+  allCurrentTabs.forEach((tab, key) => {
+    if (!existingKeys.has(key)) {
+      globalMruTabs.push(tab)
+    }
+  })
+}
+
+/**
+ * Move a tab to the front of the global MRU list
+ */
+function promoteTabInGlobalMru(browser: BrowserType, tabId: string): void {
+  const key = `${browser}:${tabId}`
+  const index = globalMruTabs.findIndex((tab) => `${tab.browser}:${tab.id}` === key)
+
+  if (index > 0) {
+    const [tab] = globalMruTabs.splice(index, 1)
+    globalMruTabs.unshift(tab)
+  }
+}
 
 // Hide dock icon on macOS (menu bar app only)
 if (process.platform === 'darwin' && app.dock) {
@@ -34,12 +119,12 @@ if (process.platform === 'darwin' && app.dock) {
 
 function createTasOverlay(): void {
   if (tasWindow) {
-    // Send cached tabs immediately so window isn't empty
-    if (cachedTabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', cachedTabs)
+    // Send global MRU tabs immediately so window isn't empty
+    if (globalMruTabs.length > 0) {
+      tasWindow.webContents.send('tabs-updated', globalMruTabs)
     }
-    // Request fresh tabs from extension (will update when response arrives)
-    sendMessageToExtension({ type: 'GET_TABS' })
+    // Request fresh tabs from all connected extensions
+    sendMessageToAllExtensions({ type: 'GET_TABS' })
     // Reset selection to second tab when reopening
     tasWindow.webContents.send('reset-selection')
     tasWindow.show()
@@ -81,9 +166,9 @@ function createTasOverlay(): void {
     // Unregister global shortcut so the window can handle Alt+Tab
     globalShortcut.unregister('Alt+Tab')
 
-    // Send cached tabs to the window
-    if (tasWindow && cachedTabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', cachedTabs)
+    // Send global MRU tabs to the window
+    if (tasWindow && globalMruTabs.length > 0) {
+      tasWindow.webContents.send('tabs-updated', globalMruTabs)
     }
 
     tasWindow?.show()
@@ -282,7 +367,7 @@ function updateTrayMenu(): void {
 function showExtensionNotInstalledNotification(): void {
   const notification = new Notification({
     title: 'Tab Application Switcher',
-    body: 'Chrome extension not detected. Install the extension to use Tab Application Switcher.',
+    body: 'Browser extension not detected. Install the extension to use Tab Application Switcher.',
     silent: false
   })
 
@@ -294,20 +379,27 @@ function showExtensionNotInstalledNotification(): void {
 }
 
 // Message handler for WebSocket messages from extension
-function handleExtensionMessage(msg: { type: string; tabs?: unknown[] }): void {
+function handleExtensionMessage(msg: { type: string; tabs?: unknown[]; browser?: BrowserType }): void {
   if (msg.type === 'TABS_UPDATED' || msg.type === 'TABS_RESPONSE') {
-    // Extension is pushing updated tab list (or responding to GET_TABS request)
-    cachedTabs = msg.tabs || []
-    console.log('Updated tab cache:', cachedTabs.length, 'tabs')
+    const browser = msg.browser || 'unknown'
+    const tabs = (msg.tabs || []) as CachedTab[]
 
-    // If TAS window is open, send updated tabs to it
+    // Store per-browser cache
+    browserTabCaches.set(browser, tabs)
+    console.log(`Updated ${browser} tab cache:`, tabs.length, 'tabs')
+
+    // Rebuild global MRU from all browser caches
+    updateGlobalMruTabs()
+    console.log('Global MRU tabs:', globalMruTabs.length, 'tabs from', getConnectedBrowsers().join(', '))
+
+    // If TAS window is open, send global MRU tabs to it
     if (tasWindow && !tasWindow.isDestroyed()) {
-      tasWindow.webContents.send('tabs-updated', cachedTabs)
+      tasWindow.webContents.send('tabs-updated', globalMruTabs)
     }
 
-    // If Tab Management window is open, send updated tabs to it
+    // If Tab Management window is open, send global MRU tabs to it
     if (tabManagementWindow && !tabManagementWindow.isDestroyed()) {
-      tabManagementWindow.webContents.send('tabs-updated', cachedTabs)
+      tabManagementWindow.webContents.send('tabs-updated', globalMruTabs)
     }
   }
 }
@@ -359,19 +451,35 @@ app.whenReady().then(() => {
     createTabManagementWindow()
   })
 
-  // Tab management IPC handlers - forward to extension
-  ipcMain.on('activate-tab', (_event, tabId: string) => {
-    sendMessageToExtension({ type: 'ACTIVATE_TAB', tabId })
+  // Tab management IPC handlers - forward to correct browser's extension
+  ipcMain.on('activate-tab', (_event, tabId: string, browser?: BrowserType) => {
+    // Find the tab in global MRU to get its browser if not provided
+    const tab = globalMruTabs.find((t) => t.id === tabId)
+    const targetBrowser = browser || tab?.browser || 'chrome'
+
+    // Send activation message to the specific browser
+    sendMessageToBrowser(targetBrowser, { type: 'ACTIVATE_TAB', tabId })
+
+    // Activate the browser application
+    activateBrowserApp(targetBrowser)
+
+    // Promote this tab in the global MRU
+    promoteTabInGlobalMru(targetBrowser, tabId)
   })
 
-  ipcMain.on('close-tab', (_event, tabId: string) => {
-    sendMessageToExtension({ type: 'CLOSE_TAB', tabId })
+  ipcMain.on('close-tab', (_event, tabId: string, browser?: BrowserType) => {
+    // Find the tab in global MRU to get its browser if not provided
+    const tab = globalMruTabs.find((t) => t.id === tabId)
+    const targetBrowser = browser || tab?.browser || 'chrome'
+
+    // Send close message to the specific browser
+    sendMessageToBrowser(targetBrowser, { type: 'CLOSE_TAB', tabId })
   })
 
-  // Send cached tabs to tab management window when requested
+  // Send global MRU tabs when requested
   ipcMain.on('request-tabs', (event) => {
-    console.log('Tab Management requested tabs, sending:', cachedTabs.length, 'tabs')
-    event.sender.send('tabs-updated', cachedTabs)
+    console.log('Tab Management requested tabs, sending:', globalMruTabs.length, 'tabs')
+    event.sender.send('tabs-updated', globalMruTabs)
   })
 })
 

@@ -105,3 +105,7 @@ npm run release patch   # From root directory
 - **Invalid refresh token**: Re-run the OAuth Playground steps to get a new token (tokens expire after 7 days if OAuth app is in Testing mode)
 - **Extension not found**: Verify `CHROME_EXTENSION_ID` matches your extension
 - **Unauthorized**: Ensure OAuth credentials are from the same Google account that owns the extension
+
+## Other Browsers
+
+This extension also supports Firefox, Edge, and Safari. See [CROSS_BROWSER.md](./CROSS_BROWSER.md) for development and publishing instructions for other browsers.

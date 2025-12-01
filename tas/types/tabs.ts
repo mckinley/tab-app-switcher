@@ -3,6 +3,8 @@
  * Used by both the website demo and the browser extension
  */
 
+export type BrowserType = "chrome" | "firefox" | "edge" | "safari" | "unknown"
+
 export interface Tab {
   id: string
   title: string
@@ -10,6 +12,7 @@ export interface Tab {
   favicon: string
   windowId?: number // Optional: browser window ID (extension only)
   index?: number // Optional: tab position within window (extension only)
+  browser?: BrowserType // Optional: which browser this tab belongs to
 }
 
 export interface KeyboardShortcuts {

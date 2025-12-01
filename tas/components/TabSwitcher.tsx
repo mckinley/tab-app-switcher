@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Search, LayoutGrid, Settings as SettingsIcon } from "lucide-react"
 import { TabItem } from "./TabItem"
 import { Tab, KeyboardShortcuts } from "../types/tabs"
@@ -40,6 +40,12 @@ export const TabSwitcher = ({
       tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tab.url.toLowerCase().includes(searchQuery.toLowerCase()),
   )
+
+  // Check if tabs are from multiple browsers
+  const hasMultipleBrowsers = useMemo(() => {
+    const browsers = new Set(tabs.map((tab) => tab.browser).filter(Boolean))
+    return browsers.size > 1
+  }, [tabs])
 
   // Track if this is the initial mount to prevent auto-scroll on open
   const isInitialMount = useRef(true)
@@ -167,6 +173,7 @@ export const TabSwitcher = ({
                       e.stopPropagation()
                       onCloseTab(tab.id)
                     }}
+                    showBrowserIcon={hasMultipleBrowsers}
                   />
                 </div>
               ))}

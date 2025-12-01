@@ -131,19 +131,19 @@ async function main() {
 
   // Publish extension
   if (!nativeOnly) {
-    console.log(`\n🧩 Publishing extension to Chrome Web Store...`)
+    console.log(`\n🧩 Publishing extension to browser stores...`)
     const extensionEnv = dotenv.config({ path: join(rootDir, "extension/.env") })
     if (extensionEnv.error) {
       throw new Error(`Failed to load extension/.env: ${extensionEnv.error.message}`)
     }
-    run("npm run publish", { cwd: join(rootDir, "extension") })
+    run("npm run publish:all", { cwd: join(rootDir, "extension") })
   }
 
   console.log(`\n✅ Release v${newVersion} complete!`)
   console.log(`\n   GitHub Release: https://github.com/mckinley/tab-app-switcher/releases/tag/v${newVersion}`)
-  console.log(
-    `   Chrome Web Store: https://chrome.google.com/webstore/detail/${process.env.CHROME_EXTENSION_ID || "mfcjanplaceclfoipcengelejgfngcan"}`,
-  )
+  console.log(`   Chrome Web Store: https://chrome.google.com/webstore/detail/mfcjanplaceclfoipcengelejgfngcan`)
+  console.log(`   Firefox Add-ons: https://addons.mozilla.org/firefox/addon/tab-application-switcher/`)
+  console.log(`   Edge Add-ons: https://microsoftedge.microsoft.com/addons/detail/epfinbjjhhlpbfcdmdhnddbjebmbkjck`)
 }
 
 main().catch((error) => {

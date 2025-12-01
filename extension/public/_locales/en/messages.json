@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "Tab Application Switcher",
+    "description": "The name of the extension"
+  },
+  "extDescription": {
+    "message": "Switch between browser tabs like you switch between applications",
+    "description": "The description of the extension"
+  }
+}
+

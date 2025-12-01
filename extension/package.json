@@ -7,11 +7,22 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
+    "dev:edge": "wxt -b edge",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
+    "build:edge": "wxt build -b edge",
+    "build:safari": "wxt build -b safari",
+    "build:all": "npm run build && npm run build:firefox && npm run build:edge && npm run build:safari",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "zip:edge": "wxt zip -b edge",
+    "zip:safari": "wxt zip -b safari",
+    "zip:all": "npm run zip && npm run zip:firefox && npm run zip:edge && npm run zip:safari",
+    "convert:safari": "./scripts/convert-safari.sh",
     "publish": "npm run build && npm run zip && wxt submit --chrome-zip \".output/tab-application-switcher-$(node -p \"require('./package.json').version\")-chrome.zip\"",
+    "publish:firefox": "./scripts/publish-firefox.sh",
+    "publish:edge": "./scripts/publish-edge.sh",
+    "publish:all": "./scripts/publish-all.sh",
     "compile": "tsc --noEmit",
     "tc": "tsc --noEmit",
     "postinstall": "wxt prepare",
@@ -57,6 +68,7 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.2",
     "vitest": "^4.0.13",
+    "web-ext": "^9.2.0",
     "wxt": "^0.20.6"
   }
 }
