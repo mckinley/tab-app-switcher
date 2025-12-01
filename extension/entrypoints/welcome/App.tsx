@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe, Chrome } from "lucide-react"
+import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe } from "lucide-react"
+import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { loadAndApplyTheme } from "../../utils/theme"
 import { BrowserType } from "@tas/types/tabs"
@@ -112,7 +113,7 @@ function App() {
                   </div>
                 </div>
                 <Button onClick={openShortcutsPage} className="gap-2">
-                  <Chrome className="w-4 h-4" />
+                  <BrowserIcon browser={browserType} className="w-4 h-4" />
                   Open Keyboard Shortcuts
                   <ExternalLink className="w-4 h-4" />
                 </Button>

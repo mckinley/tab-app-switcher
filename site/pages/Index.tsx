@@ -19,9 +19,12 @@ const GITHUB_REPO = "mckinley/tab-app-switcher"
 const LATEST_VERSION = "0.1.1"
 const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/Tab-Application-Switcher-${LATEST_VERSION}-arm64-mac.zip`
 
-// Chrome Web Store URL
+// Extension Store URLs
 const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
 const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTENSION_ID}`
+const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
+const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
+const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
 
 // Demo tab pool - these represent potential tabs that can be opened
 const DEMO_TAB_POOL: Tab[] = [
@@ -303,24 +306,33 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              size="lg"
-              className="gap-2 text-lg px-8 py-6"
-              asChild={platform.browser === "chrome"}
-              disabled={platform.browser !== "chrome"}
-            >
-              {platform.browser === "chrome" ? (
-                <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
-                  <Download className="w-5 h-5" />
-                  Install {getBrowserDisplayName(platform.browser)} Extension
-                </a>
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
-                </>
-              )}
-            </Button>
+            {(() => {
+              const storeUrl =
+                platform.browser === "chrome"
+                  ? CHROME_STORE_URL
+                  : platform.browser === "firefox"
+                    ? FIREFOX_STORE_URL
+                    : platform.browser === "edge"
+                      ? EDGE_STORE_URL
+                      : null
+              const isAvailable = storeUrl !== null
+
+              return (
+                <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild={isAvailable} disabled={!isAvailable}>
+                  {isAvailable ? (
+                    <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </a>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
+                    </>
+                  )}
+                </Button>
+              )
+            })()}
             <Button
               size="lg"
               variant="outline"

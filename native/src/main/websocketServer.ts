@@ -41,6 +41,7 @@ export function startWebSocketServer(
     ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString())
+        console.log(`Received message type: ${message.type}, browser in msg: ${message.browser}, identified: ${identifiedBrowser}`)
 
         // Handle browser identification message
         if (message.type === 'BROWSER_IDENTIFY' && message.browser) {
@@ -54,6 +55,8 @@ export function startWebSocketServer(
         // Attach browser info to message for handler
         if (identifiedBrowser) {
           message.browser = identifiedBrowser
+        } else {
+          console.log(`WARNING: Message received before browser identification!`)
         }
         messageHandler(message)
       } catch (error) {

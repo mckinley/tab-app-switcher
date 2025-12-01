@@ -77,6 +77,15 @@ function run(cmd, options = {}) {
   execSync(cmd, { stdio: "inherit", cwd: rootDir, ...options })
 }
 
+function hasUncommittedChanges() {
+  try {
+    const status = execSync("git status --porcelain", { cwd: rootDir, encoding: "utf8" })
+    return status.trim().length > 0
+  } catch {
+    return true
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const versionType = args[0]
@@ -86,6 +95,12 @@ async function main() {
 
   if (!versionType) {
     console.error("Usage: npm run release <patch|minor|major|x.y.z> [--skip-git] [--extension-only] [--native-only]")
+    process.exit(1)
+  }
+
+  if (hasUncommittedChanges()) {
+    console.error("\n❌ There are uncommitted changes in the repository.")
+    console.error("   Please commit or stash your changes before running the release script.")
     process.exit(1)
   }
 

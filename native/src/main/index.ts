@@ -73,9 +73,10 @@ function activateBrowserApp(browser: BrowserType): void {
  * Merge tabs from all browsers into a single global MRU list
  * Preserves existing order for tabs that are still present
  */
-function updateGlobalMruTabs(): void {
+function updateGlobalMruTabs(activeBrowser?: BrowserType): void {
   // Get all current tabs from all browser caches
   const allCurrentTabs = new Map<string, CachedTab>()
+  console.log('updateGlobalMruTabs - browserTabCaches keys:', [...browserTabCaches.keys()])
   browserTabCaches.forEach((tabs, browser) => {
     tabs.forEach((tab) => {
       // Create a unique key combining browser and tab ID
@@ -97,6 +98,16 @@ function updateGlobalMruTabs(): void {
       globalMruTabs.push(tab)
     }
   })
+
+  // If we know which browser just sent an update, promote its first tab
+  // (the most recently used tab in that browser) to the front of the global MRU
+  if (activeBrowser) {
+    const browserTabs = browserTabCaches.get(activeBrowser)
+    if (browserTabs && browserTabs.length > 0) {
+      const mostRecentTab = browserTabs[0]
+      promoteTabInGlobalMru(activeBrowser, String(mostRecentTab.id))
+    }
+  }
 }
 
 /**
@@ -402,9 +413,13 @@ function handleExtensionMessage(msg: {
     // Store per-browser cache
     browserTabCaches.set(browser, tabs)
     console.log(`Updated ${browser} tab cache:`, tabs.length, 'tabs')
+    // Debug: log browser field from first tab
+    if (tabs.length > 0) {
+      console.log(`First tab browser field:`, tabs[0].browser, `Title:`, tabs[0].title)
+    }
 
-    // Rebuild global MRU from all browser caches
-    updateGlobalMruTabs()
+    // Rebuild global MRU from all browser caches, promoting the active browser's first tab
+    updateGlobalMruTabs(browser)
     console.log(
       'Global MRU tabs:',
       globalMruTabs.length,

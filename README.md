@@ -5,10 +5,11 @@ Like your system's Application Switcher, but for your browser tabs.
 ## Monorepo Structure
 
 ```
-├── site/        Marketing website (Vite + React)
-├── extension/   Chrome browser extension (WXT)
+├── site/        Website (Vite + React)
+├── extension/   Browser extension (WXT)
 ├── native/      macOS menu bar app (Electron)
 ├── tas/         Shared component library
+├── resources/   Store listing descriptions and screenshots
 ```
 
 All projects use the `tas/` library for consistent UI. Each project has its own README with project-specific documentation.
@@ -16,8 +17,8 @@ All projects use the `tas/` library for consistent UI. Each project has its own 
 ## Getting Started
 
 ```bash
-npm install        # Install all workspace dependencies
-npm run dev:site   # Run the marketing site
+npm install             # Install all workspace dependencies
+npm run dev:site        # Run the website
 npm run dev:extension   # Run the browser extension
 npm run dev:native      # Run the native app
 ```
@@ -26,7 +27,7 @@ npm run dev:native      # Run the native app
 
 | Command                     | Description                                    |
 | --------------------------- | ---------------------------------------------- |
-| `npm run dev:site`          | Start the marketing site                       |
+| `npm run dev:site`          | Start the website                              |
 | `npm run dev:extension`     | Start the browser extension                    |
 | `npm run dev:native`        | Start the native Electron app                  |
 | `npm run build:all`         | Build all projects                             |

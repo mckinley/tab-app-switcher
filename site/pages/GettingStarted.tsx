@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Download, Chrome, Keyboard, Zap, AlertCircle, HelpCircle } from "lucide-react"
+import { Download, Keyboard, Zap, AlertCircle, HelpCircle } from "lucide-react"
+import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import logo from "@/assets/logo.png"
 
@@ -39,7 +40,7 @@ const GettingStarted = () => {
           <Card>
             <CardHeader>
               <div className="flex items-start gap-3">
-                <Chrome className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
+                <BrowserIcon browser="chrome" className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
                 <div>
                   <CardTitle>Extension Only (Good)</CardTitle>
                   <CardDescription>Works entirely within your browser</CardDescription>

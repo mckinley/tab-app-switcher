@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react"
 import { Settings } from "@tas/components/Settings"
+import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts, BrowserType } from "@tas/types/tabs"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { CheckCircle2, Download, ExternalLink, Chrome, AlertCircle } from "lucide-react"
+import { CheckCircle2, Download, ExternalLink, AlertCircle } from "lucide-react"
 import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
@@ -86,7 +87,7 @@ function App() {
             <Card>
               <CardHeader>
                 <div className="flex items-start gap-3">
-                  <Chrome className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
+                  <BrowserIcon browser={browserType} className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
                   <div className="flex-1">
                     <CardTitle className="text-lg">Keyboard Shortcut Configuration</CardTitle>
                     <CardDescription>Recommended: Set shortcut to "Global" scope</CardDescription>
@@ -101,7 +102,7 @@ function App() {
                     aren't always detected.
                   </p>
                   <Button onClick={openShortcutsPage} variant="outline" className="gap-2">
-                    <Chrome className="w-4 h-4" />
+                    <BrowserIcon browser={browserType} className="w-4 h-4" />
                     Open Keyboard Shortcuts
                     <ExternalLink className="w-4 h-4" />
                   </Button>
