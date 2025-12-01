@@ -4,12 +4,12 @@ This extension supports Chrome, Firefox, Edge, and Safari. This document covers 
 
 ## Overview
 
-| Browser | Build Command | Output Directory | Store |
-|---------|---------------|------------------|-------|
-| Chrome | `npm run build` | `.output/chrome-mv3` | Chrome Web Store |
-| Firefox | `npm run build:firefox` | `.output/firefox-mv2` | Firefox Add-ons |
-| Edge | `npm run build:edge` | `.output/edge-mv3` | Edge Add-ons |
-| Safari | `npm run build:safari` | `.output/safari-mv2` | Mac App Store |
+| Browser | Build Command           | Output Directory      | Store            |
+| ------- | ----------------------- | --------------------- | ---------------- |
+| Chrome  | `npm run build`         | `.output/chrome-mv3`  | Chrome Web Store |
+| Firefox | `npm run build:firefox` | `.output/firefox-mv2` | Firefox Add-ons  |
+| Edge    | `npm run build:edge`    | `.output/edge-mv3`    | Edge Add-ons     |
+| Safari  | `npm run build:safari`  | `.output/safari-mv2`  | Mac App Store    |
 
 ## Development Commands
 
@@ -69,11 +69,11 @@ Copy `.env.example` to `.env` and fill in your credentials for each store. Store
 
 ### Publishing to Firefox Add-ons
 
-| | |
-|---|---|
-| **Dashboard** | https://addons.mozilla.org/developers/ |
-| **Fee** | Free |
-| **Review Time** | 1-2 days |
+|                 |                                        |
+| --------------- | -------------------------------------- |
+| **Dashboard**   | https://addons.mozilla.org/developers/ |
+| **Fee**         | Free                                   |
+| **Review Time** | 1-2 days                               |
 
 #### Setup (One-Time)
 
@@ -116,11 +116,11 @@ npm run publish:firefox
 
 ### Publishing to Edge Add-ons
 
-| | |
-|---|---|
-| **Dashboard** | https://partner.microsoft.com/dashboard/microsoftedge/ |
-| **Fee** | Free |
-| **Review Time** | 1-2 days |
+|                 |                                                        |
+| --------------- | ------------------------------------------------------ |
+| **Dashboard**   | https://partner.microsoft.com/dashboard/microsoftedge/ |
+| **Fee**         | Free                                                   |
+| **Review Time** | 1-2 days                                               |
 
 #### Setup (One-Time)
 
@@ -166,12 +166,14 @@ Safari extensions are distributed as macOS apps through the Mac App Store, requi
 ### Loading for Development
 
 1. Build and convert to Xcode project:
+
    ```bash
    npm run build:safari
    npm run convert:safari
    ```
 
 2. Open the Xcode project:
+
    ```bash
    open ../safari-extension/Tab\ Application\ Switcher/Tab\ Application\ Switcher.xcodeproj
    ```
@@ -187,11 +189,11 @@ Safari extensions are distributed as macOS apps through the Mac App Store, requi
 
 ### Publishing to Mac App Store
 
-| | |
-|---|---|
-| **Dashboard** | https://appstoreconnect.apple.com/ |
-| **Fee** | $99/year (Apple Developer Program) |
-| **Review Time** | 1-3 days |
+|                 |                                    |
+| --------------- | ---------------------------------- |
+| **Dashboard**   | https://appstoreconnect.apple.com/ |
+| **Fee**         | $99/year (Apple Developer Program) |
+| **Review Time** | 1-3 days                           |
 
 #### Setup
 
@@ -202,6 +204,7 @@ Safari extensions are distributed as macOS apps through the Mac App Store, requi
 #### Publishing
 
 1. Build the extension and convert to Xcode:
+
    ```bash
    npm run build:safari
    npm run convert:safari

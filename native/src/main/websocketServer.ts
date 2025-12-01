@@ -8,7 +8,11 @@ let wss: WebSocketServer | null = null
 const browserClients: Map<BrowserType, WebSocket> = new Map()
 let connectionChangeCallback: (() => void) | null = null
 
-export type MessageHandler = (message: { type: string; tabs?: unknown[]; browser?: BrowserType }) => void
+export type MessageHandler = (message: {
+  type: string
+  tabs?: unknown[]
+  browser?: BrowserType
+}) => void
 
 export function startWebSocketServer(
   messageHandler: MessageHandler,

@@ -26,7 +26,12 @@ const browserIcons: Record<BrowserType, React.ReactNode> = {
   ),
   edge: (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
       <path d="M2 12C2 12 6 10 12 12C18 14 18 18 14 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   ),
@@ -51,4 +56,3 @@ const browserIcons: Record<BrowserType, React.ReactNode> = {
 export const BrowserIcon = ({ browser, className }: BrowserIconProps) => {
   return <div className={cn("text-muted-foreground", className)}>{browserIcons[browser]}</div>
 }
-

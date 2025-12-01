@@ -58,10 +58,10 @@ This will:
 
 The extension supports Firefox, Edge, and Safari. The native app can potentially support Windows and Linux.
 
-| Component | Documentation |
-|-----------|---------------|
-| Extension | [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md) |
-| Native App | [native/CROSS_PLATFORM.md](native/CROSS_PLATFORM.md) |
+| Component  | Documentation                                            |
+| ---------- | -------------------------------------------------------- |
+| Extension  | [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md) |
+| Native App | [native/CROSS_PLATFORM.md](native/CROSS_PLATFORM.md)     |
 
 ## Technologies
 

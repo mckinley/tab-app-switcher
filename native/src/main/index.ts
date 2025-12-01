@@ -379,7 +379,11 @@ function showExtensionNotInstalledNotification(): void {
 }
 
 // Message handler for WebSocket messages from extension
-function handleExtensionMessage(msg: { type: string; tabs?: unknown[]; browser?: BrowserType }): void {
+function handleExtensionMessage(msg: {
+  type: string
+  tabs?: unknown[]
+  browser?: BrowserType
+}): void {
   if (msg.type === 'TABS_UPDATED' || msg.type === 'TABS_RESPONSE') {
     const browser = msg.browser || 'unknown'
     const tabs = (msg.tabs || []) as CachedTab[]
@@ -390,7 +394,12 @@ function handleExtensionMessage(msg: { type: string; tabs?: unknown[]; browser?:
 
     // Rebuild global MRU from all browser caches
     updateGlobalMruTabs()
-    console.log('Global MRU tabs:', globalMruTabs.length, 'tabs from', getConnectedBrowsers().join(', '))
+    console.log(
+      'Global MRU tabs:',
+      globalMruTabs.length,
+      'tabs from',
+      getConnectedBrowsers().join(', ')
+    )
 
     // If TAS window is open, send global MRU tabs to it
     if (tasWindow && !tasWindow.isDestroyed()) {

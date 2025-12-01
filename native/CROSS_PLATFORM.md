@@ -4,17 +4,18 @@ The native app is built with Electron and can be compiled for macOS, Windows, an
 
 ## Overview
 
-| Platform | Build Command | Output | Distribution |
-|----------|---------------|--------|--------------|
-| macOS | `npm run build` | `.dmg`, `.zip` | GitHub Releases |
-| Windows | `npm run build:win` | `.exe`, `.msi` | GitHub Releases |
-| Linux | `npm run build:linux` | `.AppImage`, `.deb` | GitHub Releases |
+| Platform | Build Command         | Output              | Distribution    |
+| -------- | --------------------- | ------------------- | --------------- |
+| macOS    | `npm run build`       | `.dmg`, `.zip`      | GitHub Releases |
+| Windows  | `npm run build:win`   | `.exe`, `.msi`      | GitHub Releases |
+| Linux    | `npm run build:linux` | `.AppImage`, `.deb` | GitHub Releases |
 
 ## Current Status
 
 ⚠️ **Windows and Linux support is not yet implemented.** The sections below outline what would be needed.
 
 The native app currently uses macOS-specific features:
+
 - **AppleScript** for browser activation
 - **Menu bar** tray icon behavior
 - **macOS keyboard shortcuts** via Electron globalShortcut
@@ -49,6 +50,7 @@ npm run publish:win     # Build and publish to GitHub Releases
 Windows builds would be published to GitHub Releases alongside macOS builds. Users can download the `.exe` installer.
 
 For broader distribution, consider:
+
 - **Microsoft Store**: Requires MSIX packaging and Microsoft Partner Center account
 - **Windows Package Manager (winget)**: Community-maintained repository
 
@@ -82,6 +84,7 @@ npm run publish:linux   # Build and publish to GitHub Releases
 ### Publishing
 
 Linux builds would be published to GitHub Releases. Common formats:
+
 - **AppImage**: Universal, no installation required
 - **deb**: For Debian/Ubuntu
 - **rpm**: For Fedora/RHEL
@@ -117,13 +120,13 @@ Add Windows and Linux targets to `electron-builder.json5`:
 ```json5
 {
   win: {
-    target: ["nsis", "portable"],
-    icon: "resources/icon.ico"
+    target: ['nsis', 'portable'],
+    icon: 'resources/icon.ico'
   },
   linux: {
-    target: ["AppImage", "deb"],
-    icon: "resources/icon.png",
-    category: "Utility"
+    target: ['AppImage', 'deb'],
+    icon: 'resources/icon.png',
+    category: 'Utility'
   }
 }
 ```
@@ -147,6 +150,7 @@ Add Windows and Linux targets to `electron-builder.json5`:
 ### 5. CI/CD Updates
 
 GitHub Actions would need:
+
 - Windows runner for Windows builds
 - Ubuntu runner for Linux builds
 - Cross-compilation or separate build jobs per platform
@@ -163,4 +167,3 @@ If you'd like to help add Windows or Linux support:
 4. Submit a PR with your changes
 
 Platform-specific code should be isolated in `src/main/platform/` to keep the codebase maintainable.
-
