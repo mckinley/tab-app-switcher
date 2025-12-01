@@ -27,22 +27,15 @@ export default defineConfig({
         32: "/icon/32.png",
       },
     },
-    // Commands - Firefox doesn't support Alt+Tab as it's an OS-reserved shortcut
-    commands:
-      browser === "firefox"
-        ? {
-            tas_activate: {
-              description: "Activate Tab Application Switcher",
-            },
-          }
-        : {
-            tas_activate: {
-              suggested_key: {
-                default: "Alt+Tab",
-              },
-              description: "Activate Tab Application Switcher",
-            },
-          },
+    // Commands - Firefox and Safari don't support Alt+Tab (OS-reserved), use Alt+1 instead
+    commands: {
+      tas_activate: {
+        suggested_key: {
+          default: browser === "firefox" || browser === "safari" ? "Alt+1" : "Alt+Tab",
+        },
+        description: "Activate Tab Application Switcher",
+      },
+    },
     // Only include chrome_url_overrides for Chrome/Edge (not supported in Firefox/Safari)
     ...(browser !== "firefox" && browser !== "safari"
       ? {

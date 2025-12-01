@@ -11,6 +11,7 @@ let connectionChangeCallback: (() => void) | null = null
 export type MessageHandler = (message: {
   type: string
   tabs?: unknown[]
+  tabId?: string
   browser?: BrowserType
 }) => void
 
@@ -103,11 +104,6 @@ export function sendMessageToAllExtensions(message: { type: string; tabId?: stri
       client.send(messageStr)
     }
   })
-}
-
-// Legacy function for backwards compatibility - sends to all extensions
-export function sendMessageToExtension(message: { type: string; tabId?: string }): void {
-  sendMessageToAllExtensions(message)
 }
 
 export function stopWebSocketServer(): void {

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Settings } from "@tas/components/Settings"
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
+import { DEFAULT_SHORTCUTS, KeyboardShortcuts, BrowserType } from "@tas/types/tabs"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
@@ -8,9 +8,20 @@ import { CheckCircle2, Download, ExternalLink, Chrome, AlertCircle } from "lucid
 import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
+function detectBrowser(): BrowserType {
+  const userAgent = navigator.userAgent.toLowerCase()
+  if (userAgent.includes("edg/")) return "edge"
+  if (userAgent.includes("firefox")) return "firefox"
+  if (userAgent.includes("safari") && !userAgent.includes("chrome")) return "safari"
+  if (userAgent.includes("chrome")) return "chrome"
+  return "unknown"
+}
+
 function App() {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
   const [nativeAppConnected, setNativeAppConnected] = useState(false)
+  const browserType = useMemo(() => detectBrowser(), [])
+  const isChromium = browserType === "chrome" || browserType === "edge"
 
   // Apply theme on mount
   useEffect(() => {
@@ -50,7 +61,11 @@ function App() {
   }
 
   const openShortcutsPage = () => {
-    browser.tabs.create({ url: "chrome://extensions/shortcuts" })
+    if (browserType === "edge") {
+      browser.tabs.create({ url: "edge://extensions/shortcuts" })
+    } else {
+      browser.tabs.create({ url: "chrome://extensions/shortcuts" })
+    }
   }
 
   return (
@@ -66,31 +81,34 @@ function App() {
 
         {/* Status Cards */}
         <div className="space-y-4 mb-8">
-          {/* Keyboard Shortcut Configuration */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start gap-3">
-                <Chrome className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
-                <div className="flex-1">
-                  <CardTitle className="text-lg">Keyboard Shortcut Configuration</CardTitle>
-                  <CardDescription>Recommended: Set shortcut to "Global" scope</CardDescription>
+          {/* Keyboard Shortcut Configuration - only show for Chromium browsers */}
+          {isChromium && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <Chrome className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">Keyboard Shortcut Configuration</CardTitle>
+                    <CardDescription>Recommended: Set shortcut to "Global" scope</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  For the best experience, configure your keyboard shortcut to use "Global" scope instead of "In
-                  Chrome". This fixes an issue where modifier key releases aren't always detected.
-                </p>
-                <Button onClick={openShortcutsPage} variant="outline" className="gap-2">
-                  <Chrome className="w-4 h-4" />
-                  Open Keyboard Shortcuts
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    For the best experience, configure your keyboard shortcut to use "Global" scope instead of "In
+                    {browserType === "edge" ? " Edge" : " Chrome"}". This fixes an issue where modifier key releases
+                    aren't always detected.
+                  </p>
+                  <Button onClick={openShortcutsPage} variant="outline" className="gap-2">
+                    <Chrome className="w-4 h-4" />
+                    Open Keyboard Shortcuts
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Native App Status */}
           <Card>
@@ -122,7 +140,7 @@ function App() {
                   </p>
                   <Button variant="outline" className="gap-2" asChild>
                     <a
-                      href="https://github.com/yourusername/tab-app-switcher/releases"
+                      href="https://github.com/mckinley/tab-app-switcher/releases"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -145,7 +163,7 @@ function App() {
         {/* Help Links */}
         <div className="text-center space-y-2">
           <a
-            href="https://yourwebsite.com/getting-started"
+            href="https://tabappswitcher.com/getting-started"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline text-sm"

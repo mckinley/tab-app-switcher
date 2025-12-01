@@ -79,6 +79,17 @@ export function isNativeAppConnected(): boolean {
 }
 
 /**
+ * Notify native app that a specific tab was activated
+ * This allows the native app to update its global MRU order across all browsers
+ */
+export function notifyTabActivated(tabId: number): void {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+  console.log("Sending TAB_ACTIVATED to native app:", tabId)
+  ws.send(JSON.stringify({ type: "TAB_ACTIVATED", tabId: String(tabId) }))
+}
+
+/**
  * Notify native app of tab updates (debounced)
  */
 export function notifyNativeApp(): void {
@@ -154,7 +165,25 @@ export function connectToNativeApp(
   currentBrowserType = detectBrowser()
   console.log("Detected browser type:", currentBrowserType)
 
+  let reconnectScheduled = false
+
+  function scheduleReconnect(): void {
+    if (reconnectScheduled) return
+    reconnectScheduled = true
+    console.log(`Scheduling reconnect in ${RECONNECT_DELAY / 1000}s...`)
+    setTimeout(() => {
+      reconnectScheduled = false
+      attemptConnection()
+    }, RECONNECT_DELAY)
+  }
+
   function attemptConnection(): void {
+    // Don't attempt if already connected or connecting
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+      console.log("WebSocket already connected or connecting, skipping...")
+      return
+    }
+
     try {
       console.log("Connecting to native app via WebSocket...")
 
@@ -180,17 +209,22 @@ export function connectToNativeApp(
       ws.onclose = () => {
         console.log("Native app disconnected")
         ws = null
-        // Try to reconnect after delay
-        setTimeout(attemptConnection, RECONNECT_DELAY)
+        scheduleReconnect()
       }
 
       ws.onerror = (error) => {
         console.error("WebSocket error:", error)
+        // Close will usually fire after error, but ensure we clean up
+        if (ws) {
+          ws.close()
+          ws = null
+        }
+        scheduleReconnect()
       }
     } catch (error) {
       console.error("Failed to connect to native app:", error)
-      // Try to reconnect after delay
-      setTimeout(attemptConnection, RECONNECT_DELAY)
+      ws = null
+      scheduleReconnect()
     }
   }
 

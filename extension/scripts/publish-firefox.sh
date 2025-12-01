@@ -67,8 +67,12 @@ cat > "$METADATA_FILE" << 'EOF'
   "summary": {
     "en-US": "Switch between browser tabs like you switch between applications"
   },
-  "homepage": "https://tabappswitcher.com",
-  "support_url": "https://tabappswitcher.com",
+  "homepage": {
+    "en-US": "https://tabappswitcher.com"
+  },
+  "support_url": {
+    "en-US": "https://tabappswitcher.com"
+  },
   "version": {
     "license": "MIT"
   }
@@ -76,8 +80,7 @@ cat > "$METADATA_FILE" << 'EOF'
 EOF
 
 echo "Publishing to Firefox Add-ons..."
-# Use timeout to prevent hanging while waiting for approval (which can take days)
-# The submission completes quickly, but web-ext waits for approval by default
+# Use --approval-timeout=0 to submit without waiting for human review approval
 npx web-ext sign \
   --source-dir .output/firefox-mv2 \
   --channel listed \
@@ -85,7 +88,7 @@ npx web-ext sign \
   --api-secret "$FIREFOX_API_SECRET" \
   --upload-source-code "$SOURCES_ZIP" \
   --amo-metadata "$METADATA_FILE" \
-  --timeout 120000 || true
+  --approval-timeout 0
 
 echo ""
 echo "✅ Firefox extension submitted for review"

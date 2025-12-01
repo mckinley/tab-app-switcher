@@ -1,13 +1,25 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe, Chrome } from "lucide-react"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { loadAndApplyTheme } from "../../utils/theme"
+import { BrowserType } from "@tas/types/tabs"
 import "./globals.css"
+
+function detectBrowser(): BrowserType {
+  const userAgent = navigator.userAgent.toLowerCase()
+  if (userAgent.includes("edg/")) return "edge"
+  if (userAgent.includes("firefox")) return "firefox"
+  if (userAgent.includes("safari") && !userAgent.includes("chrome")) return "safari"
+  if (userAgent.includes("chrome")) return "chrome"
+  return "unknown"
+}
 
 function App() {
   const [nativeAppConnected, setNativeAppConnected] = useState(false)
+  const browserType = useMemo(() => detectBrowser(), [])
+  const isChromium = browserType === "chrome" || browserType === "edge"
 
   useEffect(() => {
     loadAndApplyTheme()
@@ -27,7 +39,11 @@ function App() {
   }, [])
 
   const openShortcutsPage = () => {
-    browser.tabs.create({ url: "chrome://extensions/shortcuts" })
+    if (browserType === "edge") {
+      browser.tabs.create({ url: "edge://extensions/shortcuts" })
+    } else {
+      browser.tabs.create({ url: "chrome://extensions/shortcuts" })
+    }
   }
 
   const openOptionsPage = () => {
@@ -66,39 +82,43 @@ function App() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-start gap-3">
-                <Keyboard className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
-                <div>
-                  <CardTitle>Recommended: Configure Keyboard Shortcut</CardTitle>
-                  <CardDescription>Set shortcut to "Global" scope for best experience</CardDescription>
+          {isChromium && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <Keyboard className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <CardTitle>Recommended: Configure Keyboard Shortcut</CardTitle>
+                    <CardDescription>Set shortcut to "Global" scope for best experience</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
-                <p className="text-sm font-medium">Why Global scope?</p>
-                <p className="text-sm text-muted-foreground">
-                  Chrome's default "In Chrome" scope has a limitation: if you press Alt+Tab multiple times quickly, the
-                  modifier key release isn't always detected. Setting it to "Global" fixes this issue.
-                </p>
-                <div className="text-sm text-muted-foreground space-y-2">
-                  <p className="font-medium">Steps:</p>
-                  <ol className="list-decimal list-inside space-y-1 ml-2">
-                    <li>Click the button below to open Keyboard Shortcuts</li>
-                    <li>Find "Tab Application Switcher"</li>
-                    <li>Change the dropdown from "In Chrome" to "Global"</li>
-                  </ol>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium">Why Global scope?</p>
+                  <p className="text-sm text-muted-foreground">
+                    {browserType === "edge" ? "Edge" : "Chrome"}'s default "In{" "}
+                    {browserType === "edge" ? "Edge" : "Chrome"}" scope has a limitation: if you press Alt+Tab multiple
+                    times quickly, the modifier key release isn't always detected. Setting it to "Global" fixes this
+                    issue.
+                  </p>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p className="font-medium">Steps:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Click the button below to open Keyboard Shortcuts</li>
+                      <li>Find "Tab Application Switcher"</li>
+                      <li>Change the dropdown from "In {browserType === "edge" ? "Edge" : "Chrome"}" to "Global"</li>
+                    </ol>
+                  </div>
                 </div>
-              </div>
-              <Button onClick={openShortcutsPage} className="gap-2">
-                <Chrome className="w-4 h-4" />
-                Open Keyboard Shortcuts
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-            </CardContent>
-          </Card>
+                <Button onClick={openShortcutsPage} className="gap-2">
+                  <Chrome className="w-4 h-4" />
+                  Open Keyboard Shortcuts
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

@@ -382,10 +382,21 @@ function showExtensionNotInstalledNotification(): void {
 function handleExtensionMessage(msg: {
   type: string
   tabs?: unknown[]
+  tabId?: string
   browser?: BrowserType
 }): void {
+  const browser = msg.browser || 'unknown'
+
+  if (msg.type === 'TAB_ACTIVATED') {
+    // A tab was activated in the browser - promote it in global MRU
+    if (msg.tabId) {
+      console.log(`Tab activated in ${browser}:`, msg.tabId)
+      promoteTabInGlobalMru(browser, msg.tabId)
+    }
+    return
+  }
+
   if (msg.type === 'TABS_UPDATED' || msg.type === 'TABS_RESPONSE') {
-    const browser = msg.browser || 'unknown'
     const tabs = (msg.tabs || []) as CachedTab[]
 
     // Store per-browser cache

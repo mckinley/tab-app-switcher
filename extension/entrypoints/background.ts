@@ -1,6 +1,11 @@
 import type { Tab } from "@tas/types/tabs"
 import { handleLogMessage } from "@tas/utils/logger"
-import { connectToNativeApp, notifyNativeApp, isNativeAppConnected } from "../utils/nativeAppConnection"
+import {
+  connectToNativeApp,
+  notifyNativeApp,
+  notifyTabActivated,
+  isNativeAppConnected,
+} from "../utils/nativeAppConnection"
 import { getFaviconDataUrl } from "../utils/faviconCache"
 
 /**
@@ -100,6 +105,7 @@ export default defineBackground(() => {
   browser.tabs.onActivated.addListener((activeInfo) => {
     console.log("Tab activated:", activeInfo.tabId)
     updateMruOrder(activeInfo.tabId)
+    notifyTabActivated(activeInfo.tabId)
   })
 
   // Listen for window focus changes
@@ -116,6 +122,7 @@ export default defineBackground(() => {
       if (tabs.length > 0 && tabs[0].id) {
         console.log("Window focused, active tab:", tabs[0].id)
         updateMruOrder(tabs[0].id)
+        notifyTabActivated(tabs[0].id)
       }
     } catch (error) {
       console.error("Error handling window focus change:", error)

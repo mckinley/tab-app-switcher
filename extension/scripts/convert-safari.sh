@@ -10,7 +10,8 @@ PROJECT_ROOT="$(dirname "$EXTENSION_DIR")"
 OUTPUT_DIR="$EXTENSION_DIR/.output/safari-mv2"
 XCODE_PROJECT_DIR="$PROJECT_ROOT/safari-extension"
 APP_NAME="Tab Application Switcher"
-BUNDLE_ID="app.tabswitcher.tab-application-switcher"
+BUNDLE_ID="app.tabswitcher.Tab-Application-Switcher"
+EXTENSION_BUNDLE_ID="${BUNDLE_ID}.Extension"
 
 # Check if Safari build exists
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -36,20 +37,33 @@ echo "Converting Safari extension to Xcode project..."
 echo "  Source: $OUTPUT_DIR"
 echo "  Destination: $XCODE_PROJECT_DIR"
 
-# Run the converter
+# Run the converter (macOS only - no iOS targets)
 xcrun safari-web-extension-converter "$OUTPUT_DIR" \
   --project-location "$XCODE_PROJECT_DIR" \
   --app-name "$APP_NAME" \
   --bundle-identifier "$BUNDLE_ID" \
+  --macos-only \
   --force \
   --no-open
 
+# Fix bundle identifiers in the generated Xcode project
+# The converter generates inconsistent casing, so we ensure the extension bundle ID is correct
+PBXPROJ="$XCODE_PROJECT_DIR/$APP_NAME/$APP_NAME.xcodeproj/project.pbxproj"
+if [ -f "$PBXPROJ" ]; then
+  echo "Fixing bundle identifiers..."
+  # Use sed to replace any variant of the extension bundle ID with the correct one
+  sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = \"[^\"]*\.Extension\";/PRODUCT_BUNDLE_IDENTIFIER = \"$EXTENSION_BUNDLE_ID\";/g" "$PBXPROJ"
+  echo "  Extension bundle ID set to: $EXTENSION_BUNDLE_ID"
+fi
+
 echo ""
-echo "✅ Safari Xcode project created at: $XCODE_PROJECT_DIR"
+echo "✅ Safari Xcode project created at: $XCODE_PROJECT_DIR/$APP_NAME"
 echo ""
 echo "Next steps:"
-echo "  1. Open $XCODE_PROJECT_DIR/$APP_NAME/$APP_NAME.xcodeproj in Xcode"
-echo "  2. Select your Team in Signing & Capabilities"
-echo "  3. Build and run the app"
-echo "  4. Enable the extension in Safari → Settings → Extensions"
-
+echo "  1. Open the Xcode project:"
+echo "     open \"$XCODE_PROJECT_DIR/$APP_NAME/$APP_NAME.xcodeproj\""
+echo "  2. Select 'macOS (App)' target and 'My Mac' destination"
+echo "  3. Select your Team in Signing & Capabilities for both macOS targets"
+echo "  4. Press Cmd+R to build and run"
+echo "  5. In Safari: Develop → Allow Unsigned Extensions"
+echo "  6. In Safari: Settings → Extensions → Enable the extension"
