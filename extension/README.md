@@ -52,7 +52,8 @@ npm run zip     # Create Chrome Web Store ZIP
    - Go to [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
    - Select "External" and click Create
    - Fill in App name, support email, and developer email
-   - Add yourself as a test user
+   - **Important**: Click "Publish App" to move from Testing to Production mode
+     (In Testing mode, refresh tokens expire after 7 days; in Production they don't expire)
 
 3. **Create OAuth Credentials**
    - Go to [Credentials](https://console.cloud.google.com/apis/credentials)
@@ -100,6 +101,7 @@ npm run release patch   # From root directory
 
 ### Troubleshooting
 
-- **Invalid refresh token**: Re-run the OAuth Playground steps to get a new token
+- **403 Forbidden**: Check for unpublished draft changes in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole) - discard any drafts before publishing via API
+- **Invalid refresh token**: Re-run the OAuth Playground steps to get a new token (tokens expire after 7 days if OAuth app is in Testing mode)
 - **Extension not found**: Verify `CHROME_EXTENSION_ID` matches your extension
-- **Unauthorized**: Ensure you're using the Google account that owns the extension
+- **Unauthorized**: Ensure OAuth credentials are from the same Google account that owns the extension

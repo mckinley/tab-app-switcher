@@ -11,7 +11,7 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
-    "publish": "npm run build && npm run zip && wxt submit --chrome-zip .output/tab-application-switcher-1.0.0-chrome.zip",
+    "publish": "npm run build && npm run zip && wxt submit --chrome-zip \".output/tab-application-switcher-$(node -p \"require('./package.json').version\")-chrome.zip\"",
     "compile": "tsc --noEmit",
     "tc": "tsc --noEmit",
     "postinstall": "wxt prepare",
