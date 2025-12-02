@@ -24,7 +24,12 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: Run postinstall scripts (skip native)
+        run: |
+          npm rebuild
+          npm run --if-present postinstall --workspace=packages/ui --workspace=site --workspace=extension --workspace=tas
 
       - name: Run linting
         run: npm run lint:all
@@ -49,7 +54,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build site
         run: npm run build:site
