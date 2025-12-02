@@ -6,6 +6,6 @@ export default {
   content: [
     './src/renderer/**/*.{ts,tsx,html}',
     '../tas/**/*.{ts,tsx}',
-    '../packages/ui/src/**/*.{ts,tsx}',
+    '../packages/ui/src/**/*.{ts,tsx}'
   ]
 } satisfies Config

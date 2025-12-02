@@ -25,4 +25,3 @@ tab switcher, browser tabs, alt tab, keyboard shortcuts, productivity
 - The native app works in conjunction with the browser extension
 - Screenshots should show the native overlay UI
 - Highlight the OS-level keyboard shortcut integration
-

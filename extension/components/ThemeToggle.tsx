@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { Button } from "@tab-app-switcher/ui/components/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@tab-app-switcher/ui/components/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@tab-app-switcher/ui/components/dropdown-menu"
 import { applyTheme } from "../utils/theme"
 
 const THEME_STORAGE_KEY = "theme"

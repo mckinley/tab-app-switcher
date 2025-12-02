@@ -64,7 +64,10 @@ async function generatePng(sourceBuffer, outputPath, size) {
     mkdirSync(outputDir, { recursive: true })
   }
 
-  await sharp(sourceBuffer).resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toFile(outputPath)
+  await sharp(sourceBuffer)
+    .resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toFile(outputPath)
 
   console.log(`  ✓ ${outputPath} (${size}x${size})`)
 }
@@ -131,4 +134,3 @@ main().catch((error) => {
   console.error("\n❌ Icon generation failed:", error.message)
   process.exit(1)
 })
-

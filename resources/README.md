@@ -19,4 +19,3 @@ resources/
 - **Edge Add-ons**: https://microsoftedge.microsoft.com/addons/detail/epfinbjjhhlpbfcdmdhnddbjebmbkjck
 - **Safari**: (via App Store with extension bundle)
 - **macOS App**: https://github.com/mckinley/tab-app-switcher/releases
-
