@@ -53,12 +53,14 @@ describe("faviconCache", () => {
     })
 
     it("should return fallback on fetch error", async () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {})
       ;(global.fetch as any).mockRejectedValueOnce(new Error("Network error"))
 
       const url = "https://example.com/favicon.ico"
       const result = await getFaviconDataUrl(url)
 
       expect(result).toContain("data:image/svg+xml")
+      consoleSpy.mockRestore()
     })
 
     it("should convert any blob to data URL", async () => {
