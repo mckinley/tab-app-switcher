@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@tab-app-switcher/ui/components/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
 import { Download, Keyboard, Zap, AlertCircle, HelpCircle } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { ThemeToggle } from "@/components/ThemeToggle"

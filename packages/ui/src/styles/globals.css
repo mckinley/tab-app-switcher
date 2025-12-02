@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Note: This file is provided for completeness but should NOT be imported.
+ * The consuming apps (site, extension, native) should import their own CSS
+ * that includes tokens from tas/styles/tokens.css.
+ *
+ * If you're seeing styling issues, ensure you're NOT importing this file
+ * and instead using your app's own globals.css that imports tokens.css.
+ */

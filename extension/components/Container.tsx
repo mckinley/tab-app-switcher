@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect } from "react"
-import { cn } from "@tas/lib/utils"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 
 interface ContainerProps {
   children: ReactNode

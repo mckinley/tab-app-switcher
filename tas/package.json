@@ -23,7 +23,6 @@
     "./TabItem": "./components/TabItem.tsx",
     "./types": "./types/tabs.ts",
     "./hooks/*": "./hooks/*",
-    "./components/ui/sonner": "./components/ui/sonner.tsx",
     "./tailwind.preset": "./tailwind.preset.ts"
   },
   "peerDependencies": {
@@ -31,19 +30,9 @@
     "@dnd-kit/sortable": ">=10.0.0",
     "@dnd-kit/utilities": ">=3.0.0",
     "@icons-pack/react-simple-icons": ">=13.0.0",
-    "@radix-ui/react-dialog": ">=1.1.0",
-    "@radix-ui/react-label": ">=2.1.0",
-    "@radix-ui/react-scroll-area": ">=1.2.0",
-    "@radix-ui/react-select": ">=2.2.0",
-    "@radix-ui/react-separator": ">=1.1.0",
-    "@radix-ui/react-switch": ">=1.2.0",
-    "class-variance-authority": ">=0.7.0",
-    "clsx": ">=2.0.0",
+    "@tab-app-switcher/ui": "*",
     "lucide-react": ">=0.400.0",
-    "next-themes": ">=0.3.0",
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
-    "sonner": ">=1.0.0",
-    "tailwind-merge": ">=2.0.0"
+    "react-dom": ">=18.0.0"
   }
 }

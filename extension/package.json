@@ -35,6 +35,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
+  "dependencies": {
+    "@tab-app-switcher/ui": "*"
+  },
   "devDependencies": {
     "@types/chrome": "^0.1.32",
     "@wxt-dev/module-react": "^1.1.3",

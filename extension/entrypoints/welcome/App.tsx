@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@tab-app-switcher/ui/components/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
 import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { ThemeToggle } from "../../components/ThemeToggle"

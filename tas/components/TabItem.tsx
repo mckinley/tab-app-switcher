@@ -1,4 +1,4 @@
-import { cn } from "../lib/utils"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Tab } from "../types/tabs"
 import { X } from "lucide-react"
 import { TabFavicon } from "./TabFavicon"

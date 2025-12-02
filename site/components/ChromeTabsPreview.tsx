@@ -1,5 +1,5 @@
 import { Tab } from "@tas/types/tabs"
-import { cn } from "@/lib/utils"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 
 interface ChromeTabsPreviewProps {
   tabs: Tab[]

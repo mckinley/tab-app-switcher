@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
+import { Button } from "@tab-app-switcher/ui/components/button"
 import { Download, Monitor, Info } from "lucide-react"
 import { SiApple } from "@icons-pack/react-simple-icons"
 import { BrowserIcon } from "@tas/components/BrowserIcon"

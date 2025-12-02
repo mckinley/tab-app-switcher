@@ -7,7 +7,7 @@ import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { TabsTooltip } from "@/components/TabsTooltip"
-import { Button } from "@/components/ui/button"
+import { Button } from "@tab-app-switcher/ui/components/button"
 import { Container } from "@/components/Container"
 
 import { Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"

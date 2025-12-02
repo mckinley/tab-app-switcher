@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { X, HelpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@tab-app-switcher/ui/components/button"
 
 const TOOLTIP_ACTIVE_KEY = "tas-tooltip-active"
 

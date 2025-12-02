@@ -1,4 +1,4 @@
-import { cn } from "../lib/utils"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 
 // Fallback favicon: a grey dot with a star in the center (8x8px)
 const FALLBACK_FAVICON =

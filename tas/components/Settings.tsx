@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Label } from "./ui/label"
-import { Button } from "./ui/button"
+import { Label } from "@tab-app-switcher/ui/components/label"
+import { Button } from "@tab-app-switcher/ui/components/button"
+import { Separator } from "@tab-app-switcher/ui/components/separator"
 import { KeyButton } from "./KeyButton"
 import { KeyboardShortcuts, DEFAULT_SHORTCUTS } from "../types/tabs"
 
@@ -50,8 +51,7 @@ export const Settings = ({ shortcuts, onShortcutsChange, themeToggle }: Settings
             </div>
           </div>
 
-          {/* Separator */}
-          <div className="border-t border-border/50" />
+          <Separator />
 
           {/* Navigation Shortcuts Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

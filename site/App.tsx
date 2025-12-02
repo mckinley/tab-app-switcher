@@ -1,5 +1,5 @@
-import { Toaster } from "@tas/components/ui/sonner"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@tab-app-switcher/ui/components/sonner"
+import { TooltipProvider } from "@tab-app-switcher/ui/components/tooltip"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { ThemeProvider } from "next-themes"

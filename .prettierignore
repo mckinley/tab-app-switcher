@@ -30,3 +30,6 @@ tsconfig.*.json
 **/*.icns
 **/*.plist
 
+# shadcn/ui components (keep original formatting for easy updates)
+packages/ui/src/components
+

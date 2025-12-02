@@ -6,7 +6,15 @@ import tseslint from "typescript-eslint"
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/.wxt/**", "**/.output/**", "**/node_modules/**", "**/coverage/**", "**/out/**"],
+    ignores: [
+      "**/dist/**",
+      "**/.wxt/**",
+      "**/.output/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/out/**",
+      "packages/ui/src/components/**", // shadcn/ui components - keep original formatting for easy updates
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

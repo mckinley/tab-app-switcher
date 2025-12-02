@@ -13,11 +13,11 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { Tab, KeyboardShortcuts } from "../types/tabs"
-import { cn } from "../lib/utils"
-import { Input } from "./ui/input"
-import { Button } from "./ui/button"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
+import { Input } from "@tab-app-switcher/ui/components/input"
+import { Button } from "@tab-app-switcher/ui/components/button"
 import { Settings } from "./Settings"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@tab-app-switcher/ui/components/select"
 import {
   DndContext,
   DragEndEvent,
@@ -31,7 +31,7 @@ import {
 } from "@dnd-kit/core"
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { ScrollArea } from "./ui/scroll-area"
+import { ScrollArea } from "@tab-app-switcher/ui/components/scroll-area"
 import { TabFavicon } from "./TabFavicon"
 
 interface TabManagementProps {
