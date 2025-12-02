@@ -2,6 +2,7 @@
   "name": "@tab-app-switcher/native",
   "version": "1.0.7",
   "description": "Tab Application Switcher - Native desktop application",
+  "author": "Bronson McKinley <bronsonmckinley@gmail.com>",
   "main": "./out/main/index.js",
   "private": true,
   "type": "module",
