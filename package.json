@@ -52,7 +52,8 @@
     "publish:native:mac": "npm run publish:mac --workspace=native",
     "publish:native:win": "npm run publish:win --workspace=native",
     "publish:native:linux": "npm run publish:linux --workspace=native",
-    "generate:icons": "node scripts/generate-icons.mjs"
+    "generate:icons": "node scripts/generate-icons.mjs",
+    "depcheck": "depcheck site --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,@vitejs/*' && depcheck extension --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,wxt' && depcheck tas --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,tailwindcss-animate' && depcheck packages/ui --ignores='postcss,tailwindcss,autoprefixer' && depcheck native --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,electron,electron-builder'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -106,6 +107,7 @@
     "@vitejs/plugin-react-swc": "^4.2.2",
     "@vitest/ui": "^4.0.14",
     "autoprefixer": "^10.4.22",
+    "depcheck": "^1.4.7",
     "dotenv": "17.2.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

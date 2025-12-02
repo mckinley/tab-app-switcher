@@ -5,14 +5,17 @@ Like your system's Application Switcher, but for your browser tabs.
 ## Monorepo Structure
 
 ```
-├── site/        Website (Vite + React)
-├── extension/   Browser extension (WXT)
-├── native/      macOS menu bar app (Electron)
-├── tas/         Shared component library
-├── resources/   Store listing descriptions and screenshots
+├── packages/ui/   Shared shadcn/ui components
+├── tas/           Shared app components and styles
+├── site/          Website (Vite + React)
+├── extension/     Browser extension (WXT)
+├── native/        macOS menu bar app (Electron)
+├── resources/     Store listing descriptions and screenshots
 ```
 
-All projects use the `tas/` library for consistent UI. Each project has its own README with project-specific documentation.
+- **packages/ui** contains shadcn/ui primitives (Button, Dialog, etc.) - add new components with `npx shadcn@latest add <component>` from the `packages/ui` directory
+- **tas** contains app-specific components (TabSwitcher, Settings) and design tokens
+- All projects import from `@tab-app-switcher/ui` and `@tab-app-switcher/tas`
 
 ## Getting Started
 
@@ -25,14 +28,15 @@ npm run dev:native      # Run the native app
 
 ## Common Commands
 
-| Command                     | Description                                    |
-| --------------------------- | ---------------------------------------------- |
-| `npm run dev:site`          | Start the website                              |
-| `npm run dev:extension`     | Start the browser extension                    |
-| `npm run dev:native`        | Start the native Electron app                  |
-| `npm run build:all`         | Build all projects                             |
-| `npm run prep`              | Format, lint, and test (run before committing) |
-| `npm run release <version>` | Release new version (see below)                |
+| Command                     | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| `npm run dev:site`          | Start the website                               |
+| `npm run dev:extension`     | Start the browser extension                     |
+| `npm run dev:native`        | Start the native Electron app                   |
+| `npm run build:all`         | Build all projects                              |
+| `npm run prep`              | Format, lint, and test (run before committing)  |
+| `npm run depcheck`          | Check for unused dependencies in all workspaces |
+| `npm run release <version>` | Release new version (see below)                 |
 
 ## Releasing
 
