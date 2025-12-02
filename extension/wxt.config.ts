@@ -3,6 +3,11 @@ import path from "path"
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  dev: {
+    server: {
+      port: 3005,
+    },
+  },
   modules: ["@wxt-dev/module-react"],
   manifest: ({ browser }) => ({
     name: "__MSG_extName__",
