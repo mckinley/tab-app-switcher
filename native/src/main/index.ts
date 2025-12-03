@@ -85,11 +85,16 @@ function updateGlobalMruTabs(activeBrowser?: BrowserType): void {
     })
   })
 
-  // Remove tabs from global MRU that no longer exist
-  globalMruTabs = globalMruTabs.filter((tab) => {
-    const key = `${tab.browser}:${tab.id}`
-    return allCurrentTabs.has(key)
-  })
+  // Update existing tabs with fresh data (title, url, favicon may have changed)
+  // and remove tabs that no longer exist
+  globalMruTabs = globalMruTabs
+    .map((tab) => {
+      const key = `${tab.browser}:${tab.id}`
+      const freshTab = allCurrentTabs.get(key)
+      // Return updated tab data if it still exists, otherwise mark for removal
+      return freshTab || null
+    })
+    .filter((tab): tab is CachedTab => tab !== null)
 
   // Add new tabs to the end of the global MRU (they'll move up when accessed)
   const existingKeys = new Set(globalMruTabs.map((tab) => `${tab.browser}:${tab.id}`))
