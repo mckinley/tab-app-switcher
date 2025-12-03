@@ -2,7 +2,8 @@ import { Tab, BrowserType } from "@tas/types/tabs"
 import { getFaviconDataUrl } from "./faviconCache"
 
 const WS_URL = "ws://localhost:48125"
-const RECONNECT_DELAY = 5000 // 5 seconds
+const INITIAL_RECONNECT_DELAY = 1000 // 1 second initial delay
+const MAX_RECONNECT_DELAY = 60000 // 1 minute max delay
 const UPDATE_DEBOUNCE = 100 // 100ms
 
 let ws: WebSocket | null = null
@@ -11,6 +12,7 @@ let browserInstance: any = null
 let getMruTabOrder: (() => number[]) | null = null
 let updateMruOrderFn: ((tabId: number) => void) | null = null
 let currentBrowserType: BrowserType = "unknown"
+let currentReconnectDelay = INITIAL_RECONNECT_DELAY
 
 /**
  * Detect which browser this extension is running in
@@ -170,11 +172,14 @@ export function connectToNativeApp(
   function scheduleReconnect(): void {
     if (reconnectScheduled) return
     reconnectScheduled = true
-    console.log(`Scheduling reconnect in ${RECONNECT_DELAY / 1000}s...`)
+
+    console.log(`Scheduling reconnect in ${currentReconnectDelay / 1000}s...`)
     setTimeout(() => {
       reconnectScheduled = false
+      // Exponential backoff: double the delay for next attempt, up to max
+      currentReconnectDelay = Math.min(currentReconnectDelay * 2, MAX_RECONNECT_DELAY)
       attemptConnection()
-    }, RECONNECT_DELAY)
+    }, currentReconnectDelay)
   }
 
   function attemptConnection(): void {
@@ -191,6 +196,8 @@ export function connectToNativeApp(
 
       ws.onopen = () => {
         console.log("Connected to native app")
+        // Reset backoff delay on successful connection
+        currentReconnectDelay = INITIAL_RECONNECT_DELAY
         // Send browser identification first
         ws!.send(JSON.stringify({ type: "BROWSER_IDENTIFY", browser: currentBrowserType }))
         // Then send initial tab list

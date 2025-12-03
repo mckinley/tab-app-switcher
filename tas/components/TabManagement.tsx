@@ -130,7 +130,10 @@ const DroppableCollection = ({
     id: collection.id,
   })
 
-  const collectionTabs = tabs.filter((tab) => collection.tabIds.includes(tab.id))
+  const collectionTabs = useMemo(
+    () => tabs.filter((tab) => collection.tabIds.includes(tab.id)),
+    [tabs, collection.tabIds],
+  )
 
   const handleNameEdit = (e: React.FormEvent<HTMLHeadingElement>) => {
     const newName = e.currentTarget.textContent?.trim() || collection.name

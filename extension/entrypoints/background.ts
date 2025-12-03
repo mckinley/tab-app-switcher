@@ -22,6 +22,12 @@ const MRU_STORAGE_KEY = "mruTabHistory"
 // Maximum number of tab URLs to persist in history
 const MAX_MRU_HISTORY = 20
 
+// Debounce delay for saving MRU history (ms)
+const MRU_SAVE_DEBOUNCE = 1000
+
+// Timeout handle for debounced save
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
 /**
  * Persisted MRU history entry
  */
@@ -106,6 +112,7 @@ export default defineBackground(() => {
     console.log("Tab activated:", activeInfo.tabId)
     updateMruOrder(activeInfo.tabId)
     notifyTabActivated(activeInfo.tabId)
+    notifyNativeApp()
   })
 
   // Listen for window focus changes
@@ -142,6 +149,7 @@ export default defineBackground(() => {
         mruTabOrder = [...mruTabOrder.filter((id) => id !== tab.id), tab.id]
       }
     }
+    notifyNativeApp()
   })
 
   // Listen for tab updates
@@ -154,12 +162,14 @@ export default defineBackground(() => {
       console.log("Active tab URL updated:", tabId)
       updateMruOrder(tabId)
     }
+    notifyNativeApp()
   })
 
   // Listen for tab removal
   browser.tabs.onRemoved.addListener((tabId) => {
     console.log("Tab removed:", tabId)
     removeFromMruOrder(tabId)
+    notifyNativeApp()
   })
 
   // Listen for tab replacement (rare, but can happen during certain browser operations)
@@ -167,6 +177,7 @@ export default defineBackground(() => {
     console.log("Tab replaced:", removedTabId, "->", addedTabId)
     // Replace the old tab ID with the new one in MRU order
     mruTabOrder = mruTabOrder.map((id) => (id === removedTabId ? addedTabId : id))
+    notifyNativeApp()
   })
 
   // Listen for keyboard commands
@@ -201,13 +212,6 @@ export default defineBackground(() => {
       }
     }
   })
-
-  // Listen for tab changes and notify native app
-  browser.tabs.onCreated.addListener(() => notifyNativeApp())
-  browser.tabs.onRemoved.addListener(() => notifyNativeApp())
-  browser.tabs.onUpdated.addListener(() => notifyNativeApp())
-  browser.tabs.onActivated.addListener(() => notifyNativeApp())
-  browser.tabs.onReplaced.addListener(() => notifyNativeApp())
 
   // Handle messages from popup
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -312,8 +316,8 @@ function updateMruOrder(tabId: number) {
   // Add to front (most recently used)
   mruTabOrder.unshift(tabId)
 
-  // Persist to storage (async, don't wait)
-  saveMruHistory()
+  // Persist to storage (debounced to avoid excessive writes during rapid switching)
+  saveMruHistoryDebounced()
 }
 
 /**
@@ -322,8 +326,18 @@ function updateMruOrder(tabId: number) {
 function removeFromMruOrder(tabId: number) {
   mruTabOrder = mruTabOrder.filter((id) => id !== tabId)
 
-  // Persist to storage (async, don't wait)
-  saveMruHistory()
+  // Persist to storage (debounced)
+  saveMruHistoryDebounced()
+}
+
+/**
+ * Debounced wrapper for saveMruHistory to prevent excessive storage writes
+ */
+function saveMruHistoryDebounced() {
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    saveMruHistory()
+  }, MRU_SAVE_DEBOUNCE)
 }
 
 /**

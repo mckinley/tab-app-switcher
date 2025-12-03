@@ -35,11 +35,10 @@ export const TabSwitcher = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const selectedItemRef = useRef<HTMLDivElement>(null)
 
-  const filteredTabs = tabs.filter(
-    (tab) =>
-      tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tab.url.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredTabs = useMemo(() => {
+    const query = searchQuery.toLowerCase()
+    return tabs.filter((tab) => tab.title.toLowerCase().includes(query) || tab.url.toLowerCase().includes(query))
+  }, [tabs, searchQuery])
 
   // Check if tabs are from multiple browsers
   const hasMultipleBrowsers = useMemo(() => {

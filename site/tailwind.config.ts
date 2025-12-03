@@ -7,8 +7,10 @@ const config = {
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./**/*.{ts,tsx}",
+    "./hooks/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
+    "./App.tsx",
+    "./main.tsx",
     "../tas/**/*.{ts,tsx}",
     "../packages/ui/src/**/*.{ts,tsx}",
   ],

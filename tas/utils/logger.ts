@@ -35,6 +35,19 @@ type GlobalWithBrowser = typeof globalThis & {
 type LogLevel = "log" | "info" | "warn" | "error" | "debug"
 
 /**
+ * Check if debug logging is enabled
+ * Debug logs are only output in development mode or when explicitly enabled
+ */
+const isDebugEnabled = (): boolean => {
+  // Check for explicit debug flag in localStorage (works in browser contexts)
+  if (typeof localStorage !== "undefined") {
+    return localStorage.getItem("tas-debug") === "true"
+  }
+  // Default: only enable in development
+  return typeof process !== "undefined" && process.env?.NODE_ENV === "development"
+}
+
+/**
  * Type for log messages sent between contexts
  */
 export interface LogMessage {
@@ -135,10 +148,16 @@ function sendLogToBackground(source: string, level: LogLevel, ...args: unknown[]
  * Create a logger with a specific source name
  * @param source - The source/component name (e.g., 'use-keyboard-shortcuts', 'TabSwitcher')
  * @returns Logger object with methods for different log levels
+ *
+ * Note: The `log` method is gated by debug mode to avoid performance overhead
+ * from frequent keyboard event logging. Use `info`, `warn`, or `error` for
+ * messages that should always appear.
  */
 export function createLogger(source: string) {
   return {
     log: (...args: unknown[]) => {
+      // Skip verbose logging in production to avoid overhead on every keypress
+      if (!isDebugEnabled()) return
       console.log(...args)
       sendLogToBackground(source, "log", ...args)
     },
@@ -155,6 +174,8 @@ export function createLogger(source: string) {
       sendLogToBackground(source, "error", ...args)
     },
     debug: (...args: unknown[]) => {
+      // Debug logs only appear when debug mode is enabled
+      if (!isDebugEnabled()) return
       console.debug(...args)
       sendLogToBackground(source, "debug", ...args)
     },
