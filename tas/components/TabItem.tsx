@@ -18,7 +18,6 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
       onClick={onClick}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2 rounded-lg",
-        "transition-colors",
         "text-left group",
         isSelected
           ? "bg-[hsl(var(--switcher-item-selected))]/10 ring-1 ring-[hsl(var(--switcher-item-selected))]/30"
@@ -59,7 +58,7 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
               onClose(e as unknown as React.MouseEvent)
             }
           }}
-          className="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+          className="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 cursor-pointer"
           aria-label="Close tab"
         >
           <X className="w-3.5 h-3.5" />

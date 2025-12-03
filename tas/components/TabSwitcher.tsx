@@ -73,8 +73,8 @@ export const TabSwitcher = ({
     // Only scroll if user is navigating (not when selection is reset)
     if (selectedItemRef.current && previousSelectedIndex.current !== selectedIndex) {
       selectedItemRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
+        behavior: "instant",
+        block: "nearest",
       })
     }
 
@@ -163,7 +163,7 @@ export const TabSwitcher = ({
           ) : (
             <div className="space-y-0.5">
               {filteredTabs.map((tab, index) => (
-                <div key={tab.id} ref={index === selectedIndex ? selectedItemRef : null}>
+                <div key={tab.id} ref={index === selectedIndex ? selectedItemRef : null} className="scroll-my-1">
                   <TabItem
                     tab={tab}
                     isSelected={index === selectedIndex}
