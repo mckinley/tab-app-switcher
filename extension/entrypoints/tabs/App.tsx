@@ -15,16 +15,15 @@ function App() {
     loadAndApplyTheme()
   }, [])
 
-  const loadTabs = () => {
-    browser.runtime.sendMessage({ type: "GET_TABS" }).then((response) => {
-      if (response?.tabs) {
-        setTabs(response.tabs)
+  // Connect to background script for push-based tab updates
+  useEffect(() => {
+    const port = browser.runtime.connect({ name: "tab-management" })
+
+    port.onMessage.addListener((message: { type: string; tabs?: Tab[] }) => {
+      if (message.type === "TABS_UPDATED" && message.tabs) {
+        setTabs(message.tabs)
       }
     })
-  }
-
-  useEffect(() => {
-    loadTabs()
 
     // Load shortcuts from storage
     browser.storage.local.get("shortcuts").then((result) => {
@@ -33,23 +32,7 @@ function App() {
       }
     })
 
-    const handleTabUpdate = () => {
-      loadTabs()
-    }
-
-    browser.tabs.onUpdated.addListener(handleTabUpdate)
-    browser.tabs.onRemoved.addListener(handleTabUpdate)
-    browser.tabs.onCreated.addListener(handleTabUpdate)
-    browser.tabs.onActivated.addListener(handleTabUpdate)
-    browser.windows.onFocusChanged.addListener(handleTabUpdate)
-
-    return () => {
-      browser.tabs.onUpdated.removeListener(handleTabUpdate)
-      browser.tabs.onRemoved.removeListener(handleTabUpdate)
-      browser.tabs.onCreated.removeListener(handleTabUpdate)
-      browser.tabs.onActivated.removeListener(handleTabUpdate)
-      browser.windows.onFocusChanged.removeListener(handleTabUpdate)
-    }
+    return () => port.disconnect()
   }, [])
 
   const handleSelectTab = (tabId: string) => {
@@ -73,13 +56,11 @@ function App() {
       console.log("handleReorderTabs:", { tabId, newIndex, targetWindowId, currentWindowId: tab.windowId })
 
       // Move the tab to the target window/index (or same window if not specified)
+      // The background script will broadcast the update via TABS_UPDATED
       await browser.tabs.move(numericTabId, {
         windowId: targetWindowId ?? tab.windowId,
         index: newIndex,
       })
-
-      // Reload tabs to reflect the change
-      loadTabs()
     } catch (error) {
       console.error("Error reordering tab:", error)
     }

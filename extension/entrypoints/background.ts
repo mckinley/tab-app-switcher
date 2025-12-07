@@ -6,7 +6,7 @@ import {
   notifyTabActivated,
   isNativeAppConnected,
 } from "../utils/nativeAppConnection"
-import { getFaviconDataUrl } from "../utils/faviconCache"
+import { getFaviconDataUrl, preloadFavicons } from "../utils/faviconCache"
 
 /**
  * Background service worker for Tab Application Switcher
@@ -15,6 +15,11 @@ import { getFaviconDataUrl } from "../utils/faviconCache"
 
 // Store MRU order of tab IDs
 let mruTabOrder: number[] = []
+
+// Connected extension pages (popup, tabs page) for push updates
+// Using ReturnType to extract the Port type from the listener parameter
+type Port = Parameters<Parameters<typeof browser.runtime.onConnect.addListener>[0]>[0]
+const connectedPorts: Set<Port> = new Set()
 
 // Storage key for persisting MRU history
 const MRU_STORAGE_KEY = "mruTabHistory"
@@ -25,8 +30,12 @@ const MAX_MRU_HISTORY = 20
 // Debounce delay for saving MRU history (ms)
 const MRU_SAVE_DEBOUNCE = 1000
 
-// Timeout handle for debounced save
+// Debounce delay for broadcasting updates (ms)
+const BROADCAST_DEBOUNCE = 50
+
+// Timeout handles for debounced operations
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let broadcastTimeout: ReturnType<typeof setTimeout> | null = null
 
 /**
  * Persisted MRU history entry
@@ -101,6 +110,10 @@ export default defineBackground(() => {
     // Save initial state to storage
     await saveMruHistory()
 
+    // Preload all favicons so they're ready when the tab switcher opens
+    const faviconUrls = allTabs.map((tab) => tab.favIconUrl).filter((url): url is string => !!url)
+    preloadFavicons(faviconUrls)
+
     // Connect to native app after MRU order is initialized
     // Pass a getter function to avoid stale closure issues when mruTabOrder is reassigned
     connectToNativeApp(browser, () => mruTabOrder, updateMruOrder)
@@ -112,7 +125,7 @@ export default defineBackground(() => {
     console.log("Tab activated:", activeInfo.tabId)
     updateMruOrder(activeInfo.tabId)
     notifyTabActivated(activeInfo.tabId)
-    notifyNativeApp()
+    broadcastTabsUpdate()
   })
 
   // Listen for window focus changes
@@ -130,6 +143,7 @@ export default defineBackground(() => {
         console.log("Window focused, active tab:", tabs[0].id)
         updateMruOrder(tabs[0].id)
         notifyTabActivated(tabs[0].id)
+        broadcastTabsUpdate()
       }
     } catch (error) {
       console.error("Error handling window focus change:", error)
@@ -148,13 +162,22 @@ export default defineBackground(() => {
         // Add to end of MRU order
         mruTabOrder = [...mruTabOrder.filter((id) => id !== tab.id), tab.id]
       }
+      // Proactively cache favicon
+      if (tab.favIconUrl) {
+        getFaviconDataUrl(tab.favIconUrl)
+      }
     }
-    notifyNativeApp()
+    broadcastTabsUpdate()
   })
 
   // Listen for tab updates
-  // When a tab becomes active (e.g., through tab.update API), update MRU
+  // Cache favicon when it changes, update MRU on URL change
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    // Proactively cache new favicon
+    if (changeInfo.favIconUrl) {
+      getFaviconDataUrl(changeInfo.favIconUrl)
+    }
+
     // Note: active state changes are better tracked via onActivated
     // This listener is mainly for other updates like URL changes
     if (tab.active && changeInfo.url) {
@@ -162,14 +185,14 @@ export default defineBackground(() => {
       console.log("Active tab URL updated:", tabId)
       updateMruOrder(tabId)
     }
-    notifyNativeApp()
+    broadcastTabsUpdate()
   })
 
   // Listen for tab removal
   browser.tabs.onRemoved.addListener((tabId) => {
     console.log("Tab removed:", tabId)
     removeFromMruOrder(tabId)
-    notifyNativeApp()
+    broadcastTabsUpdate()
   })
 
   // Listen for tab replacement (rare, but can happen during certain browser operations)
@@ -177,7 +200,7 @@ export default defineBackground(() => {
     console.log("Tab replaced:", removedTabId, "->", addedTabId)
     // Replace the old tab ID with the new one in MRU order
     mruTabOrder = mruTabOrder.map((id) => (id === removedTabId ? addedTabId : id))
-    notifyNativeApp()
+    broadcastTabsUpdate()
   })
 
   // Listen for keyboard commands
@@ -305,6 +328,26 @@ export default defineBackground(() => {
 
     return false
   })
+
+  // Handle port connections from extension pages for push updates
+  browser.runtime.onConnect.addListener((port) => {
+    console.log("Extension page connected:", port.name)
+    connectedPorts.add(port)
+
+    // Send initial tabs immediately
+    getTabsInMruOrder().then((tabs) => {
+      try {
+        port.postMessage({ type: "TABS_UPDATED", tabs })
+      } catch {
+        connectedPorts.delete(port)
+      }
+    })
+
+    port.onDisconnect.addListener(() => {
+      console.log("Extension page disconnected:", port.name)
+      connectedPorts.delete(port)
+    })
+  })
 })
 
 /**
@@ -395,4 +438,53 @@ async function saveMruHistory(): Promise<void> {
   } catch (error) {
     console.error("Error saving MRU history:", error)
   }
+}
+
+/**
+ * Get all tabs in MRU order with full Tab data
+ */
+async function getTabsInMruOrder(): Promise<Tab[]> {
+  const browserTabs = await browser.tabs.query({})
+
+  const tabPromises = browserTabs.map(async (tab) => {
+    const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
+    return {
+      id: String(tab.id),
+      title: tab.title || "Untitled",
+      url: tab.url || "",
+      favicon: faviconDataUrl,
+      windowId: tab.windowId,
+      index: tab.index,
+    } as Tab
+  })
+
+  const allTabs = await Promise.all(tabPromises)
+  const tabsById = new Map(allTabs.map((tab) => [Number(tab.id), tab]))
+
+  return mruTabOrder.map((id) => tabsById.get(id)).filter((tab): tab is Tab => tab !== undefined)
+}
+
+/**
+ * Broadcast tabs update to all connected extension pages and native app
+ * Debounced to avoid flooding during rapid tab changes
+ */
+function broadcastTabsUpdate(): void {
+  if (broadcastTimeout) clearTimeout(broadcastTimeout)
+
+  broadcastTimeout = setTimeout(async () => {
+    const tabs = await getTabsInMruOrder()
+    const message = { type: "TABS_UPDATED", tabs }
+
+    // Send to all connected extension pages
+    connectedPorts.forEach((port) => {
+      try {
+        port.postMessage(message)
+      } catch {
+        connectedPorts.delete(port)
+      }
+    })
+
+    // Also notify native app
+    notifyNativeApp()
+  }, BROADCAST_DEBOUNCE)
 }
