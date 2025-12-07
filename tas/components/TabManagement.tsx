@@ -23,13 +23,13 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  closestCenter,
+  DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
 } from "@dnd-kit/core"
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { arrayMove, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { ScrollArea } from "@tab-app-switcher/ui/components/scroll-area"
 import { TabFavicon } from "./TabFavicon"
@@ -39,7 +39,7 @@ interface TabManagementProps {
   onClose: () => void
   onSelectTab: (tabId: string) => void
   onCloseTab?: (tabId: string) => void
-  onReorderTabs?: (tabId: string, newIndex: number) => void // Extension: move tab to new position
+  onReorderTabs?: (tabId: string, newIndex: number, targetWindowId?: number) => void // Extension: move tab to new position/window
   onSendCollectionToWindow?: (tabUrls: string[]) => void // Extension: create new window with these URLs
   shortcuts: KeyboardShortcuts
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void
@@ -76,9 +76,9 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : undefined,
   }
 
   return (
@@ -143,70 +143,74 @@ const DroppableCollection = ({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "p-4 rounded-lg border cursor-pointer transition-all",
-        isSelected && "bg-primary/10 border-primary",
-        isOver && "bg-primary/5 border-primary ring-2 ring-primary/20",
-        !isSelected && !isOver && "hover:bg-muted/50",
-      )}
-      onClick={onSelect}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex-1">
-          <h3
-            className="font-medium outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1"
-            contentEditable
-            suppressContentEditableWarning
-            onBlur={handleNameEdit}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                e.currentTarget.blur()
-              }
-            }}
-          >
-            {collection.name}
-          </h3>
-          <p className="text-xs text-muted-foreground">{collection.tabIds.length} tabs</p>
+    <div className="flex">
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex-1 p-4 rounded-lg border cursor-pointer transition-all",
+          isSelected && "bg-primary/10 border-primary",
+          isOver && "bg-primary/5 border-primary ring-2 ring-primary/20",
+          !isSelected && !isOver && "hover:bg-muted/50",
+        )}
+        onClick={onSelect}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex-1">
+            <h3
+              className="font-medium outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1"
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleNameEdit}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  e.currentTarget.blur()
+                }
+              }}
+            >
+              {collection.name}
+            </h3>
+            <p className="text-xs text-muted-foreground">{collection.tabIds.length} tabs</p>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSendToWindow()
+              }}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete()
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSendToWindow()
-            }}
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      {/* Show tabs in collection */}
-      {collectionTabs.length > 0 && (
-        <div className="space-y-1 mt-3 pt-3 border-t">
-          {collectionTabs.map((tab) => (
-            <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-              <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs truncate flex-1">{tab.title}</span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Show tabs in collection */}
+        {collectionTabs.length > 0 && (
+          <div className="space-y-1 mt-3 pt-3 border-t">
+            {collectionTabs.map((tab) => (
+              <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
+                <span className="text-xs truncate flex-1">{tab.title}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Gap on the right to prevent accidental drops */}
+      <div className="w-4 flex-shrink-0" />
     </div>
   )
 }
@@ -234,16 +238,8 @@ export const TabManagement = ({
   const [newCollectionName, setNewCollectionName] = useState("")
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab | null>(null)
-  const [currentTabs, setCurrentTabs] = useState<Tab[]>(tabs)
+  const [tabsByWindowId, setTabsByWindowId] = useState<Map<number, Tab[]>>(new Map())
   const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false)
-  const [tabWindows, setTabWindows] = useState<Record<string, string>>(() => {
-    // Initialize all tabs to Window 1
-    const windows: Record<string, string> = {}
-    tabs.forEach((tab) => {
-      windows[tab.id] = "Window 1"
-    })
-    return windows
-  })
 
   // Save collections to localStorage whenever they change
   const updateCollections = (newCollections: Collection[]) => {
@@ -259,58 +255,71 @@ export const TabManagement = ({
     }),
   )
 
-  // Sync currentTabs with tabs prop when it changes
-  useEffect(() => {
-    setCurrentTabs(tabs)
-
-    // Create friendly window names based on window ID order
-    const uniqueWindowIds = Array.from(
-      new Set(tabs.map((tab) => tab.windowId).filter((id): id is number => id !== undefined)),
-    ).sort((a, b) => a - b) // Sort by window ID to get consistent ordering
-
-    const windowIdToName = new Map<number, string>()
-    uniqueWindowIds.forEach((windowId, index) => {
-      windowIdToName.set(windowId, `Window ${index + 1}`)
+  // Get unique window IDs in MRU order for display ordering
+  // Since tabs come in MRU order, the first occurrence of each windowId represents
+  // the window with the most recently active tab
+  const windowIdsInMruOrder = useMemo(() => {
+    const seen = new Set<number>()
+    const ordered: number[] = []
+    tabs.forEach((tab) => {
+      if (tab.windowId !== undefined && !seen.has(tab.windowId)) {
+        seen.add(tab.windowId)
+        ordered.push(tab.windowId)
+      }
     })
-
-    // Update tabWindows with friendly names
-    setTabWindows((prev) => {
-      const updated = { ...prev }
-      tabs.forEach((tab) => {
-        if (tab.windowId !== undefined) {
-          // Use friendly window name (Window 1, Window 2, etc.)
-          updated[tab.id] = windowIdToName.get(tab.windowId) || "Window 1"
-        } else if (!updated[tab.id]) {
-          // Fallback for tabs without windowId (e.g., demo site)
-          updated[tab.id] = "Window 1"
-        }
-      })
-      return updated
-    })
+    return ordered
   }, [tabs])
 
-  // Group tabs by window and sort by index within each window
-  const tabsByWindow = useMemo(() => {
-    const grouped: Record<string, Tab[]> = {}
-    currentTabs.forEach((tab) => {
-      const windowName = tabWindows[tab.id] || "Window 1"
-      if (!grouped[windowName]) {
-        grouped[windowName] = []
+  // Create mapping from windowId to friendly name based on creation order
+  // Chrome assigns incrementing windowIds, so sorting numerically gives creation order
+  const windowIdToName = useMemo(() => {
+    const sortedByCreation = [...windowIdsInMruOrder].sort((a, b) => a - b)
+    const mapping = new Map<number, string>()
+    sortedByCreation.forEach((windowId, index) => {
+      mapping.set(windowId, `Window ${index + 1}`)
+    })
+    return mapping
+  }, [windowIdsInMruOrder])
+
+  // Sync tabsByWindowId with tabs prop - this is the source of truth for DND
+  // Each window has its own array of tabs, sorted by index
+  useEffect(() => {
+    const grouped = new Map<number, Tab[]>()
+    tabs.forEach((tab) => {
+      const windowId = tab.windowId ?? 0
+      if (!grouped.has(windowId)) {
+        grouped.set(windowId, [])
       }
-      grouped[windowName].push(tab)
+      grouped.get(windowId)!.push(tab)
     })
-
-    // Sort tabs within each window by their index
-    Object.keys(grouped).forEach((windowName) => {
-      grouped[windowName].sort((a, b) => {
-        const indexA = a.index ?? 0
-        const indexB = b.index ?? 0
-        return indexA - indexB
-      })
+    // Sort each window's tabs by index
+    grouped.forEach((windowTabs) => {
+      windowTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
     })
+    setTabsByWindowId(grouped)
+  }, [tabs])
 
-    return grouped
-  }, [currentTabs, tabWindows])
+  // Derive currentTabs from tabsByWindowId for compatibility with existing code
+  const currentTabs = useMemo(() => {
+    const result: Tab[] = []
+    tabsByWindowId.forEach((windowTabs) => {
+      result.push(...windowTabs)
+    })
+    return result
+  }, [tabsByWindowId])
+
+  // Build display structure in MRU window order
+  const tabsByWindow = useMemo(() => {
+    const result: Record<string, Tab[]> = {}
+    windowIdsInMruOrder.forEach((windowId) => {
+      const windowName = windowIdToName.get(windowId) || "Window 1"
+      const windowTabs = tabsByWindowId.get(windowId) || []
+      if (windowTabs.length > 0) {
+        result[windowName] = windowTabs
+      }
+    })
+    return result
+  }, [tabsByWindowId, windowIdsInMruOrder, windowIdToName])
 
   // Filter and sort tabs
   const filteredAndSortedTabs = useMemo(() => {
@@ -376,25 +385,104 @@ export const TabManagement = ({
       return
     }
 
-    // Otherwise, handle reordering within current tabs
-    if (active.id !== over.id) {
-      setCurrentTabs((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over.id)
-        const reordered = arrayMove(items, oldIndex, newIndex)
-
-        // Notify parent of reorder (for extension to move real browser tabs)
-        // Find the target tab to get its actual browser index
-        const targetTab = items.find((item) => item.id === over.id)
-        if (targetTab && targetTab.index !== undefined) {
-          onReorderTabs?.(active.id as string, targetTab.index)
-        }
-
-        return reordered
-      })
+    // Handle reordering - the visual state is already correct from handleDragOver
+    // Now we just need to call the browser API with the active tab's new position
+    const activeTabData = currentTabs.find((t) => t.id === active.id)
+    if (activeTabData && activeTabData.windowId !== undefined) {
+      const targetWindowId = activeTabData.windowId
+      const targetWindowTabs = tabsByWindowId.get(targetWindowId) || []
+      const activeIndex = targetWindowTabs.findIndex((t) => t.id === active.id)
+      if (activeIndex >= 0) {
+        onReorderTabs?.(active.id as string, activeIndex, targetWindowId)
+      }
     }
 
     setActiveTab(null)
+  }
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Skip if over a collection
+    if (collections.some((c) => c.id === overId)) return
+
+    // Find which windows contain these tabs
+    let activeWindowId: number | undefined
+    let overWindowId: number | undefined
+    let activeTab: Tab | undefined
+    let overTabIndex = -1
+
+    tabsByWindowId.forEach((windowTabs, windowId) => {
+      const activeIndex = windowTabs.findIndex((t) => t.id === activeId)
+      if (activeIndex >= 0) {
+        activeWindowId = windowId
+        activeTab = windowTabs[activeIndex]
+      }
+      const foundOverIndex = windowTabs.findIndex((t) => t.id === overId)
+      if (foundOverIndex >= 0) {
+        overWindowId = windowId
+        overTabIndex = foundOverIndex
+      }
+    })
+
+    if (!activeTab || activeWindowId === undefined || overWindowId === undefined) return
+
+    // Same window - just reorder within the array
+    if (activeWindowId === overWindowId) {
+      setTabsByWindowId((prev) => {
+        const newMap = new Map(prev)
+        const windowTabs = [...(newMap.get(activeWindowId!) || [])]
+        const activeIndex = windowTabs.findIndex((t) => t.id === activeId)
+        if (activeIndex >= 0 && overTabIndex >= 0 && activeIndex !== overTabIndex) {
+          const moved = arrayMove(windowTabs, activeIndex, overTabIndex)
+          newMap.set(activeWindowId!, moved)
+        }
+        return newMap
+      })
+    } else {
+      // Cross-window move - remove from source, insert into target
+      setTabsByWindowId((prev) => {
+        const newMap = new Map(prev)
+        const sourceWindowTabs = [...(newMap.get(activeWindowId!) || [])]
+        const targetWindowTabs = [...(newMap.get(overWindowId!) || [])]
+
+        // Remove from source
+        const activeIndex = sourceWindowTabs.findIndex((t) => t.id === activeId)
+        if (activeIndex >= 0) {
+          sourceWindowTabs.splice(activeIndex, 1)
+          newMap.set(activeWindowId!, sourceWindowTabs)
+        }
+
+        // Insert into target at the position of overTab
+        const movedTab = { ...activeTab!, windowId: overWindowId }
+        targetWindowTabs.splice(overTabIndex, 0, movedTab)
+        newMap.set(overWindowId!, targetWindowTabs)
+
+        return newMap
+      })
+    }
+  }
+
+  const handleDragCancel = () => {
+    // Reset to original state from props
+    const grouped = new Map<number, Tab[]>()
+    tabs.forEach((tab) => {
+      const windowId = tab.windowId ?? 0
+      if (!grouped.has(windowId)) {
+        grouped.set(windowId, [])
+      }
+      grouped.get(windowId)!.push(tab)
+    })
+    grouped.forEach((windowTabs) => {
+      windowTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    })
+    setTabsByWindowId(grouped)
+    setActiveTab(null)
+    setIsDroppedOnCollection(false)
   }
 
   const handleCreateCollection = () => {
@@ -435,43 +523,46 @@ export const TabManagement = ({
     }
 
     // Otherwise, simulate for demo (website mode)
-    // Find the highest window number
-    const windowNumbers = Object.values(tabWindows).map((name) => {
-      const match = name.match(/Window (\d+)/)
-      return match ? parseInt(match[1]) : 0
-    })
-    const maxWindowNumber = Math.max(0, ...windowNumbers)
-    const newWindowName = `Window ${maxWindowNumber + 1}`
+    // Create a fake new window ID (higher than any existing)
+    const maxWindowId = Math.max(0, ...windowIdsInMruOrder)
+    const newWindowId = maxWindowId + 1
 
     // Create duplicate tabs with new IDs for the new window
-    const newTabWindows = { ...tabWindows }
-    const duplicateTabs: Tab[] = []
+    const duplicateTabs: Tab[] = collectionTabs.map((tab, index) => ({
+      ...tab,
+      id: `${tab.id}-${Date.now()}-${Math.random()}`,
+      windowId: newWindowId,
+      index,
+    }))
 
-    collectionTabs.forEach((tab) => {
-      // Create a duplicate tab with a new unique ID
-      const duplicateTab: Tab = {
-        ...tab,
-        id: `${tab.id}-${Date.now()}-${Math.random()}`,
-      }
-      duplicateTabs.push(duplicateTab)
-      newTabWindows[duplicateTab.id] = newWindowName
+    setTabsByWindowId((prev) => {
+      const newMap = new Map(prev)
+      newMap.set(newWindowId, duplicateTabs)
+      return newMap
     })
-
-    setCurrentTabs([...currentTabs, ...duplicateTabs])
-    setTabWindows(newTabWindows)
   }
 
   const handleCloseTab = (tabId: string) => {
-    setCurrentTabs(currentTabs.filter((t) => t.id !== tabId))
+    setTabsByWindowId((prev) => {
+      const newMap = new Map(prev)
+      newMap.forEach((windowTabs, windowId) => {
+        newMap.set(
+          windowId,
+          windowTabs.filter((t) => t.id !== tabId),
+        )
+      })
+      return newMap
+    })
     onCloseTab?.(tabId)
   }
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       {/* Tab Management Panel */}
       <div className="w-full h-full flex overflow-hidden">
@@ -739,7 +830,7 @@ export const TabManagement = ({
                   <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
                     {windowName} ({windowTabs.length})
                   </div>
-                  <SortableContext items={windowTabs.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <SortableContext items={windowTabs.map((t) => t.id)}>
                     <div className="space-y-1">
                       {windowTabs.map((tab) => (
                         <SortableTab
@@ -764,7 +855,7 @@ export const TabManagement = ({
 
       <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
         {activeTab && (
-          <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2">
+          <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2 max-w-64">
             <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
             <span className="text-xs truncate">{activeTab.title}</span>
           </div>

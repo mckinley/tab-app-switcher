@@ -55,9 +55,13 @@ function TabManagementApp(): JSX.Element {
     setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
   }
 
-  const handleReorderTabs = async (tabId: string, newIndex: number): Promise<void> => {
+  const handleReorderTabs = async (
+    tabId: string,
+    newIndex: number,
+    targetWindowId?: number
+  ): Promise<void> => {
     // TODO: Send message to extension to reorder tab
-    console.log('Reorder tab:', tabId, 'to index:', newIndex)
+    console.log('Reorder tab:', tabId, 'to index:', newIndex, 'in window:', targetWindowId)
   }
 
   const handleSendCollectionToWindow = async (tabUrls: string[]): Promise<void> => {

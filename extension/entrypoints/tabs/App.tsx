@@ -41,12 +41,14 @@ function App() {
     browser.tabs.onRemoved.addListener(handleTabUpdate)
     browser.tabs.onCreated.addListener(handleTabUpdate)
     browser.tabs.onActivated.addListener(handleTabUpdate)
+    browser.windows.onFocusChanged.addListener(handleTabUpdate)
 
     return () => {
       browser.tabs.onUpdated.removeListener(handleTabUpdate)
       browser.tabs.onRemoved.removeListener(handleTabUpdate)
       browser.tabs.onCreated.removeListener(handleTabUpdate)
       browser.tabs.onActivated.removeListener(handleTabUpdate)
+      browser.windows.onFocusChanged.removeListener(handleTabUpdate)
     }
   }, [])
 
@@ -63,14 +65,16 @@ function App() {
     browser.storage.local.set({ shortcuts: newShortcuts })
   }
 
-  const handleReorderTabs = async (tabId: string, newIndex: number) => {
+  const handleReorderTabs = async (tabId: string, newIndex: number, targetWindowId?: number) => {
     try {
       const numericTabId = parseInt(tabId)
       const tab = await browser.tabs.get(numericTabId)
 
-      // Move the tab to the new index within its window
+      console.log("handleReorderTabs:", { tabId, newIndex, targetWindowId, currentWindowId: tab.windowId })
+
+      // Move the tab to the target window/index (or same window if not specified)
       await browser.tabs.move(numericTabId, {
-        windowId: tab.windowId,
+        windowId: targetWindowId ?? tab.windowId,
         index: newIndex,
       })
 
