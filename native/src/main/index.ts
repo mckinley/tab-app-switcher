@@ -23,6 +23,7 @@ import {
   getConnectedBrowsers
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
+import { setupAuthHandlers } from './auth'
 import type { BrowserType } from '@tas/types/tabs'
 
 interface CachedTab {
@@ -475,6 +476,9 @@ app.whenReady().then(() => {
 
   // Setup auto-updater
   setupAutoUpdater()
+
+  // Setup auth handlers
+  setupAuthHandlers()
 
   // IPC handlers
   ipcMain.on('ping', () => console.log('pong'))

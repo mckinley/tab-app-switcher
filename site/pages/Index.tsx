@@ -4,9 +4,13 @@ import { TabSwitcher } from "@tas/components/TabSwitcher"
 import { Settings } from "@tas/components/Settings"
 import { TabManagement } from "@tas/components/TabManagement"
 import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
+import type { Collection } from "@tas/types/collections"
+import { DEMO_TAB_POOL } from "@tas/utils/demoTabs"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { TabsTooltip } from "@/components/TabsTooltip"
+import { Navigation } from "@/components/Navigation"
+import { Footer } from "@/components/Footer"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Container } from "@/components/Container"
 
@@ -25,58 +29,6 @@ const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTE
 const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
 const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
 const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
-
-// Demo tab pool - these represent potential tabs that can be opened
-const DEMO_TAB_POOL: Tab[] = [
-  {
-    id: "1",
-    title: "NRDC",
-    url: "https://www.nrdc.org/",
-    favicon: "/favicons/nrdc.ico",
-  },
-  {
-    id: "2",
-    title: "Sierra Club",
-    url: "https://www.sierraclub.org/",
-    favicon: "/favicons/sierraclub.png",
-  },
-  {
-    id: "3",
-    title: "Greenpeace",
-    url: "https://www.greenpeace.org/",
-    favicon: "/favicons/greenpeace.ico",
-  },
-  {
-    id: "4",
-    title: "WWF (World Wildlife Fund)",
-    url: "https://www.worldwildlife.org/",
-    favicon: "/favicons/wwf.ico",
-  },
-  {
-    id: "5",
-    title: "Amnesty International",
-    url: "https://www.amnesty.org/",
-    favicon: "/favicons/amnesty.png",
-  },
-  {
-    id: "6",
-    title: "Human Rights Watch",
-    url: "https://www.hrw.org/",
-    favicon: "/favicons/hrw.ico",
-  },
-  {
-    id: "7",
-    title: "International Rescue Committee",
-    url: "https://www.rescue.org/",
-    favicon: "/favicons/irc.ico",
-  },
-  {
-    id: "8",
-    title: "Doctors Without Borders",
-    url: "https://www.doctorswithoutborders.org/",
-    favicon: "/favicons/msf.ico",
-  },
-]
 
 /**
  * Custom hook to manage demo tabs with browser-like MRU behavior
@@ -190,6 +142,7 @@ const Index = () => {
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isTabManagementOpen, setIsTabManagementOpen] = useState(false)
+  const [demoCollections, setDemoCollections] = useState<Collection[]>([])
 
   // Track if any panel is open for keyboard event blocking
   const isPanelOpen = isSettingsOpen || isTabManagementOpen
@@ -259,35 +212,22 @@ const Index = () => {
     }
   }, [isSwitcherActive, selectedIndex, isPanelOpen, shortcuts, handleNavigate])
 
+  const demoTabsSlot = (
+    <ChromeTabsPreview
+      tabs={tabs}
+      activeTabId={activeTabId}
+      onTabClick={handleTabClick}
+      onCloseTab={handleCloseTab}
+      onAddTab={handleAddTab}
+      canAddTab={tabs.length < 8}
+    />
+  )
+
+  const helpButtonSlot = <TabsTooltip hideTooltip={isSwitcherActive} />
+
   return (
-    <div className="min-h-screen bg-background">
-      <ChromeTabsPreview
-        tabs={tabs}
-        activeTabId={activeTabId}
-        onTabClick={handleTabClick}
-        onCloseTab={handleCloseTab}
-        onAddTab={handleAddTab}
-        canAddTab={tabs.length < 8}
-      />
-
-      {/* Header - positioned below tabs with help button on left, downloads and theme toggle on right */}
-      <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center gap-2 pt-4 pb-8">
-          {/* Left side - Help button */}
-          <TabsTooltip hideTooltip={isSwitcherActive} />
-
-          {/* Right side - Downloads, Getting Started, and Theme Toggle */}
-          <div className="flex items-center gap-2">
-            <Link to="/getting-started">
-              <Button variant="ghost">Getting Started</Button>
-            </Link>
-            <Link to="/downloads">
-              <Button variant="ghost">Downloads</Button>
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navigation topSlot={demoTabsSlot} leftSlot={helpButtonSlot} />
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
@@ -548,19 +488,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="max-w-4xl mx-auto px-8 py-8">
-        <div className="text-right">
-          <a
-            href="https://www.mckinleydigital.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-          >
-            McKinley Digital
-          </a>
-        </div>
-      </div>
+      <Footer />
 
       {/* TabSwitcher in panel-right container */}
       <Container
@@ -603,6 +531,11 @@ const Index = () => {
           shortcuts={shortcuts}
           onShortcutsChange={setShortcuts}
           settingsThemeToggle={<ThemeToggle />}
+          collections={demoCollections}
+          onCollectionsChange={setDemoCollections}
+          onSignIn={async () => {
+            window.open("/login?returnTo=/collections", "_blank")
+          }}
         />
       </Container>
     </div>

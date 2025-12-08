@@ -85,10 +85,10 @@ export const TabsTooltip = ({ hideTooltip = false }: TabsTooltipProps) => {
         <HelpCircle className="h-5 w-5" />
       </Button>
 
-      {/* Tooltip */}
+      {/* Tooltip - fixed position, centered on page, aligned with nav row */}
       {showTooltip && !hideTooltip && (
         <div
-          className={`absolute top-2 left-1/2 -translate-x-1/2 z-50 w-[85vw] sm:w-auto ${fadingOut ? "animate-fade-out" : "animate-fade-in"}`}
+          className={`fixed top-[88px] left-1/2 -translate-x-1/2 z-50 ${fadingOut ? "animate-fade-out" : "animate-fade-in"}`}
         >
           <div className="relative bg-primary text-primary-foreground rounded-lg shadow-xl max-w-md animate-bounce-gentle">
             {/* Arrow pointing up */}

@@ -16,7 +16,7 @@ export default defineConfig({
     version: "1.0.7",
     homepage_url: "https://tabappswitcher.com",
     author: "Tab Application Switcher",
-    permissions: ["tabs", "storage"],
+    permissions: ["tabs", "storage", "identity"],
     host_permissions: ["<all_urls>"],
     icons: {
       16: "/icon/16.png",

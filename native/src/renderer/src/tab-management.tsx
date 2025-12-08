@@ -2,12 +2,27 @@ import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabManagement } from '@tas/components/TabManagement'
 import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
+import { supabase } from '@tas/utils/supabase'
 import './assets/globals.css'
 
 // eslint-disable-next-line react-refresh/only-export-components
 function TabManagementApp(): JSX.Element {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+
+  // Listen for auth tokens from main process
+  useEffect(() => {
+    window.api.auth.onTokens(async (tokens) => {
+      await supabase.auth.setSession({
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken
+      })
+    })
+
+    window.api.auth.onSignedOut(async () => {
+      await supabase.auth.signOut()
+    })
+  }, [])
 
   // Apply system theme on mount
   useEffect(() => {
@@ -79,6 +94,15 @@ function TabManagementApp(): JSX.Element {
     window.close()
   }
 
+  const handleSignIn = async (): Promise<void> => {
+    window.api.auth.signIn()
+  }
+
+  const handleSignOut = async (): Promise<void> => {
+    window.api.auth.signOut()
+    await supabase.auth.signOut()
+  }
+
   return (
     <div className="w-full h-screen bg-background">
       <TabManagement
@@ -90,6 +114,8 @@ function TabManagementApp(): JSX.Element {
         onSendCollectionToWindow={handleSendCollectionToWindow}
         shortcuts={shortcuts}
         onShortcutsChange={handleShortcutsChange}
+        onSignIn={handleSignIn}
+        onSignOut={handleSignOut}
       />
     </div>
   )

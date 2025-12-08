@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type ReactNode } from "react"
+import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react"
 import {
   Search,
   X,
@@ -8,11 +8,19 @@ import {
   Settings as SettingsIcon,
   User,
   ArrowUpDown,
-  Plus,
-  Trash2,
-  ExternalLink,
+  RefreshCw,
 } from "lucide-react"
 import { Tab, KeyboardShortcuts } from "../types/tabs"
+import type { Collection } from "../types/collections"
+import {
+  loadCollections,
+  saveCollections,
+  createCollection,
+  addTabToCollection,
+  renameCollection,
+} from "../utils/collectionsStorage"
+import { useAuth } from "../hooks/useAuth"
+import { useCollectionsSync } from "../hooks/useCollectionsSync"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Input } from "@tab-app-switcher/ui/components/input"
 import { Button } from "@tab-app-switcher/ui/components/button"
@@ -33,6 +41,7 @@ import { arrayMove, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { ScrollArea } from "@tab-app-switcher/ui/components/scroll-area"
 import { TabFavicon } from "./TabFavicon"
+import { CollectionsPanel } from "./CollectionsPanel"
 
 interface TabManagementProps {
   tabs: Tab[]
@@ -44,32 +53,26 @@ interface TabManagementProps {
   shortcuts: KeyboardShortcuts
   onShortcutsChange: (shortcuts: KeyboardShortcuts) => void
   settingsThemeToggle?: ReactNode
+  /** URL to redirect to after OAuth (website only - uses redirect flow) */
+  authRedirectUrl?: string
+  /** Custom sign in function (extension uses browser identity API) */
+  onSignIn?: () => Promise<void>
+  /** Custom sign out function */
+  onSignOut?: () => Promise<void>
+  /** Controlled collections - if provided, component won't load/save to localStorage */
+  collections?: Collection[]
+  /** Called when collections change (required if collections is provided) */
+  onCollectionsChange?: (collections: Collection[]) => void
 }
 
 type SortOption = "mru" | "url" | "title"
 type ViewMode = "search" | "collections" | "account" | "settings"
-
-interface Collection {
-  id: string
-  name: string
-  tabIds: string[]
-}
 
 interface SortableTabProps {
   tab: Tab
   onSelect: () => void
   onClose?: () => void
   showClose?: boolean
-}
-
-interface DroppableCollectionProps {
-  collection: Collection
-  isSelected: boolean
-  tabs: Tab[]
-  onSelect: () => void
-  onDelete: () => void
-  onRename: (newName: string) => void
-  onSendToWindow: () => void
 }
 
 const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabProps) => {
@@ -117,102 +120,10 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
   )
 }
 
-const DroppableCollection = ({
-  collection,
-  isSelected,
-  tabs,
-  onSelect,
-  onDelete,
-  onRename,
-  onSendToWindow,
-}: DroppableCollectionProps) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id: collection.id,
-  })
-
-  const collectionTabs = useMemo(
-    () => tabs.filter((tab) => collection.tabIds.includes(tab.id)),
-    [tabs, collection.tabIds],
-  )
-
-  const handleNameEdit = (e: React.FormEvent<HTMLHeadingElement>) => {
-    const newName = e.currentTarget.textContent?.trim() || collection.name
-    if (newName !== collection.name) {
-      onRename(newName)
-    }
-  }
-
-  return (
-    <div className="flex">
-      <div
-        ref={setNodeRef}
-        className={cn(
-          "flex-1 p-4 rounded-lg border cursor-pointer transition-all",
-          isSelected && "bg-primary/10 border-primary",
-          isOver && "bg-primary/5 border-primary ring-2 ring-primary/20",
-          !isSelected && !isOver && "hover:bg-muted/50",
-        )}
-        onClick={onSelect}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex-1">
-            <h3
-              className="font-medium outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1"
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={handleNameEdit}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  e.currentTarget.blur()
-                }
-              }}
-            >
-              {collection.name}
-            </h3>
-            <p className="text-xs text-muted-foreground">{collection.tabIds.length} tabs</p>
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                onSendToWindow()
-              }}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete()
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Show tabs in collection */}
-        {collectionTabs.length > 0 && (
-          <div className="space-y-1 mt-3 pt-3 border-t">
-            {collectionTabs.map((tab) => (
-              <div key={tab.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
-                <span className="text-xs truncate flex-1">{tab.title}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* Gap on the right to prevent accidental drops */}
-      <div className="w-4 flex-shrink-0" />
-    </div>
-  )
+/** Wrapper component that makes content droppable */
+const DroppableWrapper = ({ id, children }: { id: string; children: (isOver: boolean) => ReactNode }) => {
+  const { setNodeRef, isOver } = useDroppable({ id })
+  return <div ref={setNodeRef}>{children(isOver)}</div>
 }
 
 export const TabManagement = ({
@@ -225,27 +136,81 @@ export const TabManagement = ({
   shortcuts,
   onShortcutsChange,
   settingsThemeToggle,
+  authRedirectUrl,
+  onSignIn,
+  onSignOut,
+  collections: controlledCollections,
+  onCollectionsChange,
 }: TabManagementProps) => {
+  // Determine if we're in controlled mode
+  const isControlled = controlledCollections !== undefined
+
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortOption>("mru")
   const [reverseSort, setReverseSort] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("search")
-  const [collections, setCollections] = useState<Collection[]>(() => {
-    const saved = localStorage.getItem("tab-collections")
-    return saved ? JSON.parse(saved) : []
-  })
+  const [internalCollections, setInternalCollections] = useState<Collection[]>([])
+  const [collectionsLoaded, setCollectionsLoaded] = useState(false)
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
-  const [newCollectionName, setNewCollectionName] = useState("")
-  const [isSignedIn, setIsSignedIn] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab | null>(null)
   const [tabsByWindowId, setTabsByWindowId] = useState<Map<number, Tab[]>>(new Map())
   const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
-  // Save collections to localStorage whenever they change
-  const updateCollections = (newCollections: Collection[]) => {
-    setCollections(newCollections)
-    localStorage.setItem("tab-collections", JSON.stringify(newCollections))
-  }
+  // Use controlled collections if provided, otherwise use internal state
+  const collections = isControlled ? controlledCollections : internalCollections
+
+  // Auth hook for Google sign-in (use custom handlers if provided)
+  const {
+    user,
+    isLoading: isAuthLoading,
+    signIn: defaultSignIn,
+    signOut: defaultSignOut,
+  } = useAuth({
+    redirectUrl: authRedirectUrl,
+  })
+  const signIn = onSignIn ?? defaultSignIn
+  const signOut = onSignOut ?? defaultSignOut
+
+  // Sync hook for cloud sync (only in uncontrolled mode - controlled mode manages its own sync)
+  const { syncToCloud, refreshFromCloud } = useCollectionsSync({
+    user: isControlled ? null : user,
+    collections,
+    setCollections: isControlled ? () => {} : setInternalCollections,
+  })
+
+  // Load collections from localStorage (only in uncontrolled mode)
+  useEffect(() => {
+    if (!isControlled && !collectionsLoaded) {
+      const loaded = loadCollections(tabs)
+      setInternalCollections(loaded)
+      setCollectionsLoaded(true)
+    }
+  }, [tabs, collectionsLoaded, isControlled])
+
+  // Save collections to localStorage and sync to cloud (only in uncontrolled mode)
+  const updateCollections = useCallback(
+    (newCollections: Collection[]) => {
+      if (isControlled) {
+        onCollectionsChange?.(newCollections)
+      } else {
+        setInternalCollections(newCollections)
+        saveCollections(newCollections)
+        syncToCloud(newCollections)
+      }
+    },
+    [isControlled, onCollectionsChange, syncToCloud],
+  )
+
+  // Manual refresh from cloud
+  const handleRefreshFromCloud = useCallback(async () => {
+    setIsSyncing(true)
+    try {
+      await refreshFromCloud()
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [refreshFromCloud])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -258,13 +223,15 @@ export const TabManagement = ({
   // Get unique window IDs in MRU order for display ordering
   // Since tabs come in MRU order, the first occurrence of each windowId represents
   // the window with the most recently active tab
+  // Tabs without windowId are treated as windowId: 0
   const windowIdsInMruOrder = useMemo(() => {
     const seen = new Set<number>()
     const ordered: number[] = []
     tabs.forEach((tab) => {
-      if (tab.windowId !== undefined && !seen.has(tab.windowId)) {
-        seen.add(tab.windowId)
-        ordered.push(tab.windowId)
+      const windowId = tab.windowId ?? 0
+      if (!seen.has(windowId)) {
+        seen.add(windowId)
+        ordered.push(windowId)
       }
     })
     return ordered
@@ -373,11 +340,14 @@ export const TabManagement = ({
     // Check if dropping into a collection
     const collection = collections.find((c) => c.id === over.id)
     if (collection) {
-      // Add tab to collection if not already there
-      if (!collection.tabIds.includes(active.id as string)) {
-        updateCollections(
-          collections.map((c) => (c.id === collection.id ? { ...c, tabIds: [...c.tabIds, active.id as string] } : c)),
-        )
+      // Find the tab being dragged
+      const draggedTab = currentTabs.find((t) => t.id === active.id)
+      if (draggedTab) {
+        // Add tab to collection if not already there (by URL)
+        const alreadyInCollection = collection.tabs.some((t) => t.url === draggedTab.url)
+        if (!alreadyInCollection) {
+          updateCollections(collections.map((c) => (c.id === collection.id ? addTabToCollection(c, draggedTab) : c)))
+        }
       }
       // Mark as dropped on collection so drag overlay disappears
       setIsDroppedOnCollection(true)
@@ -485,17 +455,6 @@ export const TabManagement = ({
     setIsDroppedOnCollection(false)
   }
 
-  const handleCreateCollection = () => {
-    if (!newCollectionName.trim()) return
-    const newCollection: Collection = {
-      id: Date.now().toString(),
-      name: newCollectionName,
-      tabIds: [],
-    }
-    updateCollections([...collections, newCollection])
-    setNewCollectionName("")
-  }
-
   const handleDeleteCollection = (collectionId: string) => {
     updateCollections(collections.filter((c) => c.id !== collectionId))
     if (selectedCollection === collectionId) {
@@ -504,20 +463,16 @@ export const TabManagement = ({
   }
 
   const handleRenameCollection = (id: string, newName: string) => {
-    updateCollections(collections.map((c) => (c.id === id ? { ...c, name: newName } : c)))
+    updateCollections(collections.map((c) => (c.id === id ? renameCollection(c, newName) : c)))
   }
 
   const handleSendCollectionToWindow = (collectionId: string) => {
     const collection = collections.find((c) => c.id === collectionId)
-    if (!collection) return
-
-    // Get tabs from the collection
-    const collectionTabs = tabs.filter((tab) => collection.tabIds.includes(tab.id))
-    if (collectionTabs.length === 0) return
+    if (!collection || collection.tabs.length === 0) return
 
     // If callback is provided (extension mode), use it to create real browser window
     if (onSendCollectionToWindow) {
-      const tabUrls = collectionTabs.map((tab) => tab.url)
+      const tabUrls = collection.tabs.map((tab) => tab.url)
       onSendCollectionToWindow(tabUrls)
       return
     }
@@ -528,9 +483,11 @@ export const TabManagement = ({
     const newWindowId = maxWindowId + 1
 
     // Create duplicate tabs with new IDs for the new window
-    const duplicateTabs: Tab[] = collectionTabs.map((tab, index) => ({
-      ...tab,
-      id: `${tab.id}-${Date.now()}-${Math.random()}`,
+    const duplicateTabs: Tab[] = collection.tabs.map((collectionTab, index) => ({
+      id: `${collectionTab.url}-${Date.now()}-${Math.random()}`,
+      title: collectionTab.title,
+      url: collectionTab.url,
+      favicon: collectionTab.favicon,
       windowId: newWindowId,
       index,
     }))
@@ -719,58 +676,36 @@ export const TabManagement = ({
               )}
 
               {viewMode === "collections" && (
-                <div className="space-y-4">
-                  {/* Create Collection */}
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      value={newCollectionName}
-                      onChange={(e) => setNewCollectionName(e.target.value)}
-                      placeholder="New collection name..."
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleCreateCollection()
-                        }
-                      }}
-                    />
-                    <Button onClick={handleCreateCollection}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create
-                    </Button>
-                  </div>
-
-                  {/* Collections List */}
-                  <div className="space-y-2">
-                    {collections.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        No collections yet. Create one to organize your tabs.
-                      </div>
-                    ) : (
-                      collections.map((collection) => (
-                        <DroppableCollection
-                          key={collection.id}
-                          collection={collection}
-                          isSelected={selectedCollection === collection.id}
-                          tabs={tabs}
-                          onSelect={() =>
-                            setSelectedCollection(selectedCollection === collection.id ? null : collection.id)
-                          }
-                          onDelete={() => handleDeleteCollection(collection.id)}
-                          onRename={(newName) => handleRenameCollection(collection.id, newName)}
-                          onSendToWindow={() => handleSendCollectionToWindow(collection.id)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
+                <CollectionsPanel
+                  collections={collections}
+                  selectedCollection={selectedCollection}
+                  onSelectCollection={setSelectedCollection}
+                  onCreateCollection={(name) => {
+                    const newCollection = createCollection(name)
+                    updateCollections([...collections, newCollection])
+                  }}
+                  onDeleteCollection={handleDeleteCollection}
+                  onRenameCollection={handleRenameCollection}
+                  onSendToWindow={handleSendCollectionToWindow}
+                  alwaysShowTabs
+                  renderCollectionWrapper={(collectionId, children, _isOver) => (
+                    <DroppableWrapper id={collectionId}>
+                      {(isOver) => <div className={cn(isOver && "ring-2 ring-primary/20 rounded-lg")}>{children}</div>}
+                    </DroppableWrapper>
+                  )}
+                />
               )}
 
               {viewMode === "account" && (
                 <div className="py-12">
-                  {!isSignedIn ? (
+                  {isAuthLoading ? (
+                    <div className="text-center">
+                      <p className="text-muted-foreground">Loading...</p>
+                    </div>
+                  ) : !user ? (
                     <div className="text-center space-y-4">
                       <p className="text-muted-foreground mb-4">Sign in to sync your tabs across devices</p>
-                      <Button onClick={() => setIsSignedIn(true)}>
+                      <Button onClick={signIn}>
                         <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                           <path
                             fill="currentColor"
@@ -795,12 +730,18 @@ export const TabManagement = ({
                   ) : (
                     <div className="space-y-4">
                       <div className="p-4 rounded-lg border">
-                        <h3 className="font-medium mb-2">Account Information</h3>
-                        <p className="text-sm text-muted-foreground">Signed in with Google</p>
+                        <h3 className="font-medium mb-2">Account</h3>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
-                      <Button variant="outline" onClick={() => setIsSignedIn(false)}>
-                        Sign Out
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleRefreshFromCloud} disabled={isSyncing}>
+                          <RefreshCw className={cn("w-4 h-4 mr-2", isSyncing && "animate-spin")} />
+                          {isSyncing ? "Syncing..." : "Sync Now"}
+                        </Button>
+                        <Button variant="outline" onClick={signOut}>
+                          Sign Out
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -827,9 +768,12 @@ export const TabManagement = ({
             <div className="p-2">
               {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
                 <div key={windowName} className="mb-4">
-                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                    {windowName} ({windowTabs.length})
-                  </div>
+                  {/* Only show window name if there are multiple windows */}
+                  {Object.keys(tabsByWindow).length > 1 && (
+                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                      {windowName} ({windowTabs.length})
+                    </div>
+                  )}
                   <SortableContext items={windowTabs.map((t) => t.id)}>
                     <div className="space-y-1">
                       {windowTabs.map((tab) => (
@@ -840,8 +784,8 @@ export const TabManagement = ({
                             onSelectTab(tab.id)
                             onClose()
                           }}
-                          onClose={() => handleCloseTab(tab.id)}
-                          showClose={true}
+                          onClose={onCloseTab ? () => handleCloseTab(tab.id) : undefined}
+                          showClose={!!onCloseTab}
                         />
                       ))}
                     </div>

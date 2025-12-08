@@ -6,9 +6,8 @@ import { SiApple } from "@icons-pack/react-simple-icons"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { BrowserType } from "@tas/types/tabs"
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
-import { NavLink } from "@/components/NavLink"
-import { ThemeToggle } from "@/components/ThemeToggle"
-import logo from "@/assets/logo.png"
+import { Navigation } from "@/components/Navigation"
+import { Footer } from "@/components/Footer"
 
 // GitHub release URLs
 const GITHUB_REPO = "mckinley/tab-app-switcher"
@@ -90,33 +89,10 @@ const Downloads = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
-          <div className="flex items-center justify-between gap-2">
-            <NavLink to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <img
-                src={logo}
-                alt="Tab Application Switcher Logo"
-                className="h-8 w-auto rounded opacity-80 hover:opacity-100 transition-opacity flex-shrink-0"
-              />
-              <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">Tab Application Switcher</h1>
-            </NavLink>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <Link to="/">
-                <Button variant="ghost" size="sm" className="sm:h-10 sm:px-4">
-                  <span className="hidden sm:inline">Back to Home</span>
-                  <span className="sm:hidden">Home</span>
-                </Button>
-              </Link>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navigation />
 
-      <div className="max-w-6xl mx-auto px-8 py-16">
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-8 py-12 w-full">
         {/* Detected Platform Section */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-foreground mb-4">Download TAS</h1>
@@ -312,7 +288,9 @@ const Downloads = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   )
 }

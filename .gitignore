@@ -30,3 +30,8 @@ storybook-static
 
 # Generated Safari Xcode project
 safari-extension/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
