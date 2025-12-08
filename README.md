@@ -54,14 +54,23 @@ This will:
 2. Run `npm run prep` (format, lint, test)
 3. Commit and tag
 4. Push to GitHub
-5. Publish native app to GitHub Releases
-6. Publish extension to Chrome Web Store
+
+## Publishing
+
+After releasing, publish each product:
+
+```bash
+npm run publish:all -w extension   # Chrome, Firefox, Edge
+npm run publish:mac -w native      # macOS app to GitHub Releases
+```
+
+The site auto-deploys via Vercel on push to `main`.
+
+Safari requires manual publishing via Xcode (see extension/CROSS_BROWSER.md).
 
 **Prerequisites:** Set up credentials in `extension/.env` and `native/.env` (see each project's README).
 
 ## Other Platforms
-
-The extension supports Firefox, Edge, and Safari. The native app can potentially support Windows and Linux.
 
 | Component  | Documentation                                            |
 | ---------- | -------------------------------------------------------- |

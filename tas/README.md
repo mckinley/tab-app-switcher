@@ -72,21 +72,6 @@ interface KeyboardShortcuts {
 }
 ```
 
-## Structure
-
-```
-tas/
-├── components/         # React components
-│   ├── ui/            # shadcn/ui primitives
-│   ├── TabSwitcher.tsx
-│   ├── Settings.tsx
-│   └── TabManagement.tsx
-├── types/tabs.ts      # TypeScript types
-├── lib/utils.ts       # Utilities (cn helper)
-├── styles/tokens.css  # CSS custom properties
-└── tailwind.preset.ts # Shared Tailwind config
-```
-
 ## Development
 
 Changes to TAS affect all consuming projects. Test in multiple contexts:
