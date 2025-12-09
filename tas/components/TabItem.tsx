@@ -50,9 +50,7 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
       </div>
 
       {/* Relative Time */}
-      {relativeTime && (
-        <div className="flex-shrink-0 text-xs text-muted-foreground/70">{relativeTime}</div>
-      )}
+      {relativeTime && <div className="flex-shrink-0 text-xs text-muted-foreground/70">{relativeTime}</div>}
 
       {/* Close Button */}
       {onClose && (

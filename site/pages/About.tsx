@@ -299,10 +299,12 @@ export default function About() {
           <h2 className="text-3xl font-bold mb-6">History</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>
-              Tab Application Switcher was created to solve a simple problem: <strong>I just want to switch between my browser
-              tabs as fast as I can switch between OS applications</strong>. I don't want to click. I don't want to think. I just
-              want to cycle back to the last tab I am interested in, and then have the actual tab in front of me with
-              the release of a key.
+              Tab Application Switcher was created to solve a simple problem:{" "}
+              <strong>
+                I just want to switch between my browser tabs as fast as I can switch between OS applications
+              </strong>
+              . I don't want to click. I don't want to think. I just want to cycle back to the last tab I am interested
+              in, and then have the actual tab in front of me with the release of a key.
             </p>
             <p>
               TAS started many years ago. It was before Chrome had Search Tabs... (⌘+Shift+A / Ctrl+Shift+A). Search

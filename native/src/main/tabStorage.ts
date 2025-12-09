@@ -113,4 +113,3 @@ export function clearTabData(): void {
 export function getLastSavedTimestamp(): number {
   return store.get('lastSaved', 0)
 }
-

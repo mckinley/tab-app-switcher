@@ -74,10 +74,7 @@ export function TimingComparison() {
           >
             {showRelative ? "Relative" : "Absolute"}
           </button>
-          <button
-            onClick={fetchTabs}
-            className="p-1 rounded bg-muted text-muted-foreground hover:bg-muted/80"
-          >
+          <button onClick={fetchTabs} className="p-1 rounded bg-muted text-muted-foreground hover:bg-muted/80">
             <RefreshCw className="w-3 h-3" />
           </button>
         </div>
@@ -106,26 +103,25 @@ export function TimingComparison() {
                     <span className="truncate max-w-[200px]">{tab.title}</span>
                   </div>
                 </td>
-                <td className="p-2 text-muted-foreground">
-                  {formatTime(tab.lastAccessed, showRelative)}
-                </td>
-                <td className="p-2 text-muted-foreground">
-                  {formatTime(tab.lastActivated, showRelative)}
-                </td>
-                <td className="p-2 text-muted-foreground">
-                  {formatTime(tab.lastDeactivated, showRelative)}
-                </td>
+                <td className="p-2 text-muted-foreground">{formatTime(tab.lastAccessed, showRelative)}</td>
+                <td className="p-2 text-muted-foreground">{formatTime(tab.lastActivated, showRelative)}</td>
+                <td className="p-2 text-muted-foreground">{formatTime(tab.lastDeactivated, showRelative)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Chrome Accessed:</strong> Built-in Chrome lastAccessed timestamp.</p>
-        <p><strong>TAS Activated:</strong> When TAS detected this tab gained focus.</p>
-        <p><strong>TAS Deactivated:</strong> When TAS detected this tab lost focus.</p>
+        <p>
+          <strong>Chrome Accessed:</strong> Built-in Chrome lastAccessed timestamp.
+        </p>
+        <p>
+          <strong>TAS Activated:</strong> When TAS detected this tab gained focus.
+        </p>
+        <p>
+          <strong>TAS Deactivated:</strong> When TAS detected this tab lost focus.
+        </p>
       </div>
     </div>
   )
 }
-

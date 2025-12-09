@@ -54,4 +54,3 @@ export function formatRelativeTime(timestamp: number | undefined): string {
   const date = new Date(timestamp)
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
-
