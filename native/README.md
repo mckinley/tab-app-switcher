@@ -65,14 +65,9 @@ This builds the app, uploads to GitHub Releases, and enables auto-updates for us
 
 ## Installation (for users)
 
-Since the app is not code-signed, macOS will block it. Users need to:
-
-```bash
-# After downloading the ZIP from GitHub Releases
-xattr -cr ~/Downloads/Tab\ Application\ Switcher.app
-mv ~/Downloads/Tab\ Application\ Switcher.app /Applications/
-open /Applications/Tab\ Application\ Switcher.app
-```
+1. Download the ZIP from GitHub Releases
+2. Extract and move the app to your Applications folder
+3. Double-click to open
 
 ## Troubleshooting
 

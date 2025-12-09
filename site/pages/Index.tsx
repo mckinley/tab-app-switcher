@@ -17,11 +17,12 @@ import { Container } from "@/components/Container"
 import { Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
 import logo from "@/assets/logo.jpg"
+import nativePackage from "../../native/package.json"
 
-// GitHub release URLs
+// GitHub release URL - direct download of the latest macOS zip
 const GITHUB_REPO = "mckinley/tab-app-switcher"
-const LATEST_VERSION = "0.1.1"
-const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/Tab-Application-Switcher-${LATEST_VERSION}-arm64-mac.zip`
+const NATIVE_VERSION = nativePackage.version
+const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/Tab-Application-Switcher-${NATIVE_VERSION}-arm64-mac.zip`
 
 // Extension Store URLs
 const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
@@ -281,7 +282,7 @@ const Index = () => {
               disabled={platform.os !== "mac"}
             >
               {platform.os === "mac" ? (
-                <a href={MACOS_DOWNLOAD_URL} download>
+                <a href={MACOS_DOWNLOAD_URL}>
                   <Download className="w-5 h-5" />
                   Download for {getOSDisplayName(platform.os)}
                 </a>
@@ -460,7 +461,7 @@ const Index = () => {
               disabled={platform.os !== "mac"}
             >
               {platform.os === "mac" ? (
-                <a href={MACOS_DOWNLOAD_URL} download>
+                <a href={MACOS_DOWNLOAD_URL}>
                   <Download className="w-5 h-5" />
                   Download for {getOSDisplayName(platform.os)}
                 </a>

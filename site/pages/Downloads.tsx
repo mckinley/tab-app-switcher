@@ -8,11 +8,12 @@ import { BrowserType } from "@tas/types/tabs"
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
 import { Navigation } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
+import nativePackage from "../../native/package.json"
 
-// GitHub release URLs
+// GitHub release URL - direct download of the latest macOS zip
 const GITHUB_REPO = "mckinley/tab-app-switcher"
-const LATEST_VERSION = "0.1.1"
-const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/Tab-Application-Switcher-${LATEST_VERSION}-arm64-mac.zip`
+const NATIVE_VERSION = nativePackage.version
+const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/Tab-Application-Switcher-${NATIVE_VERSION}-arm64-mac.zip`
 
 // Extension Store URLs
 const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
@@ -64,7 +65,6 @@ const Downloads = () => {
       beta: true,
       instructions: [
         "Download and extract the ZIP file",
-        "Open Terminal and run: xattr -cr ~/Downloads/Tab\\ Application\\ Switcher.app",
         "Move the app to your Applications folder",
         "Double-click to open the app",
         "Install the Chrome extension to connect",
@@ -136,7 +136,7 @@ const Downloads = () => {
               disabled={platform.os !== "mac"}
             >
               {platform.os === "mac" ? (
-                <a href={MACOS_DOWNLOAD_URL} download>
+                <a href={MACOS_DOWNLOAD_URL}>
                   <Download className="w-5 h-5" />
                   Download for {getOSDisplayName(platform.os)}
                 </a>
@@ -233,7 +233,7 @@ const Downloads = () => {
 
                   {app.available ? (
                     <>
-                      <p className="text-sm text-muted-foreground mb-4">Version {LATEST_VERSION}</p>
+                      <p className="text-sm text-muted-foreground mb-4">Version {NATIVE_VERSION}</p>
                       <Button variant="outline" className="gap-2 mb-6" asChild>
                         <a href={app.url} download>
                           <Download className="w-4 h-4" />
