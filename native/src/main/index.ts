@@ -24,6 +24,7 @@ import {
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
 import { setupAuthHandlers } from './auth'
+import { loadTabData, saveTabData } from './tabStorage'
 import type { BrowserType } from '@tas/types/tabs'
 
 interface CachedTab {
@@ -77,48 +78,66 @@ function activateBrowserApp(browser: BrowserType): void {
 
 /**
  * Merge tabs from all browsers into a single global MRU list
- * Preserves existing order for tabs that are still present
+ * When a browser sends an update, adopt its MRU order for its tabs
  */
 function updateGlobalMruTabs(activeBrowser?: BrowserType): void {
-  // Get all current tabs from all browser caches
-  const allCurrentTabs = new Map<string, CachedTab>()
   console.log('updateGlobalMruTabs - browserTabCaches keys:', [...browserTabCaches.keys()])
-  browserTabCaches.forEach((tabs, browser) => {
-    tabs.forEach((tab) => {
-      // Create a unique key combining browser and tab ID
-      const key = `${browser}:${tab.id}`
-      allCurrentTabs.set(key, { ...tab, browser })
-    })
-  })
 
-  // Update existing tabs with fresh data (title, url, favicon may have changed)
-  // and remove tabs that no longer exist
-  globalMruTabs = globalMruTabs
-    .map((tab) => {
-      const key = `${tab.browser}:${tab.id}`
-      const freshTab = allCurrentTabs.get(key)
-      // Return updated tab data if it still exists, otherwise mark for removal
-      return freshTab || null
-    })
-    .filter((tab): tab is CachedTab => tab !== null)
-
-  // Add new tabs to the end of the global MRU (they'll move up when accessed)
-  const existingKeys = new Set(globalMruTabs.map((tab) => `${tab.browser}:${tab.id}`))
-  allCurrentTabs.forEach((tab, key) => {
-    if (!existingKeys.has(key)) {
-      globalMruTabs.push(tab)
-    }
-  })
-
-  // If we know which browser just sent an update, promote its first tab
-  // (the most recently used tab in that browser) to the front of the global MRU
   if (activeBrowser) {
-    const browserTabs = browserTabCaches.get(activeBrowser)
-    if (browserTabs && browserTabs.length > 0) {
-      const mostRecentTab = browserTabs[0]
-      promoteTabInGlobalMru(activeBrowser, String(mostRecentTab.id))
-    }
+    // When a specific browser sends an update, rebuild global MRU:
+    // 1. Start with the updated browser's tabs in their MRU order
+    // 2. Append tabs from other browsers, preserving their existing order
+    const updatedBrowserTabs = browserTabCaches.get(activeBrowser) || []
+    const otherBrowserTabs = globalMruTabs.filter((tab) => tab.browser !== activeBrowser)
+
+    // Create a map of all current tabs for quick lookup
+    const allCurrentTabs = new Map<string, CachedTab>()
+    browserTabCaches.forEach((tabs, browser) => {
+      tabs.forEach((tab) => {
+        const key = `${browser}:${tab.id}`
+        allCurrentTabs.set(key, { ...tab, browser })
+      })
+    })
+
+    // Update other browser tabs with fresh data and remove tabs that no longer exist
+    const updatedOtherTabs = otherBrowserTabs
+      .map((tab) => {
+        const key = `${tab.browser}:${tab.id}`
+        return allCurrentTabs.get(key) || null
+      })
+      .filter((tab): tab is CachedTab => tab !== null)
+
+    // Rebuild global MRU: updated browser's tabs first (in their MRU order), then others
+    globalMruTabs = [...updatedBrowserTabs, ...updatedOtherTabs]
+  } else {
+    // No specific browser update - just refresh tab data without changing order
+    const allCurrentTabs = new Map<string, CachedTab>()
+    browserTabCaches.forEach((tabs, browser) => {
+      tabs.forEach((tab) => {
+        const key = `${browser}:${tab.id}`
+        allCurrentTabs.set(key, { ...tab, browser })
+      })
+    })
+
+    // Update existing tabs with fresh data and remove tabs that no longer exist
+    globalMruTabs = globalMruTabs
+      .map((tab) => {
+        const key = `${tab.browser}:${tab.id}`
+        return allCurrentTabs.get(key) || null
+      })
+      .filter((tab): tab is CachedTab => tab !== null)
+
+    // Add new tabs to the end
+    const existingKeys = new Set(globalMruTabs.map((tab) => `${tab.browser}:${tab.id}`))
+    allCurrentTabs.forEach((tab, key) => {
+      if (!existingKeys.has(key)) {
+        globalMruTabs.push(tab)
+      }
+    })
   }
+
+  // Persist to disk (debounced)
+  saveTabData(globalMruTabs, browserTabCaches)
 }
 
 /**
@@ -131,6 +150,8 @@ function promoteTabInGlobalMru(browser: BrowserType, tabId: string): void {
   if (index > 0) {
     const [tab] = globalMruTabs.splice(index, 1)
     globalMruTabs.unshift(tab)
+    // Persist to disk (debounced)
+    saveTabData(globalMruTabs, browserTabCaches)
   }
 }
 
@@ -429,7 +450,7 @@ function handleExtensionMessage(msg: {
       console.log(`First tab browser field:`, tabs[0].browser, `Title:`, tabs[0].title)
     }
 
-    // Rebuild global MRU from all browser caches, promoting the active browser's first tab
+    // Rebuild global MRU, adopting this browser's MRU order
     updateGlobalMruTabs(browser)
     console.log(
       'Global MRU tabs:',
@@ -452,6 +473,14 @@ function handleExtensionMessage(msg: {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.tab-app-switcher')
+
+  // Load persisted tab data from disk
+  const persistedData = loadTabData()
+  globalMruTabs = persistedData.globalMruTabs
+  persistedData.browserTabCaches.forEach((tabs, browser) => {
+    browserTabCaches.set(browser, tabs)
+  })
+  console.log('Restored tab state from disk on startup')
 
   // Start WebSocket server for extension communication
   startWebSocketServer(handleExtensionMessage, updateTrayMenu)

@@ -36,6 +36,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@types/ws": "^8.18.1",
+    "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
     "ws": "^8.18.3"
   },

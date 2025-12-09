@@ -54,15 +54,8 @@ This will:
 2. Run `npm run prep` (format, lint, test)
 3. Commit and tag
 4. Push to GitHub
-
-## Publishing
-
-After releasing, publish each product:
-
-```bash
-npm run publish:all -w extension   # Chrome, Firefox, Edge
-npm run publish:mac -w native      # macOS app to GitHub Releases
-```
+5. **Publish native app to GitHub Releases**
+6. **Publish extension to Chrome, Firefox, and Edge stores**
 
 The site auto-deploys via Vercel on push to `main`.
 
