@@ -56,9 +56,6 @@ export default defineConfig({
             gecko: {
               id: "tab-application-switcher@tabappswitcher.com",
               strict_min_version: "109.0",
-              data_collection_permissions: {
-                granted: false,
-              },
             },
           },
         }
