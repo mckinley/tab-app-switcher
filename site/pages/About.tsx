@@ -4,7 +4,7 @@ import { Navigation, SubnavItem } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
 import { Button } from "@tab-app-switcher/ui/components/button"
-import { Download, Keyboard, Zap, AlertCircle, HelpCircle } from "lucide-react"
+import { Download, Keyboard, Zap, AlertCircle, HelpCircle, Repeat, Unlock, Grid2x2, Database } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 
 const subnavItems: SubnavItem[] = [
@@ -232,8 +232,8 @@ export default function About() {
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   The browser extension tracks your tabs in Most Recently Used (MRU) order. When you press Alt+Tab, it
-                  opens a popup showing your tabs sorted by when you last used them. Press Tab to cycle through tabs,
-                  then release Alt to switch to the selected tab.
+                  opens a popup showing your tabs sorted by the time you last used them. Press Tab to cycle through
+                  tabs, then release Alt to switch to the selected tab.
                 </p>
                 <div className="bg-muted/50 border border-border rounded-lg p-4">
                   <p className="text-sm font-medium mb-2">Technical Details:</p>
@@ -299,13 +299,22 @@ export default function About() {
           <h2 className="text-3xl font-bold mb-6">History</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>
-              Tab Application Switcher was created to solve a simple problem: switching between browser tabs should be
-              as fast and intuitive as switching between applications.
+              Tab Application Switcher was created to solve a simple problem: <strong>I just want to switch between my browser
+              tabs as fast as I can switch between OS applications</strong>. I don't want to click. I don't want to think. I just
+              want to cycle back to the last tab I am interested in, and then have the actual tab in front of me with
+              the release of a key.
             </p>
-            <p className="mt-4">
-              Modern browsers have dozens of tabs open, but navigating between them requires clicking or using Ctrl+Tab
-              which cycles in order, not by recency. This extension brings the familiar Alt+Tab experience to your
-              browser.
+            <p>
+              TAS started many years ago. It was before Chrome had Search Tabs... (⌘+Shift+A / Ctrl+Shift+A). Search
+              Tabs ended up doing a lot of what TAS was doing, and for a while I thought it might be the end of the line
+              for TAS. But at the end of the day it just didn't give me that Application Switcher feeling. So I built a
+              brand new iteration of TAS. I hope you like it.
+            </p>
+            <p>
+              You can still use TAS like the old days for the most part. If you just want a browser extension to switch
+              through and manage tabs, you can use the extension only. On the other hand, if you crave the native
+              Application Switcher vibe, you can install the native app. And howdy doody, you got yourself a Tab
+              Application Switcher!
             </p>
           </div>
         </section>
@@ -476,7 +485,10 @@ export default function About() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🎯 Muscle Memory</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Repeat className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-base">Muscle Memory</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
@@ -487,7 +499,10 @@ export default function About() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🔓 Free Forever</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Unlock className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-base">Free Forever</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
@@ -498,7 +513,10 @@ export default function About() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🪟 Cross-Window</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Grid2x2 className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-base">Cross-Window</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
@@ -509,7 +527,10 @@ export default function About() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">💾 Persistent</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Database className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-base">Persistent</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
@@ -530,7 +551,7 @@ export default function About() {
               Tab Application Switcher is provided "as is" without warranty of any kind. By using this software, you
               agree to use it at your own risk.
             </p>
-            <p className="mt-4">
+            <p>
               We do not collect personal data. If you sign in to sync collections, your data is stored securely and used
               only for the sync functionality.
             </p>
@@ -542,7 +563,7 @@ export default function About() {
           <h2 className="text-3xl font-bold mb-6">Support</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>Need help? Here are your options:</p>
-            <ul className="mt-4 space-y-2">
+            <ul className="space-y-2">
               <li>
                 <a
                   href="https://github.com/mckinley/tab-app-switcher/issues"
