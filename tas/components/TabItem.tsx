@@ -3,6 +3,7 @@ import { Tab } from "../types/tabs"
 import { X } from "lucide-react"
 import { TabFavicon } from "./TabFavicon"
 import { BrowserIcon } from "./BrowserIcon"
+import { formatRelativeTime } from "../utils/relativeTime"
 
 interface TabItemProps {
   tab: Tab
@@ -13,6 +14,8 @@ interface TabItemProps {
 }
 
 export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: TabItemProps) => {
+  const relativeTime = formatRelativeTime(tab.lastActiveTime)
+
   return (
     <button
       onClick={onClick}
@@ -45,6 +48,11 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
         <div className="text-sm font-medium text-foreground truncate">{tab.title || "Untitled"}</div>
         <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
       </div>
+
+      {/* Relative Time */}
+      {relativeTime && (
+        <div className="flex-shrink-0 text-xs text-muted-foreground/70">{relativeTime}</div>
+      )}
 
       {/* Close Button */}
       {onClose && (

@@ -3,9 +3,10 @@ import { Settings } from "@tas/components/Settings"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts, BrowserType } from "@tas/types/tabs"
 import { ThemeToggle } from "../../components/ThemeToggle"
+import { TimingComparison } from "../../components/TimingComparison"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
-import { CheckCircle2, Download, ExternalLink, AlertCircle } from "lucide-react"
+import { CheckCircle2, Download, ExternalLink, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { loadAndApplyTheme } from "../../utils/theme"
 import "./globals.css"
 
@@ -21,6 +22,7 @@ function detectBrowser(): BrowserType {
 function App() {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
   const [nativeAppConnected, setNativeAppConnected] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const browserType = useMemo(() => detectBrowser(), [])
   const isChromium = browserType === "chrome" || browserType === "edge"
 
@@ -159,6 +161,30 @@ function App() {
         {/* Settings */}
         <div className="bg-card border rounded-lg p-6 mb-8">
           <Settings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
+        </div>
+
+        {/* Advanced Section - Collapsible */}
+        <div className="mb-8">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            Advanced: Timing Comparison
+          </button>
+          {showAdvanced && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-lg">Timing Comparison</CardTitle>
+                <CardDescription>
+                  Compare different methods of tracking tab activity to understand MRU ordering
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TimingComparison />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Help Links */}

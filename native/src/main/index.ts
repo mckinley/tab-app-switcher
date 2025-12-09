@@ -34,6 +34,11 @@ interface CachedTab {
   windowId?: number
   index?: number
   browser?: BrowserType
+  // Timing fields
+  lastAccessed?: number
+  lastActivated?: number
+  lastDeactivated?: number
+  lastActiveTime?: number // Deprecated
 }
 
 let tray: Tray | null = null

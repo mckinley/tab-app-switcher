@@ -88,7 +88,7 @@ export default function About() {
                     <li>Tab search and management</li>
                   </ul>
                 </div>
-                <Link to="/downloads">
+                <Link to="/downloads" className="inline-block mt-2">
                   <Button className="gap-2">
                     <Download className="w-4 h-4" />
                     Install Extension
@@ -121,7 +121,7 @@ export default function About() {
                     <li>More reliable modifier key detection</li>
                   </ul>
                 </div>
-                <Link to="/downloads">
+                <Link to="/downloads" className="inline-block mt-2">
                   <Button className="gap-2">
                     <Download className="w-4 h-4" />
                     Download Both
@@ -311,51 +311,214 @@ export default function About() {
         </section>
 
         {/* Compare */}
-        <section id="compare" className="scroll-mt-32">
-          <h2 className="text-3xl font-bold mb-6">Compare</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 pr-4 font-medium">Feature</th>
-                  <th className="text-center py-3 px-4 font-medium">TAS</th>
-                  <th className="text-center py-3 px-4 font-medium">Browser Ctrl+Tab</th>
-                  <th className="text-center py-3 px-4 font-medium">Other Extensions</th>
-                </tr>
-              </thead>
-              <tbody className="text-muted-foreground">
-                <tr className="border-b border-border/50">
-                  <td className="py-3 pr-4">MRU (Most Recently Used) order</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">✗</td>
-                  <td className="text-center py-3 px-4">Some</td>
-                </tr>
-                <tr className="border-b border-border/50">
-                  <td className="py-3 pr-4">Visual preview while switching</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">✗</td>
-                  <td className="text-center py-3 px-4">Some</td>
-                </tr>
-                <tr className="border-b border-border/50">
-                  <td className="py-3 pr-4">Native app with OS-level shortcuts</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">✗</td>
-                  <td className="text-center py-3 px-4">✗</td>
-                </tr>
-                <tr className="border-b border-border/50">
-                  <td className="py-3 pr-4">Tab collections with cloud sync</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">✗</td>
-                  <td className="text-center py-3 px-4">Some</td>
-                </tr>
-                <tr>
-                  <td className="py-3 pr-4">Free & open source</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">✓</td>
-                  <td className="text-center py-3 px-4">Varies</td>
-                </tr>
-              </tbody>
-            </table>
+        <section id="compare" className="scroll-mt-32 space-y-12">
+          <h2 className="text-3xl font-bold">Compare</h2>
+
+          {/* TAS vs Chrome Tab Search */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Tab Switcher vs Chrome's Tab Search</h3>
+            <p className="text-muted-foreground text-sm">
+              Chrome's built-in tab search (⌘+Shift+A / Ctrl+Shift+A) lets you search and click to switch tabs. TAS
+              provides the familiar Alt+Tab experience: hold the modifier, tap to cycle, release to confirm.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 pr-4 font-medium">Feature</th>
+                    <th className="text-center py-3 px-4 font-medium">TAS</th>
+                    <th className="text-center py-3 px-4 font-medium">Chrome Tab Search</th>
+                  </tr>
+                </thead>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Alt+Tab-style switching (hold & release)</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Keyboard navigation through tab list</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Cross-window MRU order</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">Partial*</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">"Last active" timestamp</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Search/filter tabs</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Customizable keyboard shortcuts</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Native app with OS-level shortcuts</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 pr-4">MRU persists across browser restarts</td>
+                    <td className="text-center py-3 px-4">✓</td>
+                    <td className="text-center py-3 px-4">✗</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              * Chrome's timestamps don't update when switching between windows, only when switching tabs within the
+              same window. TAS tracks true cross-window usage.
+            </p>
+          </div>
+
+          {/* TAS Tab Management vs Others */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Tab Management vs Popular Extensions</h3>
+            <p className="text-muted-foreground text-sm">
+              TAS combines fast tab switching with tab management and collections. Here's how it compares to popular tab
+              management extensions.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 pr-4 font-medium">Feature</th>
+                    <th className="text-center py-3 px-2 font-medium">TAS</th>
+                    <th className="text-center py-3 px-2 font-medium">Toby</th>
+                    <th className="text-center py-3 px-2 font-medium">Workona</th>
+                    <th className="text-center py-3 px-2 font-medium">OneTab</th>
+                    <th className="text-center py-3 px-2 font-medium">Session Buddy</th>
+                  </tr>
+                </thead>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">MRU tab switching</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Save tab collections</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Cloud sync</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Keeps tabs open</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Drag-and-drop organization</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">No account required</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 pr-4">Free & open source</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 pr-4">Multi-browser support*</td>
+                    <td className="text-center py-3 px-2">✓</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                    <td className="text-center py-3 px-2">✗</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">* With native app installed</p>
+          </div>
+
+          {/* Why TAS */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Why Choose TAS?</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">🎯 Muscle Memory</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Works like your OS app switcher. Same Alt+Tab pattern you already know—hold the modifier, tap to
+                    navigate, release to confirm.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">🔓 Free Forever</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    100% free and open source. No premium tiers, no subscriptions, no data collection. The code is on
+                    GitHub for anyone to audit.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">🪟 Cross-Window</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    TAS tracks when you actually look at each tab, including window switches. Chrome's built-in
+                    timestamps don't update when switching between windows.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">💾 Persistent</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Your MRU order and collections survive browser restarts. Chrome's tab order resets every time you
+                    close your browser.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
 

@@ -21,6 +21,7 @@ import {
 } from "../utils/collectionsStorage"
 import { useAuth } from "../hooks/useAuth"
 import { useCollectionsSync } from "../hooks/useCollectionsSync"
+import { formatRelativeTime } from "../utils/relativeTime"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Input } from "@tab-app-switcher/ui/components/input"
 import { Button } from "@tab-app-switcher/ui/components/button"
@@ -653,24 +654,32 @@ export const TabManagement = ({
                   {filteredAndSortedTabs.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">No tabs found</div>
                   ) : (
-                    filteredAndSortedTabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          onSelectTab(tab.id)
-                          onClose()
-                        }}
-                        className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-start gap-3">
-                          <TabFavicon src={tab.favicon} className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">{tab.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
+                    filteredAndSortedTabs.map((tab) => {
+                      const relativeTime = formatRelativeTime(tab.lastActiveTime)
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            onSelectTab(tab.id)
+                            onClose()
+                          }}
+                          className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <TabFavicon src={tab.favicon} className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">{tab.title}</div>
+                              <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
+                            </div>
+                            {relativeTime && (
+                              <div className="flex-shrink-0 text-xs text-muted-foreground/70 mt-0.5">
+                                {relativeTime}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </button>
-                    ))
+                        </button>
+                      )
+                    })
                   )}
                 </div>
               )}

@@ -16,6 +16,14 @@ import { getFaviconDataUrl, preloadFavicons } from "../utils/faviconCache"
 // Store MRU order of tab IDs
 let mruTabOrder: number[] = []
 
+// Timing maps for comparing different tracking approaches
+// lastActivated: when TAS detected this tab gained focus (via onActivated or window focus change)
+const tabLastActivated: Map<number, number> = new Map()
+// lastDeactivated: when TAS detected this tab lost focus
+const tabLastDeactivated: Map<number, number> = new Map()
+// Track the currently active tab to know which tab to mark as deactivated
+let currentlyActiveTabId: number | null = null
+
 // Connected extension pages (popup, tabs page) for push updates
 // Using ReturnType to extract the Port type from the listener parameter
 type Port = Parameters<Parameters<typeof browser.runtime.onConnect.addListener>[0]>[0]
@@ -246,14 +254,21 @@ export default defineBackground(() => {
           // Convert to our Tab format with favicon data URLs
           const tabPromises = browserTabs.map(async (tab) => {
             const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
+            const tabId = tab.id!
 
             return {
-              id: String(tab.id),
+              id: String(tabId),
               title: tab.title || "Untitled",
               url: tab.url || "",
               favicon: faviconDataUrl,
               windowId: tab.windowId,
               index: tab.index,
+              // All timing fields for comparison
+              lastAccessed: tab.lastAccessed, // Chrome's built-in
+              lastActivated: tabLastActivated.get(tabId), // Our tracking (gained focus)
+              lastDeactivated: tabLastDeactivated.get(tabId), // Our tracking (lost focus)
+              // Deprecated but kept for backward compatibility
+              lastActiveTime: tabLastActivated.get(tabId) ?? tab.lastAccessed,
             } as Tab
           })
 
@@ -354,10 +369,23 @@ export default defineBackground(() => {
  * Update MRU order when a tab is activated
  */
 function updateMruOrder(tabId: number) {
+  const now = Date.now()
+
+  // Mark the previously active tab as deactivated
+  if (currentlyActiveTabId !== null && currentlyActiveTabId !== tabId) {
+    tabLastDeactivated.set(currentlyActiveTabId, now)
+  }
+
   // Remove tab from current position
   mruTabOrder = mruTabOrder.filter((id) => id !== tabId)
   // Add to front (most recently used)
   mruTabOrder.unshift(tabId)
+
+  // Track the exact timestamp when this tab was activated
+  tabLastActivated.set(tabId, now)
+
+  // Update the currently active tab
+  currentlyActiveTabId = tabId
 
   // Persist to storage (debounced to avoid excessive writes during rapid switching)
   saveMruHistoryDebounced()
@@ -368,6 +396,13 @@ function updateMruOrder(tabId: number) {
  */
 function removeFromMruOrder(tabId: number) {
   mruTabOrder = mruTabOrder.filter((id) => id !== tabId)
+  tabLastActivated.delete(tabId)
+  tabLastDeactivated.delete(tabId)
+
+  // If the closed tab was the currently active one, clear it
+  if (currentlyActiveTabId === tabId) {
+    currentlyActiveTabId = null
+  }
 
   // Persist to storage (debounced)
   saveMruHistoryDebounced()
@@ -448,13 +483,19 @@ async function getTabsInMruOrder(): Promise<Tab[]> {
 
   const tabPromises = browserTabs.map(async (tab) => {
     const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
+    const tabId = tab.id!
     return {
-      id: String(tab.id),
+      id: String(tabId),
       title: tab.title || "Untitled",
       url: tab.url || "",
       favicon: faviconDataUrl,
       windowId: tab.windowId,
       index: tab.index,
+      // All timing fields for comparison
+      lastAccessed: tab.lastAccessed,
+      lastActivated: tabLastActivated.get(tabId),
+      lastDeactivated: tabLastDeactivated.get(tabId),
+      lastActiveTime: tabLastActivated.get(tabId) ?? tab.lastAccessed,
     } as Tab
   })
 
