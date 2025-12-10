@@ -30,6 +30,7 @@ const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTE
 const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
 const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
 const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
+const SAFARI_STORE_URL = "https://apps.apple.com/app/tab-application-switcher/id6756280616"
 
 /**
  * Custom hook to manage demo tabs with browser-like MRU behavior
@@ -231,17 +232,17 @@ const Index = () => {
       <Navigation topSlot={demoTabsSlot} leftSlot={helpButtonSlot} />
 
       {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
-        <div className="max-w-4xl space-y-8">
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 sm:p-8 text-center">
+        <div className="max-w-4xl space-y-6 sm:space-y-8">
           <div className="space-y-4">
             <img
               src={logo}
               alt="Tab Application Switcher Logo"
-              className="h-20 w-auto mx-auto rounded-lg mb-12 animate-fade-in"
+              className="h-16 sm:h-20 w-auto mx-auto rounded-lg mb-8 sm:mb-12 animate-fade-in"
               style={{ animationDuration: "800ms" }}
             />
-            <h1 className="text-6xl font-bold text-foreground">Tab Application Switcher</h1>
-            <p className="text-2xl text-muted-foreground max-w-3xl mx-auto">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">Tab Application Switcher</h1>
+            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
               Like your system's Application Switcher, but for your browser tabs
             </p>
           </div>
@@ -255,11 +256,18 @@ const Index = () => {
                     ? FIREFOX_STORE_URL
                     : platform.browser === "edge"
                       ? EDGE_STORE_URL
-                      : null
+                      : platform.browser === "safari"
+                        ? SAFARI_STORE_URL
+                        : null
               const isAvailable = storeUrl !== null
 
               return (
-                <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild={isAvailable} disabled={!isAvailable}>
+                <Button
+                  size="lg"
+                  className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+                  asChild={isAvailable}
+                  disabled={!isAvailable}
+                >
                   {isAvailable ? (
                     <a href={storeUrl} target="_blank" rel="noopener noreferrer">
                       <Download className="w-5 h-5" />
@@ -268,7 +276,7 @@ const Index = () => {
                   ) : (
                     <>
                       <Download className="w-5 h-5" />
-                      Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
+                      Install {getBrowserDisplayName(platform.browser)} Extension
                     </>
                   )}
                 </Button>
@@ -277,7 +285,7 @@ const Index = () => {
             <Button
               size="lg"
               variant="outline"
-              className="gap-2 text-lg px-8 py-6"
+              className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
               asChild={platform.os === "mac"}
               disabled={platform.os !== "mac"}
             >
@@ -289,7 +297,7 @@ const Index = () => {
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  Download for {getOSDisplayName(platform.os)} (Coming Soon)
+                  Download for {getOSDisplayName(platform.os)}
                 </>
               )}
             </Button>
@@ -310,7 +318,7 @@ const Index = () => {
       </div>
 
       {/* Features Section */}
-      <div className="max-w-6xl mx-auto px-8 py-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
         <h2 className="text-3xl font-bold text-center mb-12 text-foreground">Features</h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -378,7 +386,7 @@ const Index = () => {
       </div>
 
       {/* How to Use Section */}
-      <div className="max-w-4xl mx-auto px-8 py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
         <div className="bg-card border border-border rounded-xl p-8 space-y-6">
           <h2 className="text-3xl font-bold text-foreground">Default Keyboard Shortcuts</h2>
 
@@ -428,35 +436,51 @@ const Index = () => {
       </div>
 
       {/* Footer CTA */}
-      <div className="max-w-4xl mx-auto px-8 py-16 text-center">
-        <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-border rounded-xl p-12 space-y-6">
-          <h2 className="text-3xl font-bold text-foreground">Ready to switch tabs like a pro?</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-16 text-center">
+        <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-border rounded-xl p-6 sm:p-12 space-y-4 sm:space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Ready to switch tabs like a pro?</h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Install the browser extension and native UI to get started
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              size="lg"
-              className="gap-2 text-lg px-8 py-6"
-              asChild={platform.browser === "chrome"}
-              disabled={platform.browser !== "chrome"}
-            >
-              {platform.browser === "chrome" ? (
-                <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
-                  <Download className="w-5 h-5" />
-                  Install {getBrowserDisplayName(platform.browser)} Extension
-                </a>
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
-                </>
-              )}
-            </Button>
+            {(() => {
+              const storeUrl =
+                platform.browser === "chrome"
+                  ? CHROME_STORE_URL
+                  : platform.browser === "firefox"
+                    ? FIREFOX_STORE_URL
+                    : platform.browser === "edge"
+                      ? EDGE_STORE_URL
+                      : platform.browser === "safari"
+                        ? SAFARI_STORE_URL
+                        : null
+              const isAvailable = storeUrl !== null
+
+              return (
+                <Button
+                  size="lg"
+                  className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+                  asChild={isAvailable}
+                  disabled={!isAvailable}
+                >
+                  {isAvailable ? (
+                    <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </a>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </>
+                  )}
+                </Button>
+              )
+            })()}
             <Button
               size="lg"
               variant="outline"
-              className="gap-2 text-lg px-8 py-6"
+              className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
               asChild={platform.os === "mac"}
               disabled={platform.os !== "mac"}
             >
@@ -468,7 +492,7 @@ const Index = () => {
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  Download for {getOSDisplayName(platform.os)} (Coming Soon)
+                  Download for {getOSDisplayName(platform.os)}
                 </>
               )}
             </Button>

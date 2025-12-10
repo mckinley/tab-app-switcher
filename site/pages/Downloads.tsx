@@ -21,6 +21,7 @@ const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTE
 const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
 const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
 const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
+const SAFARI_STORE_URL = "https://apps.apple.com/app/tab-application-switcher/id6756280616"
 
 const Downloads = () => {
   const [platform, setPlatform] = useState(() => detectPlatform())
@@ -51,8 +52,8 @@ const Downloads = () => {
     {
       name: "Safari",
       browser: "safari",
-      url: "#safari-store",
-      available: false,
+      url: SAFARI_STORE_URL,
+      available: true,
     },
   ]
 
@@ -94,9 +95,9 @@ const Downloads = () => {
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-8 py-12 w-full">
         {/* Detected Platform Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-foreground mb-4">Download TAS</h1>
-          <p className="text-xl text-muted-foreground mb-8">
+        <div className="text-center mb-12 sm:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">Download TAS</h1>
+          <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8">
             Detected: {getBrowserDisplayName(platform.browser)} on {getOSDisplayName(platform.os)}
           </p>
 
@@ -113,7 +114,12 @@ const Downloads = () => {
               const isAvailable = storeUrl !== null
 
               return (
-                <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild={isAvailable} disabled={!isAvailable}>
+                <Button
+                  size="lg"
+                  className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+                  asChild={isAvailable}
+                  disabled={!isAvailable}
+                >
                   {isAvailable ? (
                     <a href={storeUrl} target="_blank" rel="noopener noreferrer">
                       <Download className="w-5 h-5" />
@@ -122,7 +128,7 @@ const Downloads = () => {
                   ) : (
                     <>
                       <Download className="w-5 h-5" />
-                      Install {getBrowserDisplayName(platform.browser)} Extension (Coming Soon)
+                      Install {getBrowserDisplayName(platform.browser)} Extension
                     </>
                   )}
                 </Button>
@@ -131,7 +137,7 @@ const Downloads = () => {
             <Button
               size="lg"
               variant="outline"
-              className="gap-2 text-lg px-8 py-6"
+              className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
               asChild={platform.os === "mac"}
               disabled={platform.os !== "mac"}
             >
@@ -143,7 +149,7 @@ const Downloads = () => {
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  Download for {getOSDisplayName(platform.os)} (Coming Soon)
+                  Download for {getOSDisplayName(platform.os)}
                 </>
               )}
             </Button>
@@ -151,15 +157,17 @@ const Downloads = () => {
         </div>
 
         {/* Browser Extensions Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">Browser Extensions</h2>
-          <div className="bg-card border border-border rounded-xl p-6">
+        <div className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8 text-center">
+            Browser Extensions
+          </h2>
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
             <div className="grid md:grid-cols-2 gap-6">
               {browserExtensions.map((browser) => (
                 <div key={browser.name} className="relative bg-card border border-border rounded-xl overflow-hidden">
                   <a
                     href={browser.available ? browser.url : undefined}
-                    className={`group p-8 transition-colors block ${
+                    className={`group p-4 sm:p-8 transition-colors block ${
                       browser.available ? "hover:bg-accent/5" : "pointer-events-none"
                     }`}
                   >
@@ -195,18 +203,18 @@ const Downloads = () => {
         </div>
 
         {/* Native Apps Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-foreground mb-4 text-center">Native UI Apps</h2>
-          <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+        <div className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4 text-center">Native UI Apps</h2>
+          <p className="text-center text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
             The Native UI provides OS-level keyboard shortcuts and an overlay that appears above all applications, just
             like your system's application switcher.
           </p>
-          <div className="bg-card border border-border rounded-xl p-6">
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
             <div className="grid md:grid-cols-3 gap-6">
               {nativeApps.map((app) => (
                 <div
                   key={app.name}
-                  className="bg-card border border-border rounded-xl p-8 text-center relative overflow-hidden"
+                  className="bg-card border border-border rounded-xl p-4 sm:p-8 text-center relative overflow-hidden"
                 >
                   {/* Beta Badge */}
                   {app.beta && (
@@ -266,8 +274,8 @@ const Downloads = () => {
         </div>
 
         {/* Info Section */}
-        <div className="bg-card border border-border rounded-xl p-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Why Two Downloads?</h2>
+        <div className="bg-card border border-border rounded-xl p-6 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">Why Two Downloads?</h2>
           <div className="space-y-4 text-muted-foreground">
             <p>
               <strong className="text-foreground">Browser Extension:</strong> Works entirely within your browser. Use

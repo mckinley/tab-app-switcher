@@ -9,6 +9,8 @@ import {
   User,
   ArrowUpDown,
   RefreshCw,
+  Plus,
+  Layers,
 } from "lucide-react"
 import { Tab, KeyboardShortcuts } from "../types/tabs"
 import type { Collection } from "../types/collections"
@@ -21,6 +23,7 @@ import {
 } from "../utils/collectionsStorage"
 import { useAuth } from "../hooks/useAuth"
 import { useCollectionsSync } from "../hooks/useCollectionsSync"
+import { useIsMobile } from "../hooks/useIsMobile"
 import { formatRelativeTime } from "../utils/relativeTime"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Input } from "@tab-app-switcher/ui/components/input"
@@ -146,6 +149,9 @@ export const TabManagement = ({
   // Determine if we're in controlled mode
   const isControlled = controlledCollections !== undefined
 
+  // Check if we're on mobile
+  const isMobile = useIsMobile()
+
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortOption>("mru")
   const [reverseSort, setReverseSort] = useState(false)
@@ -157,6 +163,7 @@ export const TabManagement = ({
   const [tabsByWindowId, setTabsByWindowId] = useState<Map<number, Tab[]>>(new Map())
   const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [showMobileTabsPanel, setShowMobileTabsPanel] = useState(false)
 
   // Use controlled collections if provided, otherwise use internal state
   const collections = isControlled ? controlledCollections : internalCollections
@@ -213,6 +220,8 @@ export const TabManagement = ({
     }
   }, [refreshFromCloud])
 
+  // Always include the sensor to avoid hook size warnings from useSensors
+  // DnD is disabled on mobile via the event handlers (set to undefined)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -514,78 +523,128 @@ export const TabManagement = ({
     onCloseTab?.(tabId)
   }
 
+  // Helper: Add tab to collection via dropdown (for mobile)
+  const handleAddTabToCollection = (tabId: string, collectionId: string) => {
+    const tab = currentTabs.find((t) => t.id === tabId)
+    const collection = collections.find((c) => c.id === collectionId)
+    if (tab && collection) {
+      const alreadyInCollection = collection.tabs.some((t) => t.url === tab.url)
+      if (!alreadyInCollection) {
+        updateCollections(collections.map((c) => (c.id === collectionId ? addTabToCollection(c, tab) : c)))
+      }
+    }
+  }
+
+  // Mobile navigation button component
+  const MobileNavButton = ({ mode, icon: Icon, label }: { mode: ViewMode; icon: typeof Search; label: string }) => (
+    <button
+      onClick={() => setViewMode(mode)}
+      className={cn(
+        "flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-md text-xs transition-colors",
+        viewMode === mode ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground",
+      )}
+    >
+      <Icon className="w-4 h-4" />
+      <span className="truncate">{label}</span>
+    </button>
+  )
+
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
+      onDragStart={isMobile ? undefined : handleDragStart}
+      onDragOver={isMobile ? undefined : handleDragOver}
+      onDragEnd={isMobile ? undefined : handleDragEnd}
+      onDragCancel={isMobile ? undefined : handleDragCancel}
     >
       {/* Tab Management Panel */}
-      <div className="w-full h-full flex overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-40 border-r bg-muted/30 flex flex-col">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold text-sm">Tab Manager</h2>
+      <div className="w-full h-full flex flex-col md:flex-row overflow-hidden">
+        {/* Mobile Navigation Bar */}
+        {isMobile && (
+          <div className="border-b bg-muted/30 p-2">
+            <div className="flex gap-1">
+              <MobileNavButton mode="search" icon={Search} label="Search" />
+              <MobileNavButton mode="collections" icon={LinkIcon} label="Collections" />
+              <MobileNavButton mode="account" icon={User} label="Account" />
+              <MobileNavButton mode="settings" icon={SettingsIcon} label="Settings" />
+              <button
+                onClick={() => setShowMobileTabsPanel(!showMobileTabsPanel)}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-md text-xs transition-colors",
+                  showMobileTabsPanel ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground",
+                )}
+              >
+                <Layers className="w-4 h-4" />
+                <span className="truncate">Tabs</span>
+              </button>
+            </div>
           </div>
+        )}
 
-          {/* Navigation */}
-          <nav className="flex-1 p-2">
-            <button
-              onClick={() => setViewMode("search")}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "search" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <Search className="inline-block w-4 h-4 mr-2" />
-              Search
-            </button>
-            <button
-              onClick={() => setViewMode("collections")}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors mt-1",
-                viewMode === "collections" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <LinkIcon className="inline-block w-4 h-4 mr-2" />
-              Collections
-            </button>
-          </nav>
+        {/* Desktop Left Sidebar */}
+        {!isMobile && (
+          <div className="w-40 border-r bg-muted/30 flex flex-col">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold text-sm">Tab Manager</h2>
+            </div>
 
-          {/* Bottom Links */}
-          <div className="p-2 border-t space-y-1">
-            <button
-              onClick={() => setViewMode("account")}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "account" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <User className="inline-block w-4 h-4 mr-2" />
-              Account
-            </button>
-            <button
-              onClick={() => setViewMode("settings")}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                viewMode === "settings" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <SettingsIcon className="inline-block w-4 h-4 mr-2" />
-              Settings
-            </button>
+            {/* Navigation */}
+            <nav className="flex-1 p-2">
+              <button
+                onClick={() => setViewMode("search")}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                  viewMode === "search" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <Search className="inline-block w-4 h-4 mr-2" />
+                Search
+              </button>
+              <button
+                onClick={() => setViewMode("collections")}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors mt-1",
+                  viewMode === "collections" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <LinkIcon className="inline-block w-4 h-4 mr-2" />
+                Collections
+              </button>
+            </nav>
+
+            {/* Bottom Links */}
+            <div className="p-2 border-t space-y-1">
+              <button
+                onClick={() => setViewMode("account")}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                  viewMode === "account" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <User className="inline-block w-4 h-4 mr-2" />
+                Account
+              </button>
+              <button
+                onClick={() => setViewMode("settings")}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                  viewMode === "settings" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                <SettingsIcon className="inline-block w-4 h-4 mr-2" />
+                Settings
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="border-b p-4 flex items-center gap-4">
+          <div className="border-b p-2 sm:p-4 flex flex-wrap items-center gap-2 sm:gap-4">
             {viewMode === "search" && (
               <>
-                <div className="relative flex-1">
+                <div className="relative flex-1 min-w-[150px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
@@ -597,13 +656,14 @@ export const TabManagement = ({
                 </div>
 
                 <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-32 sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="z-[70]">
                     <SelectItem value="mru">
                       <Clock className="inline-block w-4 h-4 mr-2" />
-                      Most Recent
+                      <span className="hidden sm:inline">Most Recent</span>
+                      <span className="sm:hidden">Recent</span>
                     </SelectItem>
                     <SelectItem value="url">
                       <LinkIcon className="inline-block w-4 h-4 mr-2" />
@@ -657,15 +717,17 @@ export const TabManagement = ({
                     filteredAndSortedTabs.map((tab) => {
                       const relativeTime = formatRelativeTime(tab.lastActiveTime)
                       return (
-                        <button
+                        <div
                           key={tab.id}
-                          onClick={() => {
-                            onSelectTab(tab.id)
-                            onClose()
-                          }}
-                          className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                          className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors group flex items-start gap-3"
                         >
-                          <div className="flex items-start gap-3">
+                          <button
+                            onClick={() => {
+                              onSelectTab(tab.id)
+                              onClose()
+                            }}
+                            className="flex-1 flex items-start gap-3 min-w-0 text-left"
+                          >
                             <TabFavicon src={tab.favicon} className="w-5 h-5 mt-0.5 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm truncate">{tab.title}</div>
@@ -676,8 +738,26 @@ export const TabManagement = ({
                                 {relativeTime}
                               </div>
                             )}
-                          </div>
-                        </button>
+                          </button>
+                          {/* Add to collection dropdown (mobile) */}
+                          {isMobile && collections.length > 0 && (
+                            <Select
+                              value=""
+                              onValueChange={(collectionId) => handleAddTabToCollection(tab.id, collectionId)}
+                            >
+                              <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent opacity-0 group-hover:opacity-100 focus:opacity-100 flex-shrink-0">
+                                <Plus className="h-4 w-4" />
+                              </SelectTrigger>
+                              <SelectContent className="z-[70]">
+                                {collections.map((collection) => (
+                                  <SelectItem key={collection.id} value={collection.id}>
+                                    {collection.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
                       )
                     })
                   )}
@@ -767,53 +847,130 @@ export const TabManagement = ({
           </ScrollArea>
         </div>
 
-        {/* Right Sidebar - Current Tabs */}
-        <div className="w-80 border-l bg-muted/30 flex flex-col overflow-hidden">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold text-sm">Current</h3>
-          </div>
-
-          <ScrollArea className="flex-1">
-            <div className="p-2">
-              {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
-                <div key={windowName} className="mb-4">
-                  {/* Only show window name if there are multiple windows */}
-                  {Object.keys(tabsByWindow).length > 1 && (
-                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                      {windowName} ({windowTabs.length})
-                    </div>
-                  )}
-                  <SortableContext items={windowTabs.map((t) => t.id)}>
-                    <div className="space-y-1">
-                      {windowTabs.map((tab) => (
-                        <SortableTab
-                          key={tab.id}
-                          tab={tab}
-                          onSelect={() => {
-                            onSelectTab(tab.id)
-                            onClose()
-                          }}
-                          onClose={onCloseTab ? () => handleCloseTab(tab.id) : undefined}
-                          showClose={!!onCloseTab}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </div>
-              ))}
+        {/* Right Sidebar - Current Tabs (Desktop only) */}
+        {!isMobile && (
+          <div className="w-80 border-l bg-muted/30 flex flex-col overflow-hidden">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold text-sm">Current</h3>
             </div>
-          </ScrollArea>
-        </div>
-      </div>
 
-      <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
-        {activeTab && (
-          <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2 max-w-64">
-            <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
-            <span className="text-xs truncate">{activeTab.title}</span>
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
+                  <div key={windowName} className="mb-4">
+                    {/* Only show window name if there are multiple windows */}
+                    {Object.keys(tabsByWindow).length > 1 && (
+                      <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                        {windowName} ({windowTabs.length})
+                      </div>
+                    )}
+                    <SortableContext items={windowTabs.map((t) => t.id)}>
+                      <div className="space-y-1">
+                        {windowTabs.map((tab) => (
+                          <SortableTab
+                            key={tab.id}
+                            tab={tab}
+                            onSelect={() => {
+                              onSelectTab(tab.id)
+                              onClose()
+                            }}
+                            onClose={onCloseTab ? () => handleCloseTab(tab.id) : undefined}
+                            showClose={!!onCloseTab}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
-      </DragOverlay>
+
+        {/* Mobile Tabs Panel (slides in from right) */}
+        {isMobile && showMobileTabsPanel && (
+          <div className="absolute inset-0 z-50 flex">
+            <div className="flex-1 bg-black/50" onClick={() => setShowMobileTabsPanel(false)} />
+            <div className="w-72 bg-background border-l flex flex-col overflow-hidden">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Current Tabs</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowMobileTabsPanel(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="p-2">
+                  {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
+                    <div key={windowName} className="mb-4">
+                      {Object.keys(tabsByWindow).length > 1 && (
+                        <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                          {windowName} ({windowTabs.length})
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        {windowTabs.map((tab) => (
+                          <div key={tab.id} className="p-2 rounded-md hover:bg-muted/50 flex items-center gap-2 group">
+                            <button
+                              onClick={() => {
+                                onSelectTab(tab.id)
+                                onClose()
+                              }}
+                              className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                            >
+                              <TabFavicon src={tab.favicon} className="w-4 h-4 flex-shrink-0" />
+                              <span className="text-xs truncate">{tab.title}</span>
+                            </button>
+                            {/* Add to collection dropdown */}
+                            {collections.length > 0 && (
+                              <Select
+                                value=""
+                                onValueChange={(collectionId) => handleAddTabToCollection(tab.id, collectionId)}
+                              >
+                                <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                  <Plus className="h-4 w-4" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[70]">
+                                  {collections.map((collection) => (
+                                    <SelectItem key={collection.id} value={collection.id}>
+                                      {collection.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            {onCloseTab && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                onClick={() => handleCloseTab(tab.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!isMobile && (
+        <DragOverlay dropAnimation={isDroppedOnCollection ? null : undefined}>
+          {activeTab && (
+            <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2 max-w-64">
+              <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs truncate">{activeTab.title}</span>
+            </div>
+          )}
+        </DragOverlay>
+      )}
     </DndContext>
   )
 }

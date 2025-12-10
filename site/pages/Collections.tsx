@@ -52,14 +52,14 @@ const Collections = () => {
   }
 
   const handleRenameCollection = (id: string, newName: string) => {
-    const newCollections = renameCollection(collections, id, newName)
+    const newCollections = collections.map((c) => (c.id === id ? renameCollection(c, newName) : c))
     updateCollections(newCollections)
   }
 
-  const handleRemoveTab = (collectionId: string, tabId: string) => {
+  const handleRemoveTab = (collectionId: string, tabIndex: number) => {
     const newCollections = collections.map((c) => {
       if (c.id === collectionId) {
-        return { ...c, tabs: c.tabs.filter((t) => t.id !== tabId) }
+        return { ...c, tabs: c.tabs.filter((_, index) => index !== tabIndex), updatedAt: Date.now() }
       }
       return c
     })
@@ -70,7 +70,7 @@ const Collections = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navigation subnavItems={subnavItems} />
-        <div className="flex-1 max-w-4xl mx-auto px-8 py-16">
+        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-16">
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         </div>
         <Footer />

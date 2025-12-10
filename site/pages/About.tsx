@@ -35,8 +35,8 @@ export default function About() {
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-12 space-y-16">
         {/* Getting Started */}
-        <section id="getting-started" className="scroll-mt-32 space-y-8">
-          <h2 className="text-3xl font-bold">Getting Started</h2>
+        <section id="getting-started" className="scroll-mt-32 space-y-6 sm:space-y-8">
+          <h2 className="text-2xl sm:text-3xl font-bold">Getting Started</h2>
 
           {/* Quick Start */}
           <div className="prose prose-neutral dark:prose-invert max-w-none">
@@ -272,9 +272,9 @@ export default function About() {
 
         {/* Pricing */}
         <section id="pricing" className="scroll-mt-32">
-          <h2 className="text-3xl font-bold mb-6">Pricing</h2>
-          <div className="bg-gradient-to-br from-primary/5 to-accent/5 border border-border rounded-xl p-8">
-            <p className="text-2xl font-semibold mb-2">Free & Open Source</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Pricing</h2>
+          <div className="bg-gradient-to-br from-primary/5 to-accent/5 border border-border rounded-xl p-6 sm:p-8">
+            <p className="text-xl sm:text-2xl font-semibold mb-2">Free & Open Source</p>
             <p className="text-muted-foreground">
               Tab Application Switcher is completely free and open source. No subscriptions, no premium tiers, no data
               collection.
@@ -296,7 +296,7 @@ export default function About() {
 
         {/* History */}
         <section id="history" className="scroll-mt-32">
-          <h2 className="text-3xl font-bold mb-6">History</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">History</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>
               Tab Application Switcher was created to solve a simple problem:{" "}
@@ -322,8 +322,8 @@ export default function About() {
         </section>
 
         {/* Compare */}
-        <section id="compare" className="scroll-mt-32 space-y-12">
-          <h2 className="text-3xl font-bold">Compare</h2>
+        <section id="compare" className="scroll-mt-32 space-y-8 sm:space-y-12">
+          <h2 className="text-2xl sm:text-3xl font-bold">Compare</h2>
 
           {/* TAS vs Chrome Tab Search */}
           <div className="space-y-4">
@@ -332,13 +332,13 @@ export default function About() {
               Chrome's built-in tab search (⌘+Shift+A / Ctrl+Shift+A) lets you search and click to switch tabs. TAS
               provides the familiar Alt+Tab experience: hold the modifier, tap to cycle, release to confirm.
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[480px]">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 pr-4 font-medium">Feature</th>
-                    <th className="text-center py-3 px-4 font-medium">TAS</th>
-                    <th className="text-center py-3 px-4 font-medium">Chrome Tab Search</th>
+                    <th className="text-left py-3 pr-4 font-medium min-w-[200px]">Feature</th>
+                    <th className="text-center py-3 px-4 font-medium whitespace-nowrap">TAS</th>
+                    <th className="text-center py-3 px-4 font-medium whitespace-nowrap">Chrome Tab Search</th>
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
@@ -398,16 +398,16 @@ export default function About() {
               TAS combines fast tab switching with tab management and collections. Here's how it compares to popular tab
               management extensions.
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 pr-4 font-medium">Feature</th>
-                    <th className="text-center py-3 px-2 font-medium">TAS</th>
-                    <th className="text-center py-3 px-2 font-medium">Toby</th>
-                    <th className="text-center py-3 px-2 font-medium">Workona</th>
-                    <th className="text-center py-3 px-2 font-medium">OneTab</th>
-                    <th className="text-center py-3 px-2 font-medium">Session Buddy</th>
+                    <th className="text-left py-3 pr-4 font-medium min-w-[160px]">Feature</th>
+                    <th className="text-center py-3 px-2 font-medium whitespace-nowrap">TAS</th>
+                    <th className="text-center py-3 px-2 font-medium whitespace-nowrap">Toby</th>
+                    <th className="text-center py-3 px-2 font-medium whitespace-nowrap">Workona</th>
+                    <th className="text-center py-3 px-2 font-medium whitespace-nowrap">OneTab</th>
+                    <th className="text-center py-3 px-2 font-medium whitespace-nowrap">Session Buddy</th>
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
@@ -547,7 +547,7 @@ export default function About() {
 
         {/* Terms of Service */}
         <section id="terms" className="scroll-mt-32">
-          <h2 className="text-3xl font-bold mb-6">Terms of Service</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Terms of Service</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>
               Tab Application Switcher is provided "as is" without warranty of any kind. By using this software, you
@@ -562,7 +562,7 @@ export default function About() {
 
         {/* Support */}
         <section id="support" className="scroll-mt-32">
-          <h2 className="text-3xl font-bold mb-6">Support</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Support</h2>
           <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
             <p>Need help? Here are your options:</p>
             <ul className="space-y-2">

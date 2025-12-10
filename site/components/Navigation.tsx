@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@tab-app-switcher/ui/components/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@tab-app-switcher/ui/components/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@tab-app-switcher/ui/components/sheet"
 import { useAuth } from "@tas/hooks/useAuth"
 import { NavLink } from "./NavLink"
 import { ThemeToggle } from "./ThemeToggle"
@@ -134,6 +134,7 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
               </SheetTrigger>
               <SheetContent side="right" className="w-72">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Site navigation links</SheetDescription>
                 <nav className="flex flex-col gap-2 mt-8">
                   <NavLink to="/" className={navLinkClass} activeClassName={activeNavLinkClass} end>
                     Home

@@ -46,7 +46,7 @@ const Account = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navigation subnavItems={subnavItems} />
-        <div className="flex-1 max-w-4xl mx-auto px-8 py-16">
+        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-16">
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         </div>
         <Footer />

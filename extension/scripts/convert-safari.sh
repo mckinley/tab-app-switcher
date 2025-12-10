@@ -12,6 +12,7 @@ XCODE_PROJECT_DIR="$PROJECT_ROOT/safari-extension"
 APP_NAME="Tab Application Switcher"
 BUNDLE_ID="app.tabswitcher.tab-application-switcher"
 EXTENSION_BUNDLE_ID="${BUNDLE_ID}.Extension"
+TEMPLATES_DIR="$SCRIPT_DIR/safari-app-templates"
 
 # Check if Safari build exists
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -106,7 +107,15 @@ EOF
   echo "  App icons generated"
 fi
 
-
+# Copy custom helper app templates (styled HTML/CSS/JS for the macOS app)
+APP_RESOURCES_DIR="$XCODE_PROJECT_DIR/$APP_NAME/$APP_NAME/Resources"
+if [ -d "$TEMPLATES_DIR" ] && [ -d "$APP_RESOURCES_DIR" ]; then
+  echo "Copying custom app templates..."
+  cp "$TEMPLATES_DIR/Style.css" "$APP_RESOURCES_DIR/Style.css"
+  cp "$TEMPLATES_DIR/Script.js" "$APP_RESOURCES_DIR/Script.js"
+  cp "$TEMPLATES_DIR/Main.html" "$APP_RESOURCES_DIR/Base.lproj/Main.html"
+  echo "  App templates installed"
+fi
 
 echo ""
 echo "✅ Safari Xcode project created at: $XCODE_PROJECT_DIR/$APP_NAME"

@@ -180,15 +180,16 @@ export const CollectionsPanel = ({
           value={newCollectionName}
           onChange={(e) => setNewCollectionName(e.target.value)}
           placeholder="New collection name..."
+          className="flex-1 min-w-0"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               handleCreate()
             }
           }}
         />
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create
+        <Button onClick={handleCreate} className="flex-shrink-0">
+          <Plus className="h-4 w-4" />
+          <span className="sr-only">Create</span>
         </Button>
       </div>
 
