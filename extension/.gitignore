@@ -19,6 +19,9 @@ web-ext.config.ts
 .env.local
 .env.*.local
 
+# Safari extension config (contains personal team ID)
+.safari-config
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
