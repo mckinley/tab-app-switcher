@@ -27,7 +27,8 @@ import { setupAutoUpdater } from './autoUpdater'
 import { setupAuthHandlers } from './auth'
 import { loadTabData, saveTabData } from './tabStorage'
 import type { Tab, BrowserType } from '@tas/types/tabs'
-import type { EventPayload } from '@tas/types/protocol'
+import type { EventPayload, BrowserTab, BrowserWindow as ProtocolBrowserWindow, TabAugmentation, SessionTab, DeviceSession } from '@tas/types/protocol'
+import { sortTabsWithSections } from '@tas/sorting'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
@@ -93,48 +94,67 @@ function activateBrowserApp(browser: BrowserType): void {
 function rebuildDisplayTabs(): void {
   const sessions = getActiveSessions()
 
-  // Collect all tabs from all sessions with session key prefix to avoid ID collisions
-  const allTabs: Tab[] = []
-  const allAugmentation: Record<string, { lastActivated?: number; lastDeactivated?: number }> = {}
+  // Collect all data from all sessions
+  const allSessionTabs: BrowserTab[] = []
+  const allSessionWindows: ProtocolBrowserWindow[] = []
+  const allAugmentation: Record<string, TabAugmentation> = {}
+  const allRecentlyClosed: SessionTab[] = []
+  const allOtherDevices: DeviceSession[] = []
+  const browserTypeByTabId: Record<string, BrowserType> = {}
 
   sessions.forEach((session) => {
+    // Collect tabs with unique IDs
     session.sessionTabs.forEach((browserTab) => {
       const tabId = browserTab.id
       if (tabId === undefined) return
 
-      // Create a unique key for cross-session deduplication
       const uniqueId = `${session.instanceId.substring(0, 8)}:${tabId}`
       const augData = session.augmentation.get(String(tabId))
 
-      // Convert to display Tab format
-      const tab: Tab = {
-        id: uniqueId,
-        title: browserTab.title ?? 'Untitled',
-        url: browserTab.url ?? '',
-        favicon: augData?.faviconDataUrl ?? browserTab.favIconUrl ?? '',
-        windowId: browserTab.windowId,
-        index: browserTab.index,
-        browser: session.browserType,
-        lastAccessed: browserTab.lastAccessed,
-        lastActivated: augData?.lastActivated,
-        lastDeactivated: augData?.lastDeactivated
+      // Create a copy with unique ID
+      allSessionTabs.push({
+        ...browserTab,
+        id: parseInt(uniqueId.replace(/[^0-9]/g, '').slice(0, 10)) // Create numeric ID from unique string
+      })
+
+      if (augData) {
+        allAugmentation[String(browserTab.id)] = augData
       }
 
-      allTabs.push(tab)
-      allAugmentation[uniqueId] = {
-        lastActivated: augData?.lastActivated,
-        lastDeactivated: augData?.lastDeactivated
-      }
+      browserTypeByTabId[String(browserTab.id)] = session.browserType
     })
+
+    // Collect windows
+    session.sessionWindows.forEach((win) => {
+      allSessionWindows.push(win)
+    })
+
+    // Collect recently closed tabs
+    if (session.recentlyClosed) {
+      allRecentlyClosed.push(...session.recentlyClosed)
+    }
+
+    // Collect other devices
+    if (session.otherDevices) {
+      allOtherDevices.push(...session.otherDevices)
+    }
   })
 
-  // Sort using the shared sorting module
-  // For now, we sort by lastActivated (default MRU)
-  displayTabs = allTabs.sort((a, b) => {
-    const aTime = a.lastActivated ?? a.lastAccessed ?? 0
-    const bTime = b.lastActivated ?? b.lastAccessed ?? 0
-    return bTime - aTime
+  // Use the shared sorting module with sections
+  const sortedTabs = sortTabsWithSections({
+    sessionTabs: allSessionTabs,
+    sessionWindows: allSessionWindows,
+    augmentation: allAugmentation,
+    recentlyClosed: allRecentlyClosed.slice(0, 10), // Limit to 10
+    otherDevices: allOtherDevices.slice(0, 5), // Limit to 5 devices
+    strategy: 'lastActivated'
   })
+
+  // Add browser type to each tab
+  displayTabs = sortedTabs.map((tab) => ({
+    ...tab,
+    browser: browserTypeByTabId[tab.id] ?? 'chrome'
+  }))
 
   // Persist to disk (debounced via tabStorage)
   saveTabData(displayTabs)
@@ -177,9 +197,10 @@ function handleEvent(_sessionKey: SessionKey, _session: Session, event: EventPay
   } else if (
     event.event === 'tab.created' ||
     event.event === 'tab.removed' ||
-    event.event === 'tab.updated'
+    event.event === 'tab.updated' ||
+    event.event === 'augmentation.updated'
   ) {
-    // For other tab changes, also update
+    // For tab and augmentation changes (including favicon updates), update display
     rebuildDisplayTabs()
     broadcastDisplayTabs()
   }
@@ -727,6 +748,16 @@ app.whenReady().then(() => {
   ipcMain.on('request-tabs', (event) => {
     console.log('[TAS] Tab Management requested tabs, sending:', displayTabs.length, 'tabs')
     event.sender.send('tabs-updated', displayTabs)
+  })
+
+  // Refresh tabs: send refresh command to all connected sessions
+  ipcMain.on('refresh-tabs', () => {
+    console.log('[TAS] Refresh tabs requested')
+    const sessions = getActiveSessions()
+    sessions.forEach((session) => {
+      const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+      sendCommand(sessionKey, { command: 'refresh' })
+    })
   })
 })
 

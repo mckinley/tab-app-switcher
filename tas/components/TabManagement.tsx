@@ -679,7 +679,7 @@ export const TabManagement = ({
                     <div className="text-center py-12 text-muted-foreground">No tabs found</div>
                   ) : (
                     filteredAndSortedTabs.map((tab) => {
-                      const relativeTime = formatRelativeTime(tab.lastActiveTime)
+                      const relativeTime = formatRelativeTime(tab.lastActivated)
                       return (
                         <div
                           key={tab.id}

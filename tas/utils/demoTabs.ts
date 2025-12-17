@@ -1,7 +1,7 @@
 import type { Tab } from "../types/tabs"
 
 /**
- * Generate demo lastActiveTime values relative to now
+ * Generate demo lastActivated values relative to now
  * Creates realistic "X min ago" / "X hours ago" patterns
  */
 function generateDemoTimestamps(): number[] {
@@ -22,7 +22,7 @@ function generateDemoTimestamps(): number[] {
  * Demo tab pool - represents potential tabs that can be opened in demo mode.
  * Used by the website to provide a realistic demo experience.
  */
-const DEMO_TAB_POOL_BASE: Omit<Tab, "lastActiveTime">[] = [
+const DEMO_TAB_POOL_BASE: Omit<Tab, "lastActivated">[] = [
   {
     id: "1",
     title: "NRDC",
@@ -74,13 +74,13 @@ const DEMO_TAB_POOL_BASE: Omit<Tab, "lastActiveTime">[] = [
 ]
 
 /**
- * Get demo tabs with generated lastActiveTime values
+ * Get demo tabs with generated lastActivated values
  */
 function getDemoTabsWithTimestamps(): Tab[] {
   const timestamps = generateDemoTimestamps()
   return DEMO_TAB_POOL_BASE.map((tab, index) => ({
     ...tab,
-    lastActiveTime: timestamps[index],
+    lastActivated: timestamps[index],
   }))
 }
 

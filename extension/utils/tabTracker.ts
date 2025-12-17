@@ -14,7 +14,15 @@
  */
 
 import type { Browser } from "wxt/browser"
-import type { BrowserTab, BrowserWindow, TabAugmentation, SnapshotPayload, EventPayload } from "@tas/types/protocol"
+import type {
+  BrowserTab,
+  BrowserWindow,
+  TabAugmentation,
+  SnapshotPayload,
+  EventPayload,
+  SessionTab,
+  DeviceSession,
+} from "@tas/types/protocol"
 import { getFaviconDataUrl } from "./faviconCache"
 
 export interface TabTrackerState {
@@ -22,6 +30,8 @@ export interface TabTrackerState {
   sessionWindows: Map<number, BrowserWindow>
   augmentation: Map<number, TabAugmentation>
   currentlyActiveTabId: number | null
+  recentlyClosed: SessionTab[]
+  otherDevices: DeviceSession[]
 }
 
 export type TabTrackerEventHandler = (event: EventPayload) => void
@@ -109,6 +119,8 @@ export function createTabTracker(): TabTracker {
     sessionWindows: new Map(),
     augmentation: new Map(),
     currentlyActiveTabId: null,
+    recentlyClosed: [],
+    otherDevices: [],
   }
 
   const eventHandlers: Set<TabTrackerEventHandler> = new Set()
@@ -158,6 +170,8 @@ export function createTabTracker(): TabTracker {
         sessionTabs,
         sessionWindows,
         augmentation,
+        recentlyClosed: state.recentlyClosed,
+        otherDevices: state.otherDevices,
       }
     },
 
@@ -192,12 +206,18 @@ export function createTabTracker(): TabTracker {
         updateAugmentationOnActivate(tab.id)
       }
 
-      // Proactively cache favicon
+      // Proactively cache favicon and emit augmentation update when ready
       if (tab.favIconUrl) {
         getFaviconDataUrl(tab.favIconUrl).then((dataUrl) => {
           const aug = state.augmentation.get(tab.id!)
           if (aug) {
             aug.faviconDataUrl = dataUrl
+            // Emit augmentation update for the favicon
+            emit({
+              event: "augmentation.updated",
+              tabId: tab.id!,
+              augmentation: { faviconDataUrl: dataUrl },
+            })
           }
         })
       }
@@ -238,12 +258,18 @@ export function createTabTracker(): TabTracker {
       const updatedTab = toBrowserTab(tab)
       state.sessionTabs.set(tabId, updatedTab)
 
-      // Update favicon cache if it changed
+      // Update favicon cache if it changed and emit augmentation update when ready
       if (changes.favIconUrl) {
         getFaviconDataUrl(changes.favIconUrl).then((dataUrl) => {
           const aug = state.augmentation.get(tabId)
           if (aug) {
             aug.faviconDataUrl = dataUrl
+            // Emit augmentation update for the favicon
+            emit({
+              event: "augmentation.updated",
+              tabId,
+              augmentation: { faviconDataUrl: dataUrl },
+            })
           }
         })
       }
@@ -315,24 +341,31 @@ export function createTabTracker(): TabTracker {
     },
 
     async initialize() {
-      // Query all tabs and windows from browser
-      const [tabs, windows] = await Promise.all([browser.tabs.query({}), browser.windows.getAll()])
+      // Query all tabs, windows, recently closed, and other devices from browser
+      const [tabs, windows, recentlyClosed, devices] = await Promise.all([
+        browser.tabs.query({}),
+        browser.windows.getAll(),
+        browser.sessions.getRecentlyClosed({ maxResults: 10 }),
+        browser.sessions.getDevices({ maxResults: 5 }),
+      ])
 
       const now = Date.now()
 
-      // Store raw data
+      // Find the focused window
+      const focusedWindow = windows.find((win) => win.focused)
+      const focusedWindowId = focusedWindow?.id
+
       tabs.forEach((tab) => {
         if (tab.id !== undefined) {
           state.sessionTabs.set(tab.id, toBrowserTab(tab))
 
           // Initialize augmentation with browser's lastAccessed
-          // Fallback to now if lastAccessed is not available
           state.augmentation.set(tab.id, {
             lastActivated: tab.lastAccessed ?? now,
           })
 
-          // Track currently active tab
-          if (tab.active) {
+          // Track currently active tab (only in the focused window)
+          if (tab.active && tab.windowId === focusedWindowId) {
             state.currentlyActiveTabId = tab.id
           }
         }
@@ -352,7 +385,7 @@ export function createTabTracker(): TabTracker {
         }
       })
 
-      // Preload favicons in background (don't await)
+      // Preload favicons in background and emit augmentation updates when ready
       Promise.all(
         tabs.map(async (tab) => {
           if (tab.id !== undefined && tab.favIconUrl) {
@@ -360,12 +393,67 @@ export function createTabTracker(): TabTracker {
             const aug = state.augmentation.get(tab.id)
             if (aug) {
               aug.faviconDataUrl = dataUrl
+              // Emit augmentation update for the favicon
+              emit({
+                event: "augmentation.updated",
+                tabId: tab.id,
+                augmentation: { faviconDataUrl: dataUrl },
+              })
             }
           }
         }),
       )
 
-      console.log(`[TAS] TabTracker initialized: ${state.sessionTabs.size} tabs, ${state.sessionWindows.size} windows`)
+      // Process recently closed tabs
+      state.recentlyClosed = recentlyClosed
+        .filter((session) => session.tab) // Only tabs, not windows
+        .map((session) => ({
+          sessionId: session.tab!.sessionId!,
+          title: session.tab!.title ?? "Untitled",
+          url: session.tab!.url ?? "",
+          favIconUrl: session.tab!.favIconUrl,
+          lastModified: session.lastModified,
+        }))
+
+      // Process tabs from other devices
+      // Process tabs from other devices
+      // Sessions can have either .tab or .window - we need to extract tabs from both
+      state.otherDevices = devices.map((device) => {
+        const deviceTabs: SessionTab[] = []
+
+        device.sessions.forEach((session) => {
+          if (session.tab) {
+            // Direct tab session
+            deviceTabs.push({
+              sessionId: session.tab.sessionId ?? `device-tab-${deviceTabs.length}`,
+              title: session.tab.title ?? "Untitled",
+              url: session.tab.url ?? "",
+              favIconUrl: session.tab.favIconUrl,
+              lastModified: session.lastModified,
+            })
+          } else if (session.window?.tabs) {
+            // Window session with tabs inside
+            session.window.tabs.forEach((tab) => {
+              deviceTabs.push({
+                sessionId: tab.sessionId ?? `device-tab-${deviceTabs.length}`,
+                title: tab.title ?? "Untitled",
+                url: tab.url ?? "",
+                favIconUrl: tab.favIconUrl,
+                lastModified: session.lastModified,
+              })
+            })
+          }
+        })
+
+        return {
+          deviceName: device.deviceName,
+          tabs: deviceTabs.slice(0, 10), // Limit tabs per device
+        }
+      })
+
+      console.log(
+        `[TAS] TabTracker initialized: ${state.sessionTabs.size} tabs, ${state.sessionWindows.size} windows, ${state.recentlyClosed.length} recently closed, ${state.otherDevices.length} devices`,
+      )
 
       return this.getSnapshot()
     },
@@ -376,6 +464,8 @@ export function createTabTracker(): TabTracker {
       state.sessionWindows.clear()
       state.augmentation.clear()
       state.currentlyActiveTabId = null
+      state.recentlyClosed = []
+      state.otherDevices = []
 
       // Re-initialize
       return this.initialize()

@@ -65,6 +65,27 @@ export interface SnapshotPayload {
   sessionTabs: BrowserTab[] // Raw tabs from browser.tabs.query({})
   sessionWindows: BrowserWindow[] // Raw windows from browser.windows.getAll()
   augmentation: Record<string, TabAugmentation> // TAS-specific data keyed by tabId
+  recentlyClosed?: SessionTab[] // Recently closed tabs from chrome.sessions API
+  otherDevices?: DeviceSession[] // Tabs from other synced devices
+}
+
+/**
+ * SessionTab - A tab from chrome.sessions API (recently closed or from another device)
+ */
+export interface SessionTab {
+  sessionId: string // Session ID for restoring
+  title: string
+  url: string
+  favIconUrl?: string
+  lastModified: number // Timestamp in seconds since epoch
+}
+
+/**
+ * DeviceSession - Tabs from another synced device
+ */
+export interface DeviceSession {
+  deviceName: string
+  tabs: SessionTab[]
 }
 
 /**
@@ -76,6 +97,7 @@ export type EventPayload =
   | { event: "tab.created"; tab: BrowserTab }
   | { event: "tab.removed"; tabId: number; windowId: number }
   | { event: "tab.updated"; tabId: number; changes: Partial<BrowserTab> }
+  | { event: "augmentation.updated"; tabId: number; augmentation: Partial<TabAugmentation> }
   | { event: "window.focused"; windowId: number }
   | { event: "window.created"; window: BrowserWindow }
   | { event: "window.removed"; windowId: number }
@@ -88,6 +110,7 @@ export type CommandPayload =
   | { command: "activateTab"; tabId: number; windowId: number }
   | { command: "closeTab"; tabId: number }
   | { command: "requestSnapshot" } // Force a full resync
+  | { command: "refresh" } // Clear state and re-query all tabs from browser API
 
 // ============================================================================
 // Browser API Types (preserved exactly as returned by browser APIs)

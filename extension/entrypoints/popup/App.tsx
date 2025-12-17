@@ -123,6 +123,21 @@ function App() {
     window.close()
   }
 
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    browser.runtime
+      .sendMessage({ type: "REFRESH_TABS" })
+      .then(() => {
+        // Give a brief visual feedback before clearing state
+        setTimeout(() => setIsRefreshing(false), 500)
+      })
+      .catch(() => {
+        setIsRefreshing(false)
+      })
+  }
+
   return (
     <div className="w-[360px] h-[480px] bg-background">
       <Container variant="fill" onClose={() => window.close()}>
@@ -136,6 +151,8 @@ function App() {
           shortcuts={shortcuts}
           onOpenSettings={handleOpenSettingsPage}
           onOpenTabManagement={handleOpenTabManagementPage}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
       </Container>
     </div>

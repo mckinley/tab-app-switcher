@@ -95,6 +95,10 @@ function TasApp(): JSX.Element {
     window.electron.ipcRenderer.send('hide-tas')
   }
 
+  const handleRefresh = (): void => {
+    window.electron.ipcRenderer.send('refresh-tabs')
+  }
+
   return (
     <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
       <TabSwitcher
@@ -108,6 +112,7 @@ function TasApp(): JSX.Element {
         shortcuts={shortcuts}
         onOpenSettings={handleOpenSettings}
         onOpenTabManagement={handleOpenTabManagement}
+        onRefresh={handleRefresh}
       />
     </div>
   )

@@ -19,6 +19,8 @@ import {
   type BrowserTab,
   type BrowserWindow,
   type TabAugmentation,
+  type SessionTab,
+  type DeviceSession,
   createEnvelope,
   isValidEnvelope,
   isConnectPayload,
@@ -56,6 +58,8 @@ export interface Session {
   sessionTabs: BrowserTab[]
   sessionWindows: BrowserWindow[]
   augmentation: Map<string, TabAugmentation>
+  recentlyClosed: SessionTab[]
+  otherDevices: DeviceSession[]
   connections: Map<string, ConnectionState>
   createdAt: number
   lastActivity: number
@@ -228,6 +232,8 @@ function handleConnect(
       sessionTabs: [],
       sessionWindows: [],
       augmentation: new Map(),
+      recentlyClosed: [],
+      otherDevices: [],
       connections: new Map(),
       createdAt: Date.now(),
       lastActivity: Date.now()
@@ -288,12 +294,15 @@ function handleSnapshot(
   session.sessionTabs = snapshot.sessionTabs
   session.sessionWindows = snapshot.sessionWindows
   session.augmentation = new Map(Object.entries(snapshot.augmentation))
+  session.recentlyClosed = snapshot.recentlyClosed ?? []
+  session.otherDevices = snapshot.otherDevices ?? []
   session.hasSnapshot = true
   session.lastSnapshotSeq = envelope.seq
 
   console.log(
     `[TAS Server] Snapshot received for ${session.browserType}: ` +
-      `${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows`
+      `${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows, ` +
+      `${session.recentlyClosed.length} recently closed, ${session.otherDevices.length} devices`
   )
 
   snapshotCallback?.(sessionKey, session)
@@ -345,6 +354,15 @@ function handleEvent(sessionKey: SessionKey, session: Session, envelope: Protoco
           ...event.changes
         }
       }
+      break
+    }
+
+    case 'augmentation.updated': {
+      const existingAug = session.augmentation.get(String(event.tabId)) || {}
+      session.augmentation.set(String(event.tabId), {
+        ...existingAug,
+        ...event.augmentation
+      })
       break
     }
 

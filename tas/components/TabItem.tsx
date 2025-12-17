@@ -14,7 +14,7 @@ interface TabItemProps {
 }
 
 export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: TabItemProps) => {
-  const relativeTime = formatRelativeTime(tab.lastActiveTime)
+  const relativeTime = formatRelativeTime(tab.lastActivated)
 
   return (
     <button

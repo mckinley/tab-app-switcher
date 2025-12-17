@@ -1,8 +1,25 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Search, LayoutGrid, Settings as SettingsIcon } from "lucide-react"
+import { Search, LayoutGrid, Settings as SettingsIcon, RefreshCw } from "lucide-react"
 import { TabItem } from "./TabItem"
-import { Tab, KeyboardShortcuts } from "../types/tabs"
+import { Tab, KeyboardShortcuts, TabSection } from "../types/tabs"
 import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts"
+
+const SECTION_LABELS: Record<TabSection, string> = {
+  tabs: "Tabs",
+  apps: "Apps",
+  recentlyClosed: "Recently Closed",
+  otherDevices: "Other Devices",
+}
+
+// Subtle, earthy background colors for each section
+const SECTION_BACKGROUNDS: Record<TabSection, string> = {
+  tabs: "", // No background for main tabs section
+  apps: "bg-amber-500/5", // Warm amber/orange
+  recentlyClosed: "bg-rose-500/5", // Soft pink/rose
+  otherDevices: "bg-teal-500/5", // Pleasant teal
+}
+
+const SECTION_ORDER: TabSection[] = ["tabs", "apps", "recentlyClosed", "otherDevices"]
 
 interface TabSwitcherProps {
   tabs: Tab[]
@@ -15,6 +32,8 @@ interface TabSwitcherProps {
   onOpenSettings: () => void // Called when user clicks settings button
   onOpenTabManagement: () => void // Called when user clicks tab management button
   isEnabled?: boolean // Optional: Whether keyboard shortcuts are enabled - defaults to true
+  onRefresh?: () => void // Called when user clicks refresh button
+  isRefreshing?: boolean // Whether a refresh is in progress
 }
 
 export const TabSwitcher = ({
@@ -28,6 +47,8 @@ export const TabSwitcher = ({
   onOpenSettings,
   onOpenTabManagement,
   isEnabled = true,
+  onRefresh,
+  isRefreshing = false,
 }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -40,11 +61,33 @@ export const TabSwitcher = ({
     return tabs.filter((tab) => tab.title.toLowerCase().includes(query) || tab.url.toLowerCase().includes(query))
   }, [tabs, searchQuery])
 
+  // Group filtered tabs by section, maintaining order
+  const groupedTabs = useMemo(() => {
+    const groups: { section: TabSection; label: string; tabs: { tab: Tab; globalIndex: number }[] }[] = []
+    let globalIndex = 0
+
+    for (const section of SECTION_ORDER) {
+      const sectionTabs = filteredTabs.filter((tab) => (tab.section ?? "tabs") === section)
+      if (sectionTabs.length > 0) {
+        groups.push({
+          section,
+          label: SECTION_LABELS[section],
+          tabs: sectionTabs.map((tab) => ({ tab, globalIndex: globalIndex++ })),
+        })
+      }
+    }
+
+    return groups
+  }, [filteredTabs])
+
   // Check if tabs are from multiple browsers
   const hasMultipleBrowsers = useMemo(() => {
     const browsers = new Set(tabs.map((tab) => tab.browser).filter(Boolean))
     return browsers.size > 1
   }, [tabs])
+
+  // Check if we have multiple sections (to show section headers)
+  const hasMultipleSections = groupedTabs.length > 1
 
   // Track if this is the initial mount to prevent auto-scroll on open
   const isInitialMount = useRef(true)
@@ -162,18 +205,37 @@ export const TabSwitcher = ({
             </div>
           ) : (
             <div className="space-y-0.5">
-              {filteredTabs.map((tab, index) => (
-                <div key={tab.id} ref={index === selectedIndex ? selectedItemRef : null} className="scroll-my-1">
-                  <TabItem
-                    tab={tab}
-                    isSelected={index === selectedIndex}
-                    onClick={() => onSelectTab(tab.id)}
-                    onClose={(e) => {
-                      e.stopPropagation()
-                      onCloseTab(tab.id)
-                    }}
-                    showBrowserIcon={hasMultipleBrowsers}
-                  />
+              {groupedTabs.map((group) => (
+                <div
+                  key={group.section}
+                  className={`${SECTION_BACKGROUNDS[group.section]} ${group.section !== "tabs" ? "rounded-lg mx-0.5 px-0.5" : ""}`}
+                >
+                  {/* Section header - only show if we have multiple sections and not the main tabs section */}
+                  {hasMultipleSections && group.section !== "tabs" && (
+                    <div className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      {group.label}
+                    </div>
+                  )}
+                  <div className={group.section !== "tabs" ? "pb-1" : ""}>
+                    {group.tabs.map(({ tab, globalIndex }) => (
+                      <div
+                        key={tab.id}
+                        ref={globalIndex === selectedIndex ? selectedItemRef : null}
+                        className="scroll-my-1"
+                      >
+                        <TabItem
+                          tab={tab}
+                          isSelected={globalIndex === selectedIndex}
+                          onClick={() => onSelectTab(tab.id)}
+                          onClose={(e) => {
+                            e.stopPropagation()
+                            onCloseTab(tab.id)
+                          }}
+                          showBrowserIcon={hasMultipleBrowsers}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -183,23 +245,36 @@ export const TabSwitcher = ({
 
       {/* Footer with shortcuts */}
       <div className="px-3 py-2 border-t border-border/50">
-        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.search}</kbd>
-            <span>Search</span>
+        <div className="flex items-center">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.search}</kbd>
+              <span>Search</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.closeTab}</kbd>
+              <span>Close</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↵</kbd>
+              <span>Select</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Esc</kbd>
+              <span>Exit</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.closeTab}</kbd>
-            <span>Close</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">↵</kbd>
-            <span>Select</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Esc</kbd>
-            <span>Exit</span>
-          </div>
+          <div className="flex-1" /> {/* Spacer to push refresh button to right */}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+              aria-label="Refresh tabs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
         </div>
       </div>
     </div>

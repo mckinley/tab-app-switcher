@@ -11,7 +11,7 @@
 
 import type { Tab } from "@tas/types/tabs"
 import type { CommandPayload } from "@tas/types/protocol"
-import { sortTabs, type SortStrategy } from "@tas/sorting"
+import { sortTabsWithSections, type SortStrategy } from "@tas/sorting"
 import { handleLogMessage } from "@tas/utils/logger"
 import { createTabTracker, type TabTracker } from "../utils/tabTracker"
 
@@ -59,6 +59,13 @@ export default defineBackground(() => {
 
     // Handle commands from native app
     transport.onCommand(handleCommand)
+
+    // Forward tab events to native app
+    tabTracker.onEvent((event) => {
+      if (transport?.isConnected()) {
+        transport.sendEvent(event)
+      }
+    })
 
     // Start connection
     transport.connect()
@@ -226,6 +233,13 @@ export default defineBackground(() => {
       return true
     }
 
+    if (message.type === "REFRESH_TABS") {
+      refreshTabs()
+        .then(() => sendResponse({ success: true }))
+        .catch((error) => sendResponse({ success: false, error: error.message }))
+      return true
+    }
+
     if (message.type === "CHECK_NATIVE_APP") {
       sendResponse({ connected: transport?.isConnected() ?? false })
       return false
@@ -284,7 +298,30 @@ function handleCommand(command: CommandPayload): void {
         transport.sendSnapshot(snapshot)
       }
       break
+    case "refresh":
+      refreshTabs()
+      break
   }
+}
+
+/**
+ * Refresh tabs: clear state and re-query all tabs from browser API
+ */
+async function refreshTabs(): Promise<void> {
+  if (!tabTracker) return
+
+  console.log("[TAS] Refreshing tabs...")
+  await tabTracker.refresh()
+
+  // Send new snapshot to native app
+  if (transport?.isConnected()) {
+    const snapshot = tabTracker.getSnapshot()
+    transport.sendSnapshot(snapshot)
+  }
+
+  // Broadcast to popup and other extension pages
+  broadcastTabsUpdate()
+  console.log("[TAS] Refresh complete")
 }
 
 /**
@@ -317,7 +354,7 @@ async function getSortStrategy(): Promise<SortStrategy> {
 }
 
 /**
- * Get tabs formatted for display (sorted, with favicons)
+ * Get tabs formatted for display (sorted, with favicons, with sections)
  */
 async function getTabsForDisplay(): Promise<Tab[]> {
   if (!tabTracker) return []
@@ -326,13 +363,20 @@ async function getTabsForDisplay(): Promise<Tab[]> {
 
   // Get user's sort preference and apply it
   const strategy = await getSortStrategy()
-  const sortedTabs = sortTabs(snapshot.sessionTabs, snapshot.augmentation, strategy)
+  const sortedTabs = sortTabsWithSections({
+    sessionTabs: snapshot.sessionTabs,
+    sessionWindows: snapshot.sessionWindows,
+    augmentation: snapshot.augmentation,
+    recentlyClosed: snapshot.recentlyClosed,
+    otherDevices: snapshot.otherDevices,
+    strategy,
+  })
 
   // Ensure favicons are loaded (they should be cached by TabTracker)
   const tabsWithFavicons = await Promise.all(
-    sortedTabs.map(async (tab) => {
-      // If favicon is missing, try to fetch it
-      if (!tab.favicon && snapshot.sessionTabs.find((t) => String(t.id) === tab.id)?.favIconUrl) {
+    sortedTabs.map(async (tab: Tab) => {
+      // If favicon is missing, try to fetch it (only for regular tabs, not session tabs)
+      if (!tab.favicon && !tab.sessionId) {
         const browserTab = snapshot.sessionTabs.find((t) => String(t.id) === tab.id)
         if (browserTab?.favIconUrl) {
           tab.favicon = await getFaviconDataUrl(browserTab.favIconUrl)
