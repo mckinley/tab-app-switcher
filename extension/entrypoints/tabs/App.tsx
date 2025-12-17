@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { TabManagement } from "@tas/components/TabManagement"
-import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
-import { ThemeToggle } from "../../components/ThemeToggle"
+import { Tab } from "@tas/types/tabs"
 import { Container } from "../../components/Container"
 import { loadAndApplyTheme } from "../../utils/theme"
 import { signInWithGoogleExtension, signOutExtension } from "../../utils/auth"
@@ -9,7 +8,6 @@ import "./globals.css"
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
   // Apply theme on mount
   useEffect(() => {
@@ -26,13 +24,6 @@ function App() {
       }
     })
 
-    // Load shortcuts from storage
-    browser.storage.local.get("shortcuts").then((result) => {
-      if (result.shortcuts) {
-        setShortcuts(result.shortcuts)
-      }
-    })
-
     return () => port.disconnect()
   }, [])
 
@@ -42,11 +33,6 @@ function App() {
 
   const handleCloseTab = (tabId: string) => {
     browser.tabs.remove(parseInt(tabId))
-  }
-
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
-    setShortcuts(newShortcuts)
-    browser.storage.local.set({ shortcuts: newShortcuts })
   }
 
   const handleReorderTabs = async (tabId: string, newIndex: number, targetWindowId?: number) => {
@@ -101,9 +87,6 @@ function App() {
         onCloseTab={handleCloseTab}
         onReorderTabs={handleReorderTabs}
         onSendCollectionToWindow={handleSendCollectionToWindow}
-        shortcuts={shortcuts}
-        onShortcutsChange={handleShortcutsChange}
-        settingsThemeToggle={<ThemeToggle />}
         onSignIn={signInWithGoogleExtension}
         onSignOut={signOutExtension}
       />

@@ -18,13 +18,21 @@ function App() {
     loadAndApplyTheme()
   }, [])
 
-  // Load tabs from background script
+  // Connect to background script for real-time tab updates
   useEffect(() => {
-    browser.runtime.sendMessage({ type: "GET_TABS" }).then((response) => {
-      if (response?.tabs) {
-        setTabs(response.tabs)
+    const port = browser.runtime.connect({ name: "popup" })
+
+    // Listen for tab updates from background
+    port.onMessage.addListener((message: { type: string; tabs?: Tab[] }) => {
+      if (message.type === "TABS_UPDATED" && message.tabs) {
+        setTabs(message.tabs)
       }
     })
+
+    // Cleanup on unmount
+    return () => {
+      port.disconnect()
+    }
   }, [])
 
   // Load shortcuts from storage

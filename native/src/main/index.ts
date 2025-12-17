@@ -7,9 +7,9 @@ import {
   Menu,
   globalShortcut,
   screen,
-  nativeImage,
-  Notification
+  nativeImage
 } from 'electron'
+import Store from 'electron-store'
 import { join } from 'path'
 import { exec } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -17,39 +17,49 @@ import icon from '../../resources/icon.png?asset'
 import trayIconPath from '../../resources/tas.png?asset'
 import {
   startWebSocketServer,
-  sendMessageToBrowser,
-  sendMessageToAllExtensions,
-  isExtensionConnected,
-  getConnectedBrowsers
+  sendCommand,
+  getConnectedBrowsers,
+  getActiveSessions,
+  type Session,
+  type SessionKey
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
 import { setupAuthHandlers } from './auth'
 import { loadTabData, saveTabData } from './tabStorage'
-import type { BrowserType } from '@tas/types/tabs'
-
-interface CachedTab {
-  id: string
-  title: string
-  url: string
-  favicon: string
-  windowId?: number
-  index?: number
-  browser?: BrowserType
-  // Timing fields
-  lastAccessed?: number
-  lastActivated?: number
-  lastDeactivated?: number
-  lastActiveTime?: number // Deprecated
-}
+import type { Tab, BrowserType } from '@tas/types/tabs'
+import type { EventPayload } from '@tas/types/protocol'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
-// Global MRU list of all tabs across all browsers
-let globalMruTabs: CachedTab[] = []
-// Per-browser tab caches (updated when each browser sends TABS_UPDATED)
-const browserTabCaches: Map<BrowserType, CachedTab[]> = new Map()
 let settingsWindow: BrowserWindow | null = null
 let tabManagementWindow: BrowserWindow | null = null
+let aboutWindow: BrowserWindow | null = null
+
+// Display-ready tabs cache (pre-sorted, ready for immediate display)
+let displayTabs: Tab[] = []
+
+// App settings store with preferences
+interface AppSettingsSchema {
+  hasCompletedFirstRun: boolean
+  launchOnLogin: boolean
+  hideMenuBarIcon: boolean
+  checkUpdatesAutomatically: boolean
+  theme: 'light' | 'dark' | 'system'
+}
+
+const appSettingsStore = new Store<AppSettingsSchema>({
+  name: 'app-settings',
+  defaults: {
+    hasCompletedFirstRun: false,
+    launchOnLogin: false,
+    hideMenuBarIcon: false,
+    checkUpdatesAutomatically: true,
+    theme: 'system'
+  }
+})
+
+// Git commit hash (injected at build time or fallback)
+const GIT_COMMIT_HASH = process.env.GIT_COMMIT_HASH || 'dev'
 
 // Map browser types to application names for AppleScript
 const browserAppNames: Record<BrowserType, string> = {
@@ -77,82 +87,113 @@ function activateBrowserApp(browser: BrowserType): void {
 }
 
 /**
- * Merge tabs from all browsers into a single global MRU list
- * When a browser sends an update, adopt its MRU order for its tabs
+ * Rebuild displayTabs from all active sessions
+ * This is called whenever session state changes
  */
-function updateGlobalMruTabs(activeBrowser?: BrowserType): void {
-  console.log('updateGlobalMruTabs - browserTabCaches keys:', [...browserTabCaches.keys()])
+function rebuildDisplayTabs(): void {
+  const sessions = getActiveSessions()
 
-  if (activeBrowser) {
-    // When a specific browser sends an update, rebuild global MRU:
-    // 1. Start with the updated browser's tabs in their MRU order
-    // 2. Append tabs from other browsers, preserving their existing order
-    const updatedBrowserTabs = browserTabCaches.get(activeBrowser) || []
-    const otherBrowserTabs = globalMruTabs.filter((tab) => tab.browser !== activeBrowser)
+  // Collect all tabs from all sessions with session key prefix to avoid ID collisions
+  const allTabs: Tab[] = []
+  const allAugmentation: Record<string, { lastActivated?: number; lastDeactivated?: number }> = {}
 
-    // Create a map of all current tabs for quick lookup
-    const allCurrentTabs = new Map<string, CachedTab>()
-    browserTabCaches.forEach((tabs, browser) => {
-      tabs.forEach((tab) => {
-        const key = `${browser}:${tab.id}`
-        allCurrentTabs.set(key, { ...tab, browser })
-      })
-    })
+  sessions.forEach((session) => {
+    session.sessionTabs.forEach((browserTab) => {
+      const tabId = browserTab.id
+      if (tabId === undefined) return
 
-    // Update other browser tabs with fresh data and remove tabs that no longer exist
-    const updatedOtherTabs = otherBrowserTabs
-      .map((tab) => {
-        const key = `${tab.browser}:${tab.id}`
-        return allCurrentTabs.get(key) || null
-      })
-      .filter((tab): tab is CachedTab => tab !== null)
+      // Create a unique key for cross-session deduplication
+      const uniqueId = `${session.instanceId.substring(0, 8)}:${tabId}`
+      const augData = session.augmentation.get(String(tabId))
 
-    // Rebuild global MRU: updated browser's tabs first (in their MRU order), then others
-    globalMruTabs = [...updatedBrowserTabs, ...updatedOtherTabs]
-  } else {
-    // No specific browser update - just refresh tab data without changing order
-    const allCurrentTabs = new Map<string, CachedTab>()
-    browserTabCaches.forEach((tabs, browser) => {
-      tabs.forEach((tab) => {
-        const key = `${browser}:${tab.id}`
-        allCurrentTabs.set(key, { ...tab, browser })
-      })
-    })
+      // Convert to display Tab format
+      const tab: Tab = {
+        id: uniqueId,
+        title: browserTab.title ?? 'Untitled',
+        url: browserTab.url ?? '',
+        favicon: augData?.faviconDataUrl ?? browserTab.favIconUrl ?? '',
+        windowId: browserTab.windowId,
+        index: browserTab.index,
+        browser: session.browserType,
+        lastAccessed: browserTab.lastAccessed,
+        lastActivated: augData?.lastActivated,
+        lastDeactivated: augData?.lastDeactivated
+      }
 
-    // Update existing tabs with fresh data and remove tabs that no longer exist
-    globalMruTabs = globalMruTabs
-      .map((tab) => {
-        const key = `${tab.browser}:${tab.id}`
-        return allCurrentTabs.get(key) || null
-      })
-      .filter((tab): tab is CachedTab => tab !== null)
-
-    // Add new tabs to the end
-    const existingKeys = new Set(globalMruTabs.map((tab) => `${tab.browser}:${tab.id}`))
-    allCurrentTabs.forEach((tab, key) => {
-      if (!existingKeys.has(key)) {
-        globalMruTabs.push(tab)
+      allTabs.push(tab)
+      allAugmentation[uniqueId] = {
+        lastActivated: augData?.lastActivated,
+        lastDeactivated: augData?.lastDeactivated
       }
     })
-  }
+  })
 
-  // Persist to disk (debounced)
-  saveTabData(globalMruTabs, browserTabCaches)
+  // Sort using the shared sorting module
+  // For now, we sort by lastActivated (default MRU)
+  displayTabs = allTabs.sort((a, b) => {
+    const aTime = a.lastActivated ?? a.lastAccessed ?? 0
+    const bTime = b.lastActivated ?? b.lastAccessed ?? 0
+    return bTime - aTime
+  })
+
+  // Persist to disk (debounced via tabStorage)
+  saveTabData(displayTabs)
 }
 
 /**
- * Move a tab to the front of the global MRU list
+ * Send current displayTabs to all open windows
  */
-function promoteTabInGlobalMru(browser: BrowserType, tabId: string): void {
-  const key = `${browser}:${tabId}`
-  const index = globalMruTabs.findIndex((tab) => `${tab.browser}:${tab.id}` === key)
-
-  if (index > 0) {
-    const [tab] = globalMruTabs.splice(index, 1)
-    globalMruTabs.unshift(tab)
-    // Persist to disk (debounced)
-    saveTabData(globalMruTabs, browserTabCaches)
+function broadcastDisplayTabs(): void {
+  if (tasWindow && !tasWindow.isDestroyed()) {
+    tasWindow.webContents.send('tabs-updated', displayTabs)
   }
+
+  if (tabManagementWindow && !tabManagementWindow.isDestroyed()) {
+    tabManagementWindow.webContents.send('tabs-updated', displayTabs)
+  }
+}
+
+/**
+ * Handle snapshot received from a session
+ */
+function handleSnapshot(_sessionKey: SessionKey, session: Session): void {
+  console.log(
+    `[TAS] Snapshot received from ${session.browserType}: ${session.sessionTabs.length} tabs`
+  )
+  // Update tray menu now that session has snapshot (is fully connected)
+  updateTrayMenu()
+  rebuildDisplayTabs()
+  broadcastDisplayTabs()
+}
+
+/**
+ * Handle event received from a session
+ */
+function handleEvent(_sessionKey: SessionKey, _session: Session, event: EventPayload): void {
+  // For activation events, we want to update immediately
+  if (event.event === 'tab.activated') {
+    rebuildDisplayTabs()
+    broadcastDisplayTabs()
+  } else if (
+    event.event === 'tab.created' ||
+    event.event === 'tab.removed' ||
+    event.event === 'tab.updated'
+  ) {
+    // For other tab changes, also update
+    rebuildDisplayTabs()
+    broadcastDisplayTabs()
+  }
+  // Window events don't necessarily need display update
+}
+
+/**
+ * Handle connection changes
+ */
+function handleConnectionChange(): void {
+  updateTrayMenu()
+  // When a session connects/disconnects, rebuild display
+  rebuildDisplayTabs()
+  broadcastDisplayTabs()
 }
 
 // Hide dock icon on macOS (menu bar app only)
@@ -162,12 +203,12 @@ if (process.platform === 'darwin' && app.dock) {
 
 function createTasOverlay(): void {
   if (tasWindow) {
-    // Send global MRU tabs immediately so window isn't empty
-    if (globalMruTabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', globalMruTabs)
+    // Send cached displayTabs immediately - should be fresh from event updates
+    if (displayTabs.length > 0) {
+      tasWindow.webContents.send('tabs-updated', displayTabs)
     }
-    // Request fresh tabs from all connected extensions
-    sendMessageToAllExtensions({ type: 'GET_TABS' })
+    // Don't request snapshot here - the event system keeps displayTabs up-to-date
+    // This avoids flooding when rapidly showing/hiding the overlay
     // Reset selection to second tab when reopening
     tasWindow.webContents.send('reset-selection')
     tasWindow.show()
@@ -209,9 +250,9 @@ function createTasOverlay(): void {
     // Unregister global shortcut so the window can handle Alt+Tab
     globalShortcut.unregister('Alt+Tab')
 
-    // Send global MRU tabs to the window
-    if (tasWindow && globalMruTabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', globalMruTabs)
+    // Send cached displayTabs to the window
+    if (tasWindow && displayTabs.length > 0) {
+      tasWindow.webContents.send('tabs-updated', displayTabs)
     }
 
     tasWindow?.show()
@@ -257,8 +298,12 @@ function createTasOverlay(): void {
   }
 }
 
-function createSettingsWindow(): void {
+function createSettingsWindow(initialTab?: 'keys' | 'options' | 'setup'): void {
   if (settingsWindow) {
+    // If window exists, send message to switch tab if specified
+    if (initialTab) {
+      settingsWindow.webContents.send('switch-tab', initialTab)
+    }
     settingsWindow.show()
     settingsWindow.focus()
     return
@@ -267,7 +312,7 @@ function createSettingsWindow(): void {
   settingsWindow = new BrowserWindow({
     width: 650,
     height: 600,
-    title: 'Settings - Tab Application Switcher',
+    title: 'Settings - TAS',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -285,10 +330,15 @@ function createSettingsWindow(): void {
     return { action: 'deny' }
   })
 
+  // Build URL with initial tab parameter
+  const tabParam = initialTab ? `?tab=${initialTab}` : ''
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/settings.html`)
+    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/settings.html${tabParam}`)
   } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'))
+    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'), {
+      query: initialTab ? { tab: initialTab } : undefined
+    })
   }
 }
 
@@ -304,7 +354,7 @@ function createTabManagementWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: 'Tab Management - Tab Application Switcher',
+    title: 'Tab Management - TAS',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -326,6 +376,40 @@ function createTabManagementWindow(): void {
     tabManagementWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/tab-management.html`)
   } else {
     tabManagementWindow.loadFile(join(__dirname, '../renderer/tab-management.html'))
+  }
+}
+
+function createAboutWindow(): void {
+  if (aboutWindow) {
+    aboutWindow.show()
+    aboutWindow.focus()
+    return
+  }
+
+  aboutWindow = new BrowserWindow({
+    width: 300,
+    height: 320,
+    title: 'About TAS',
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.mjs'),
+      sandbox: false
+    }
+  })
+
+  aboutWindow.on('closed', () => {
+    aboutWindow = null
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    aboutWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/about.html`)
+  } else {
+    aboutWindow.loadFile(join(__dirname, '../renderer/about.html'))
   }
 }
 
@@ -357,8 +441,29 @@ function createTray(): void {
 function updateTrayMenu(): void {
   if (!tray) return
 
-  const extensionConnected = isExtensionConnected()
-  const statusLabel = extensionConnected ? '✓ Extension Connected' : '✗ Extension Not Connected'
+  const activeSessions = getActiveSessions()
+  const isConnected = activeSessions.length > 0
+  const connectedBrowsers = getConnectedBrowsers()
+
+  // Build status label based on connection state
+  let statusLabel: string
+  if (!isConnected) {
+    statusLabel = '✗ No browsers connected'
+  } else if (activeSessions.length === 1) {
+    // Single session - show browser name
+    const browserName = connectedBrowsers[0].charAt(0).toUpperCase() + connectedBrowsers[0].slice(1)
+    statusLabel = `✓ Connected: ${browserName}`
+  } else {
+    // Multiple sessions - could be multiple browsers or multiple profiles
+    const uniqueBrowsers = connectedBrowsers.length
+    if (uniqueBrowsers === activeSessions.length) {
+      // Each session is a different browser
+      statusLabel = `✓ ${activeSessions.length} browsers connected`
+    } else {
+      // Multiple profiles of same browser(s)
+      statusLabel = `✓ ${activeSessions.length} sessions connected`
+    }
+  }
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -369,26 +474,26 @@ function updateTrayMenu(): void {
     {
       label: 'Show Tab Switcher',
       click: () => createTasOverlay(),
-      enabled: extensionConnected
-    },
-    {
-      label: 'Settings',
-      click: () => createSettingsWindow()
+      enabled: isConnected
     },
     {
       label: 'Tab Management',
       click: () => createTabManagementWindow(),
-      enabled: extensionConnected
+      enabled: isConnected
     },
     { type: 'separator' },
     {
-      label: extensionConnected ? 'Extension Connected' : 'Install Extension',
-      click: () => {
-        if (!extensionConnected) {
-          shell.openExternal('https://chrome.google.com/webstore')
-        }
-      },
-      enabled: !extensionConnected
+      label: 'Setup...',
+      click: () => createSettingsWindow('setup')
+    },
+    {
+      label: 'Settings...',
+      click: () => createSettingsWindow('keys')
+    },
+    { type: 'separator' },
+    {
+      label: 'About TAS',
+      click: () => createAboutWindow()
     },
     { type: 'separator' },
     {
@@ -400,90 +505,52 @@ function updateTrayMenu(): void {
   ])
 
   tray.setToolTip(
-    extensionConnected
-      ? 'Tab Application Switcher - Connected'
-      : 'Tab Application Switcher - Extension Not Connected'
+    isConnected
+      ? `TAS - ${activeSessions.length} session${activeSessions.length > 1 ? 's' : ''} connected`
+      : 'TAS - No browsers connected'
   )
   tray.setContextMenu(contextMenu)
 }
 
-function showExtensionNotInstalledNotification(): void {
-  const notification = new Notification({
-    title: 'Tab Application Switcher',
-    body: 'Browser extension not detected. Install the extension to use Tab Application Switcher.',
-    silent: false
-  })
+/**
+ * Find the session that owns a tab by its display ID
+ * Display IDs are formatted as "instancePrefix:tabId"
+ */
+function findSessionForTab(displayTabId: string): {
+  session: Session
+  sessionKey: SessionKey
+  tabId: number
+} | null {
+  const sessions = getActiveSessions()
 
-  notification.on('click', () => {
-    shell.openExternal('https://chrome.google.com/webstore')
-  })
-
-  notification.show()
-}
-
-// Message handler for WebSocket messages from extension
-function handleExtensionMessage(msg: {
-  type: string
-  tabs?: unknown[]
-  tabId?: string
-  browser?: BrowserType
-}): void {
-  const browser = msg.browser || 'unknown'
-
-  if (msg.type === 'TAB_ACTIVATED') {
-    // A tab was activated in the browser - promote it in global MRU
-    if (msg.tabId) {
-      console.log(`Tab activated in ${browser}:`, msg.tabId)
-      promoteTabInGlobalMru(browser, msg.tabId)
-    }
-    return
-  }
-
-  if (msg.type === 'TABS_UPDATED' || msg.type === 'TABS_RESPONSE') {
-    const tabs = (msg.tabs || []) as CachedTab[]
-
-    // Store per-browser cache
-    browserTabCaches.set(browser, tabs)
-    console.log(`Updated ${browser} tab cache:`, tabs.length, 'tabs')
-    // Debug: log browser field from first tab
-    if (tabs.length > 0) {
-      console.log(`First tab browser field:`, tabs[0].browser, `Title:`, tabs[0].title)
-    }
-
-    // Rebuild global MRU, adopting this browser's MRU order
-    updateGlobalMruTabs(browser)
-    console.log(
-      'Global MRU tabs:',
-      globalMruTabs.length,
-      'tabs from',
-      getConnectedBrowsers().join(', ')
-    )
-
-    // If TAS window is open, send global MRU tabs to it
-    if (tasWindow && !tasWindow.isDestroyed()) {
-      tasWindow.webContents.send('tabs-updated', globalMruTabs)
-    }
-
-    // If Tab Management window is open, send global MRU tabs to it
-    if (tabManagementWindow && !tabManagementWindow.isDestroyed()) {
-      tabManagementWindow.webContents.send('tabs-updated', globalMruTabs)
+  for (const session of sessions) {
+    const prefix = session.instanceId.substring(0, 8)
+    if (displayTabId.startsWith(`${prefix}:`)) {
+      const tabId = parseInt(displayTabId.substring(prefix.length + 1), 10)
+      if (!isNaN(tabId)) {
+        const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+        return { session, sessionKey, tabId }
+      }
     }
   }
+
+  return null
 }
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.tab-app-switcher')
 
-  // Load persisted tab data from disk
+  // Load persisted tab data from disk for instant startup display
   const persistedData = loadTabData()
-  globalMruTabs = persistedData.globalMruTabs
-  persistedData.browserTabCaches.forEach((tabs, browser) => {
-    browserTabCaches.set(browser, tabs)
-  })
-  console.log('Restored tab state from disk on startup')
+  displayTabs = persistedData.displayTabs
+  console.log(`[TAS] Restored ${displayTabs.length} tabs from disk on startup`)
 
-  // Start WebSocket server for extension communication
-  startWebSocketServer(handleExtensionMessage, updateTrayMenu)
+  // Start WebSocket server with new session-based callbacks
+  startWebSocketServer({
+    onConnectionChange: handleConnectionChange,
+    onSnapshot: handleSnapshot,
+    onEvent: handleEvent
+  })
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -491,6 +558,12 @@ app.whenReady().then(() => {
 
   // Create tray icon
   createTray()
+
+  // First-run experience: show Setup tab on first launch
+  if (!appSettingsStore.get('hasCompletedFirstRun')) {
+    appSettingsStore.set('hasCompletedFirstRun', true)
+    createSettingsWindow('setup')
+  }
 
   // Register global keyboard shortcut (Alt+Tab)
   const registered = globalShortcut.register('Alt+Tab', () => {
@@ -500,13 +573,6 @@ app.whenReady().then(() => {
   if (!registered) {
     console.error('Failed to register global shortcut Alt+Tab')
   }
-
-  // Check for extension connection after a delay
-  setTimeout(() => {
-    if (!isExtensionConnected()) {
-      showExtensionNotInstalledNotification()
-    }
-  }, 3000)
 
   // Setup auto-updater
   setupAutoUpdater()
@@ -529,35 +595,138 @@ app.whenReady().then(() => {
     createTabManagementWindow()
   })
 
-  // Tab management IPC handlers - forward to correct browser's extension
+  // IPC handler for Settings to get connection status
+  ipcMain.handle('get-connection-status', () => {
+    const sessions = getActiveSessions()
+    return {
+      connected: sessions.length > 0,
+      sessionCount: sessions.length,
+      browsers: sessions.map((s) => ({
+        browser: s.browserType,
+        tabCount: s.sessionTabs.length
+      }))
+    }
+  })
+
+  // IPC handler for About window
+  ipcMain.handle('get-about-info', () => {
+    return {
+      version: app.getVersion(),
+      commitHash: GIT_COMMIT_HASH
+    }
+  })
+
+  // IPC handlers for app options
+  ipcMain.handle('get-app-options', () => {
+    return {
+      launchOnLogin: appSettingsStore.get('launchOnLogin'),
+      hideMenuBarIcon: appSettingsStore.get('hideMenuBarIcon'),
+      checkUpdatesAutomatically: appSettingsStore.get('checkUpdatesAutomatically'),
+      theme: appSettingsStore.get('theme')
+    }
+  })
+
+  ipcMain.handle('set-app-option', (_event, key: string, value: unknown) => {
+    if (key === 'launchOnLogin' && typeof value === 'boolean') {
+      appSettingsStore.set('launchOnLogin', value)
+      app.setLoginItemSettings({ openAtLogin: value })
+    } else if (key === 'hideMenuBarIcon' && typeof value === 'boolean') {
+      appSettingsStore.set('hideMenuBarIcon', value)
+      if (tray) {
+        if (value) {
+          tray.destroy()
+          tray = null
+        }
+      } else if (!value) {
+        createTray()
+      }
+    } else if (key === 'checkUpdatesAutomatically' && typeof value === 'boolean') {
+      appSettingsStore.set('checkUpdatesAutomatically', value)
+    } else if (key === 'theme' && (value === 'light' || value === 'dark' || value === 'system')) {
+      appSettingsStore.set('theme', value)
+      // Broadcast theme change to all windows
+      const windows = BrowserWindow.getAllWindows()
+      windows.forEach((win) => {
+        win.webContents.send('theme-changed', value)
+      })
+    }
+    return true
+  })
+
+  ipcMain.on('check-for-updates', () => {
+    // Trigger manual update check via autoUpdater
+    // The autoUpdater module should export a function for this
+    console.log('[TAS] Manual update check requested')
+  })
+
+  // Tab management IPC handlers - route to correct session
   ipcMain.on('activate-tab', (_event, tabId: string, browser?: BrowserType) => {
-    // Find the tab in global MRU to get its browser if not provided
-    const tab = globalMruTabs.find((t) => t.id === tabId)
-    const targetBrowser = browser || tab?.browser || 'chrome'
+    const found = findSessionForTab(tabId)
 
-    // Send activation message to the specific browser
-    sendMessageToBrowser(targetBrowser, { type: 'ACTIVATE_TAB', tabId })
+    if (found) {
+      // Send command to the correct session
+      sendCommand(found.sessionKey, {
+        command: 'activateTab',
+        tabId: found.tabId,
+        windowId: 0 // Extension will look up the window
+      })
 
-    // Activate the browser application
-    activateBrowserApp(targetBrowser)
+      // Activate the browser application
+      activateBrowserApp(found.session.browserType)
+    } else {
+      // Fallback: try to find in displayTabs and use browser hint
+      const tab = displayTabs.find((t) => t.id === tabId)
+      const targetBrowser = browser || tab?.browser || 'chrome'
 
-    // Promote this tab in the global MRU
-    promoteTabInGlobalMru(targetBrowser, tabId)
+      // Extract numeric tab ID (legacy format)
+      const numericTabId = parseInt(tabId.split(':').pop() || tabId, 10)
+      if (!isNaN(numericTabId)) {
+        // Send to all sessions of this browser type
+        const sessions = getActiveSessions().filter((s) => s.browserType === targetBrowser)
+        sessions.forEach((session) => {
+          const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+          sendCommand(sessionKey, {
+            command: 'activateTab',
+            tabId: numericTabId,
+            windowId: 0
+          })
+        })
+        activateBrowserApp(targetBrowser)
+      }
+    }
   })
 
   ipcMain.on('close-tab', (_event, tabId: string, browser?: BrowserType) => {
-    // Find the tab in global MRU to get its browser if not provided
-    const tab = globalMruTabs.find((t) => t.id === tabId)
-    const targetBrowser = browser || tab?.browser || 'chrome'
+    const found = findSessionForTab(tabId)
 
-    // Send close message to the specific browser
-    sendMessageToBrowser(targetBrowser, { type: 'CLOSE_TAB', tabId })
+    if (found) {
+      sendCommand(found.sessionKey, {
+        command: 'closeTab',
+        tabId: found.tabId
+      })
+    } else {
+      // Fallback: try to find in displayTabs
+      const tab = displayTabs.find((t) => t.id === tabId)
+      const targetBrowser = browser || tab?.browser || 'chrome'
+
+      const numericTabId = parseInt(tabId.split(':').pop() || tabId, 10)
+      if (!isNaN(numericTabId)) {
+        const sessions = getActiveSessions().filter((s) => s.browserType === targetBrowser)
+        sessions.forEach((session) => {
+          const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+          sendCommand(sessionKey, {
+            command: 'closeTab',
+            tabId: numericTabId
+          })
+        })
+      }
+    }
   })
 
-  // Send global MRU tabs when requested
+  // Send displayTabs when requested
   ipcMain.on('request-tabs', (event) => {
-    console.log('Tab Management requested tabs, sending:', globalMruTabs.length, 'tabs')
-    event.sender.send('tabs-updated', globalMruTabs)
+    console.log('[TAS] Tab Management requested tabs, sending:', displayTabs.length, 'tabs')
+    event.sender.send('tabs-updated', displayTabs)
   })
 })
 

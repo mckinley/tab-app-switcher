@@ -1,8 +1,8 @@
 const THEME_STORAGE_KEY = "theme"
 
-type ThemeOption = "light" | "dark" | "system"
+export type Theme = "light" | "dark" | "system"
 
-export function applyTheme(theme: ThemeOption): void {
+export function applyTheme(theme: Theme): void {
   if (typeof document === "undefined" || typeof window === "undefined") return
 
   const root = document.documentElement
@@ -24,9 +24,16 @@ export function applyTheme(theme: ThemeOption): void {
   }
 }
 
-export async function loadAndApplyTheme(): Promise<void> {
+export async function getTheme(): Promise<Theme> {
   const result = await browser.storage.local.get(THEME_STORAGE_KEY)
-  const stored = result[THEME_STORAGE_KEY] as ThemeOption | undefined
-  const theme = stored ?? "system"
+  return (result[THEME_STORAGE_KEY] as Theme) ?? "system"
+}
+
+export async function saveTheme(theme: Theme): Promise<void> {
+  await browser.storage.local.set({ [THEME_STORAGE_KEY]: theme })
+}
+
+export async function loadAndApplyTheme(): Promise<void> {
+  const theme = await getTheme()
   applyTheme(theme)
 }

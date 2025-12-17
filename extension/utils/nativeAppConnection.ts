@@ -1,239 +1,288 @@
-import { Tab, BrowserType } from "@tas/types/tabs"
-import { getFaviconDataUrl } from "./faviconCache"
+/**
+ * Native App WebSocket Transport
+ *
+ * Handles WebSocket communication with the native TAS app using the v1 protocol.
+ * Responsibilities:
+ * - Identity management (instanceId, runtimeSessionId, connectionId)
+ * - Handshake: connect → connected → snapshot
+ * - Send events after snapshot
+ * - Handle commands from server
+ * - Exponential backoff reconnection
+ * - Ping/pong keepalive
+ */
+
+import {
+  type ProtocolEnvelope,
+  type MessageType,
+  type ConnectPayload,
+  type ConnectedPayload,
+  type SnapshotPayload,
+  type EventPayload,
+  type CommandPayload,
+  createEnvelope,
+  isValidEnvelope,
+  isCommandPayload,
+} from "@tas/types/protocol"
+import { getIdentity, generateConnectionId } from "./identity"
+import { detectBrowserType, getExtensionVersion } from "./browserDetection"
+import type { TabTracker } from "./tabTracker"
 
 const WS_URL = "ws://localhost:48125"
-const INITIAL_RECONNECT_DELAY = 1000 // 1 second initial delay
-const MAX_RECONNECT_DELAY = 60000 // 1 minute max delay
-const UPDATE_DEBOUNCE = 100 // 100ms
+const INITIAL_RECONNECT_DELAY = 1000 // 1 second
+const MAX_RECONNECT_DELAY = 60000 // 1 minute
+const PING_INTERVAL = 30000 // 30 seconds
 
-let ws: WebSocket | null = null
-let updateTimeout: ReturnType<typeof setTimeout> | null = null
-let browserInstance: any = null
-let getMruTabOrder: (() => number[]) | null = null
-let updateMruOrderFn: ((tabId: number) => void) | null = null
-let currentBrowserType: BrowserType = "unknown"
-let currentReconnectDelay = INITIAL_RECONNECT_DELAY
+interface TransportState {
+  instanceId: string | null
+  runtimeSessionId: string | null
+  connectionId: string | null
+  seq: number
+  ws: WebSocket | null
+  hasConnected: boolean // Has completed handshake
+  reconnectDelay: number
+  reconnectScheduled: boolean
+  pingTimer: ReturnType<typeof setInterval> | null
+}
 
-/**
- * Detect which browser this extension is running in
- */
-function detectBrowser(): BrowserType {
-  const userAgent = navigator.userAgent.toLowerCase()
+export type CommandHandler = (command: CommandPayload) => void
 
-  // Check for Edge first since it also contains "chrome"
-  if (userAgent.includes("edg/")) {
-    return "edge"
-  }
-  // Firefox
-  if (userAgent.includes("firefox")) {
-    return "firefox"
-  }
-  // Safari (check before Chrome since Safari can include "chrome" in some contexts)
-  if (userAgent.includes("safari") && !userAgent.includes("chrome")) {
-    return "safari"
-  }
-  // Chrome (and Chromium-based browsers that aren't Edge)
-  if (userAgent.includes("chrome")) {
-    return "chrome"
-  }
-
-  return "unknown"
+export interface NativeAppTransport {
+  connect(): Promise<void>
+  disconnect(): void
+  isConnected(): boolean
+  sendEvent(event: EventPayload): void
+  sendSnapshot(snapshot: SnapshotPayload): void
+  onCommand(handler: CommandHandler): void
+  offCommand(handler: CommandHandler): void
 }
 
 /**
- * Get tabs in MRU (Most Recently Used) order with favicon data URLs
+ * Create a new NativeAppTransport instance
  */
-async function getTabsInMruOrder(): Promise<Tab[]> {
-  if (!browserInstance) throw new Error("Browser instance not initialized")
-  if (!getMruTabOrder) throw new Error("MRU getter not initialized")
+export async function createNativeAppTransport(tabTracker: TabTracker): Promise<NativeAppTransport> {
+  const state: TransportState = {
+    instanceId: null,
+    runtimeSessionId: null,
+    connectionId: null,
+    seq: 0,
+    ws: null,
+    hasConnected: false,
+    reconnectDelay: INITIAL_RECONNECT_DELAY,
+    reconnectScheduled: false,
+    pingTimer: null,
+  }
 
-  const mruTabOrder = getMruTabOrder()
-  const browserTabs = await browserInstance.tabs.query({})
+  const commandHandlers: Set<CommandHandler> = new Set()
 
-  // Convert tabs to our format and fetch favicon data URLs in parallel
-  const tabPromises = browserTabs.map(async (tab: any) => {
-    const faviconDataUrl = await getFaviconDataUrl(tab.favIconUrl || "")
-
-    return {
-      id: String(tab.id),
-      title: tab.title || "Untitled",
-      url: tab.url || "",
-      favicon: faviconDataUrl,
-      windowId: tab.windowId,
-      index: tab.index,
-      browser: currentBrowserType,
-    } as Tab
+  // Initialize identity (await once at startup)
+  const identity = await getIdentity()
+  state.instanceId = identity.instanceId
+  state.runtimeSessionId = identity.runtimeSessionId
+  console.log("[TAS] Identity initialized:", {
+    instanceId: state.instanceId.substring(0, 8) + "...",
+    runtimeSessionId: state.runtimeSessionId.substring(0, 8) + "...",
   })
 
-  const allTabs = await Promise.all(tabPromises)
-  const tabsById = new Map(allTabs.map((tab) => [Number(tab.id), tab]))
-
-  const tabsInMruOrder = mruTabOrder.map((id) => tabsById.get(id)).filter((tab): tab is Tab => tab !== undefined)
-
-  return tabsInMruOrder
-}
-
-/**
- * Check if native app is connected
- */
-export function isNativeAppConnected(): boolean {
-  return ws !== null && ws.readyState === WebSocket.OPEN
-}
-
-/**
- * Notify native app that a specific tab was activated
- * This allows the native app to update its global MRU order across all browsers
- */
-export function notifyTabActivated(tabId: number): void {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-  console.log("Sending TAB_ACTIVATED to native app:", tabId)
-  ws.send(JSON.stringify({ type: "TAB_ACTIVATED", tabId: String(tabId) }))
-}
-
-/**
- * Notify native app of tab updates (debounced)
- */
-export function notifyNativeApp(): void {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-  // Debounce updates to avoid flooding the native app
-  if (updateTimeout) clearTimeout(updateTimeout)
-
-  updateTimeout = setTimeout(() => {
-    getTabsInMruOrder().then((tabs) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        console.log("Sending TABS_UPDATED to native app:", tabs.length, "tabs")
-        ws.send(JSON.stringify({ type: "TABS_UPDATED", tabs }))
-      }
-    })
-  }, UPDATE_DEBOUNCE)
-}
-
-/**
- * Handle messages from native app
- */
-function handleNativeMessage(message: any): void {
-  if (!browserInstance) return
-
-  console.log("Message from native app:", message)
-
-  if (message.type === "GET_TABS") {
-    // Native app is requesting fresh tab list
-    getTabsInMruOrder().then((tabs) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        console.log("Sending TABS_RESPONSE to native app:", tabs.length, "tabs")
-        ws.send(JSON.stringify({ type: "TABS_RESPONSE", tabs }))
-      }
-    })
-  } else if (message.type === "ACTIVATE_TAB") {
-    const tabId = Number(message.tabId)
-    browserInstance.tabs
-      .update(tabId, { active: true })
-      .then(() => browserInstance!.tabs.get(tabId))
-      .then((tab: any) => {
-        if (tab.windowId) {
-          return browserInstance!.windows.update(tab.windowId, { focused: true })
-        }
-      })
-      .then(() => {
-        if (updateMruOrderFn) updateMruOrderFn(tabId)
-      })
-      .catch((error: any) => {
-        console.error("Error activating tab:", error)
-      })
-  } else if (message.type === "CLOSE_TAB") {
-    const tabId = Number(message.tabId)
-    browserInstance.tabs.remove(tabId).catch((error: any) => {
-      console.error("Error closing tab:", error)
-    })
+  function nextSeq(): number {
+    return ++state.seq
   }
-}
 
-/**
- * Connect to native app via WebSocket
- * @param browser - Browser API instance
- * @param getMruOrder - Getter function that returns current MRU tab order (avoids stale closures)
- * @param updateMruOrder - Function to update MRU order when tab is activated
- */
-export function connectToNativeApp(
-  browser: any,
-  getMruOrder: () => number[],
-  updateMruOrder: (tabId: number) => void,
-): void {
-  browserInstance = browser
-  getMruTabOrder = getMruOrder
-  updateMruOrderFn = updateMruOrder
-  currentBrowserType = detectBrowser()
-  console.log("Detected browser type:", currentBrowserType)
+  function send<T>(type: MessageType, payload: T): void {
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return
+    if (!state.instanceId || !state.runtimeSessionId || !state.connectionId) return
 
-  let reconnectScheduled = false
+    const envelope = createEnvelope(
+      type,
+      state.instanceId,
+      state.runtimeSessionId,
+      state.connectionId,
+      nextSeq(),
+      payload,
+    )
+
+    state.ws.send(JSON.stringify(envelope))
+  }
 
   function scheduleReconnect(): void {
-    if (reconnectScheduled) return
-    reconnectScheduled = true
+    if (state.reconnectScheduled) return
+    state.reconnectScheduled = true
 
-    console.log(`Scheduling reconnect in ${currentReconnectDelay / 1000}s...`)
+    console.log(`[TAS] Scheduling reconnect in ${state.reconnectDelay / 1000}s...`)
     setTimeout(() => {
-      reconnectScheduled = false
-      // Exponential backoff: double the delay for next attempt, up to max
-      currentReconnectDelay = Math.min(currentReconnectDelay * 2, MAX_RECONNECT_DELAY)
+      state.reconnectScheduled = false
+      state.reconnectDelay = Math.min(state.reconnectDelay * 2, MAX_RECONNECT_DELAY)
       attemptConnection()
-    }, currentReconnectDelay)
+    }, state.reconnectDelay)
+  }
+
+  function startPingTimer(): void {
+    stopPingTimer()
+    state.pingTimer = setInterval(() => {
+      send("ping", {})
+    }, PING_INTERVAL)
+  }
+
+  function stopPingTimer(): void {
+    if (state.pingTimer) {
+      clearInterval(state.pingTimer)
+      state.pingTimer = null
+    }
+  }
+
+  function handleMessage(event: MessageEvent): void {
+    try {
+      const msg = JSON.parse(event.data)
+
+      if (!isValidEnvelope(msg)) {
+        console.warn("[TAS] Invalid message envelope:", msg)
+        return
+      }
+
+      const envelope = msg as ProtocolEnvelope
+
+      switch (envelope.type) {
+        case "connected": {
+          const payload = envelope.payload as ConnectedPayload
+          if (payload.ok) {
+            console.log("[TAS] Handshake complete, server version:", payload.serverVersion)
+            state.hasConnected = true
+            state.reconnectDelay = INITIAL_RECONNECT_DELAY
+            startPingTimer()
+
+            // Send initial snapshot
+            const snapshot = tabTracker.getSnapshot()
+            send("snapshot", snapshot)
+            console.log(
+              `[TAS] Sent snapshot: ${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows`,
+            )
+          } else {
+            console.error("[TAS] Handshake failed:", payload.error)
+          }
+          break
+        }
+
+        case "command": {
+          if (isCommandPayload(envelope.payload)) {
+            const cmd = envelope.payload
+            console.log("[TAS] Received command:", cmd.command)
+            commandHandlers.forEach((handler) => handler(cmd))
+          }
+          break
+        }
+
+        case "pong":
+          // Heartbeat acknowledged, no action needed
+          break
+
+        case "ping":
+          send("pong", {})
+          break
+
+        default:
+          console.log("[TAS] Unhandled message type:", envelope.type)
+      }
+    } catch (error) {
+      console.error("[TAS] Error handling message:", error)
+    }
   }
 
   function attemptConnection(): void {
     // Don't attempt if already connected or connecting
-    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
-      console.log("WebSocket already connected or connecting, skipping...")
+    if (state.ws && (state.ws.readyState === WebSocket.CONNECTING || state.ws.readyState === WebSocket.OPEN)) {
+      console.log("[TAS] WebSocket already connected or connecting")
       return
     }
 
+    // Generate new connection ID for this attempt
+    state.connectionId = generateConnectionId()
+    state.seq = 0
+    state.hasConnected = false
+
+    console.log("[TAS] Connecting to native app...", {
+      connectionId: state.connectionId.substring(0, 8) + "...",
+    })
+
     try {
-      console.log("Connecting to native app via WebSocket...")
+      state.ws = new WebSocket(WS_URL)
 
-      ws = new WebSocket(WS_URL)
+      state.ws.onopen = () => {
+        console.log("[TAS] WebSocket connected, sending handshake")
 
-      ws.onopen = () => {
-        console.log("Connected to native app")
-        // Reset backoff delay on successful connection
-        currentReconnectDelay = INITIAL_RECONNECT_DELAY
-        // Send browser identification first
-        ws!.send(JSON.stringify({ type: "BROWSER_IDENTIFY", browser: currentBrowserType }))
-        // Then send initial tab list
-        notifyNativeApp()
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data)
-          handleNativeMessage(message)
-        } catch (error) {
-          console.error("Error parsing message from native app:", error)
+        const connectPayload: ConnectPayload = {
+          browserType: detectBrowserType(),
+          extensionVersion: getExtensionVersion(),
         }
+
+        send("connect", connectPayload)
       }
 
-      ws.onclose = () => {
-        console.log("Native app disconnected")
-        ws = null
+      state.ws.onmessage = handleMessage
+
+      state.ws.onclose = () => {
+        console.log("[TAS] WebSocket closed")
+        state.ws = null
+        state.hasConnected = false
+        stopPingTimer()
         scheduleReconnect()
       }
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error)
-        // Close will usually fire after error, but ensure we clean up
-        if (ws) {
-          ws.close()
-          ws = null
+      state.ws.onerror = (error) => {
+        console.error("[TAS] WebSocket error:", error)
+        // Close will fire after error, but ensure cleanup
+        if (state.ws) {
+          state.ws.close()
+          state.ws = null
         }
         scheduleReconnect()
       }
     } catch (error) {
-      console.error("Failed to connect to native app:", error)
-      ws = null
+      console.error("[TAS] Failed to create WebSocket:", error)
+      state.ws = null
       scheduleReconnect()
     }
   }
 
-  attemptConnection()
+  // Subscribe to tab tracker events and forward to native app
+  tabTracker.onEvent((event) => {
+    if (state.hasConnected) {
+      send("event", event)
+    }
+  })
+
+  return {
+    async connect() {
+      attemptConnection()
+    },
+
+    disconnect() {
+      stopPingTimer()
+      state.reconnectScheduled = false // Don't reconnect
+      if (state.ws) {
+        state.ws.close()
+        state.ws = null
+      }
+    },
+
+    isConnected() {
+      return state.ws !== null && state.ws.readyState === WebSocket.OPEN && state.hasConnected
+    },
+
+    sendEvent(event: EventPayload) {
+      if (state.hasConnected) {
+        send("event", event)
+      }
+    },
+
+    sendSnapshot(snapshot: SnapshotPayload) {
+      send("snapshot", snapshot)
+    },
+
+    onCommand(handler: CommandHandler) {
+      commandHandlers.add(handler)
+    },
+
+    offCommand(handler: CommandHandler) {
+      commandHandlers.delete(handler)
+    },
+  }
 }

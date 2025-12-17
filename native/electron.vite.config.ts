@@ -21,7 +21,8 @@ export default defineConfig({
           index: resolve(__dirname, 'src/renderer/index.html'),
           tas: resolve(__dirname, 'src/renderer/tas.html'),
           settings: resolve(__dirname, 'src/renderer/settings.html'),
-          'tab-management': resolve(__dirname, 'src/renderer/tab-management.html')
+          'tab-management': resolve(__dirname, 'src/renderer/tab-management.html'),
+          about: resolve(__dirname, 'src/renderer/about.html')
         }
       }
     },

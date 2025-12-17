@@ -1,14 +1,13 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabManagement } from '@tas/components/TabManagement'
-import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
+import { Tab } from '@tas/types/tabs'
 import { supabase } from '@tas/utils/supabase'
 import './assets/globals.css'
 
 // eslint-disable-next-line react-refresh/only-export-components
 function TabManagementApp(): JSX.Element {
   const [tabs, setTabs] = useState<Tab[]>([])
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
   // Listen for auth tokens from main process
   useEffect(() => {
@@ -54,11 +53,6 @@ function TabManagementApp(): JSX.Element {
     }
   }, [])
 
-  // TODO: Load shortcuts from electron store
-  useEffect(() => {
-    // Will load from electron store
-  }, [])
-
   const handleSelectTab = (tabId: string): void => {
     // TODO: Send message to extension to activate tab
     console.log('Activate tab:', tabId)
@@ -84,12 +78,6 @@ function TabManagementApp(): JSX.Element {
     console.log('Create window with tabs:', tabUrls)
   }
 
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts): void => {
-    setShortcuts(newShortcuts)
-    // TODO: Save to electron store
-    console.log('Shortcuts changed:', newShortcuts)
-  }
-
   const handleClose = (): void => {
     window.close()
   }
@@ -112,8 +100,6 @@ function TabManagementApp(): JSX.Element {
         onCloseTab={handleCloseTab}
         onReorderTabs={handleReorderTabs}
         onSendCollectionToWindow={handleSendCollectionToWindow}
-        shortcuts={shortcuts}
-        onShortcutsChange={handleShortcutsChange}
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
       />

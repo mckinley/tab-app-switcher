@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { TabSwitcher } from "@tas/components/TabSwitcher"
-import { Settings } from "@tas/components/Settings"
+import { KeyboardSettings, ThemeSettings } from "@tas/components/settings"
 import { TabManagement } from "@tas/components/TabManagement"
 import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
 import type { Collection } from "@tas/types/collections"
 import { DEMO_TAB_POOL } from "@tas/utils/demoTabs"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
-import { ThemeToggle } from "@/components/ThemeToggle"
 import { TabsTooltip } from "@/components/TabsTooltip"
+import { useTheme } from "next-themes"
 import { Navigation } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
 import { Button } from "@tab-app-switcher/ui/components/button"
@@ -118,6 +118,7 @@ const useDemoTabs = () => {
 
 const Index = () => {
   const [platform] = useState(() => detectPlatform())
+  const { theme, setTheme } = useTheme()
 
   // Use the demo tab management hook
   const { tabs, activeTabId, getTabsInMruOrder, activateTab, closeTab, addTab } = useDemoTabs()
@@ -538,12 +539,16 @@ const Index = () => {
 
       {/* Settings in modal container */}
       <Container variant="modal" isVisible={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}>
-        <div className="p-6">
-          <div className="mb-6">
+        <div className="p-6 space-y-6">
+          <div>
             <h2 className="text-lg font-semibold">TAS Settings</h2>
             <p className="text-sm text-muted-foreground">Customize keyboard shortcuts and appearance</p>
           </div>
-          <Settings shortcuts={shortcuts} onShortcutsChange={setShortcuts} themeToggle={<ThemeToggle />} />
+          <div>
+            <h3 className="text-sm font-medium mb-3">Theme</h3>
+            <ThemeSettings value={(theme as "light" | "dark" | "system") ?? "system"} onChange={setTheme} />
+          </div>
+          <KeyboardSettings shortcuts={shortcuts} onShortcutsChange={setShortcuts} />
         </div>
       </Container>
 
@@ -553,9 +558,6 @@ const Index = () => {
           tabs={mruTabs}
           onClose={() => setIsTabManagementOpen(false)}
           onSelectTab={handleSelectTab}
-          shortcuts={shortcuts}
-          onShortcutsChange={setShortcuts}
-          settingsThemeToggle={<ThemeToggle />}
           collections={demoCollections}
           onCollectionsChange={setDemoCollections}
           onSignIn={async () => {

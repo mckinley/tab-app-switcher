@@ -3,7 +3,6 @@ import { Button } from "@tab-app-switcher/ui/components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
 import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
-import { ThemeToggle } from "../../components/ThemeToggle"
 import { loadAndApplyTheme } from "../../utils/theme"
 import { BrowserType } from "@tas/types/tabs"
 import "./globals.css"
@@ -55,12 +54,9 @@ function App() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Welcome to Tab Application Switcher!</h1>
-            <p className="text-muted-foreground text-lg">Let's get you set up for the best experience</p>
-          </div>
-          <ThemeToggle />
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Welcome to Tab Application Switcher!</h1>
+          <p className="text-muted-foreground text-lg">Let's get you set up for the best experience</p>
         </div>
 
         {/* Quick Start Steps */}

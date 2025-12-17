@@ -1,32 +1,25 @@
-import Store from 'electron-store'
-import type { BrowserType } from '@tas/types/tabs'
+/**
+ * Tab Storage Module
+ *
+ * Persists tab data to disk for instant startup display.
+ * Uses electron-store for reliable cross-platform persistence.
+ */
 
-interface CachedTab {
-  id: string
-  title: string
-  url: string
-  favicon: string
-  windowId?: number
-  index?: number
-  browser?: BrowserType
-  lastAccessed?: number
-  lastActivated?: number
-  lastDeactivated?: number
-  lastActiveTime?: number
-}
+import Store from 'electron-store'
+import type { Tab } from '@tas/types/tabs'
 
 interface TabStorageSchema {
-  globalMruTabs: CachedTab[]
-  browserTabCaches: Record<BrowserType, CachedTab[]>
+  // Display-ready tabs for instant startup
+  displayTabs: Tab[]
+  // Last saved timestamp
   lastSaved: number
 }
 
 // Create store with schema
 const store = new Store<TabStorageSchema>({
-  name: 'tab-cache',
+  name: 'tab-cache-v2', // New name to avoid conflicts with old format
   defaults: {
-    globalMruTabs: [],
-    browserTabCaches: {} as Record<BrowserType, CachedTab[]>,
+    displayTabs: [],
     lastSaved: 0
   }
 })
@@ -35,29 +28,13 @@ const store = new Store<TabStorageSchema>({
  * Load persisted tab data from disk
  */
 export function loadTabData(): {
-  globalMruTabs: CachedTab[]
-  browserTabCaches: Map<BrowserType, CachedTab[]>
+  displayTabs: Tab[]
 } {
-  const data = store.store
-  const browserTabCaches = new Map<BrowserType, CachedTab[]>()
+  const displayTabs = store.get('displayTabs', [])
 
-  // Convert stored object back to Map
-  Object.entries(data.browserTabCaches || {}).forEach(([browser, tabs]) => {
-    browserTabCaches.set(browser as BrowserType, tabs)
-  })
+  console.log('[TAS Storage] Loaded', displayTabs.length, 'tabs from disk')
 
-  console.log(
-    'Loaded tab data from disk:',
-    data.globalMruTabs.length,
-    'global tabs,',
-    browserTabCaches.size,
-    'browsers'
-  )
-
-  return {
-    globalMruTabs: data.globalMruTabs || [],
-    browserTabCaches
-  }
+  return { displayTabs }
 }
 
 /**
@@ -65,37 +42,23 @@ export function loadTabData(): {
  * Debounced to avoid excessive writes
  */
 let saveTimeout: NodeJS.Timeout | null = null
+let lastSavedCount = -1
 const SAVE_DEBOUNCE_MS = 1000
 
-export function saveTabData(
-  globalMruTabs: CachedTab[],
-  browserTabCaches: Map<BrowserType, CachedTab[]>
-): void {
+export function saveTabData(displayTabs: Tab[]): void {
   if (saveTimeout) clearTimeout(saveTimeout)
 
   saveTimeout = setTimeout(() => {
-    // Convert Map to plain object for storage
-    const browserTabCachesObj: Record<BrowserType, CachedTab[]> = {} as Record<
-      BrowserType,
-      CachedTab[]
-    >
-    browserTabCaches.forEach((tabs, browser) => {
-      browserTabCachesObj[browser] = tabs
-    })
-
     store.set({
-      globalMruTabs,
-      browserTabCaches: browserTabCachesObj,
+      displayTabs,
       lastSaved: Date.now()
     })
 
-    console.log(
-      'Saved tab data to disk:',
-      globalMruTabs.length,
-      'global tabs,',
-      browserTabCaches.size,
-      'browsers'
-    )
+    // Only log if tab count changed to reduce noise
+    if (displayTabs.length !== lastSavedCount) {
+      console.log('[TAS Storage] Saved', displayTabs.length, 'tabs to disk')
+      lastSavedCount = displayTabs.length
+    }
   }, SAVE_DEBOUNCE_MS)
 }
 
@@ -104,7 +67,7 @@ export function saveTabData(
  */
 export function clearTabData(): void {
   store.clear()
-  console.log('Cleared all tab data from disk')
+  console.log('[TAS Storage] Cleared all tab data from disk')
 }
 
 /**

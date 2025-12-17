@@ -1,37 +1,29 @@
-import { useState, useEffect, useMemo } from "react"
-import { Settings } from "@tas/components/Settings"
-import { BrowserIcon } from "@tas/components/BrowserIcon"
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts, BrowserType } from "@tas/types/tabs"
-import { ThemeToggle } from "../../components/ThemeToggle"
-import { TimingComparison } from "../../components/TimingComparison"
-import { Button } from "@tab-app-switcher/ui/components/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
-import { CheckCircle2, Download, ExternalLink, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
-import { loadAndApplyTheme } from "../../utils/theme"
+import { useState, useEffect } from "react"
+import { KeyboardSettings, ThemeSettings, SortSettings, AboutSettings, SortOrder } from "@tas/components/settings"
+import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tab-app-switcher/ui/components/tabs"
+import { Info, Palette, Keyboard, Download, ArrowUpDown } from "lucide-react"
+import { ChromiumShortcutNote } from "../../components/ChromiumShortcutNote"
+import { NativeStatus } from "../../components/NativeStatus"
+import { SortPreview } from "../../components/SortPreview"
+import { loadAndApplyTheme, saveTheme, getTheme, type Theme } from "../../utils/theme"
 import "./globals.css"
 
-function detectBrowser(): BrowserType {
-  const userAgent = navigator.userAgent.toLowerCase()
-  if (userAgent.includes("edg/")) return "edge"
-  if (userAgent.includes("firefox")) return "firefox"
-  if (userAgent.includes("safari") && !userAgent.includes("chrome")) return "safari"
-  if (userAgent.includes("chrome")) return "chrome"
-  return "unknown"
-}
+// Tab values in alphabetical order
+type SettingsTab = "about" | "appearance" | "keys" | "native" | "sorting"
 
 function App() {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
-  const [nativeAppConnected, setNativeAppConnected] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const browserType = useMemo(() => detectBrowser(), [])
-  const isChromium = browserType === "chrome" || browserType === "edge"
+  const [activeTab, setActiveTab] = useState<SettingsTab>("keys")
+  const [theme, setTheme] = useState<Theme>("system")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("activated")
+  const [version, setVersion] = useState<string>("")
 
-  // Apply theme on mount
+  // Load initial settings
   useEffect(() => {
     loadAndApplyTheme()
-  }, [])
+    getTheme().then(setTheme)
 
-  useEffect(() => {
     // Load shortcuts from storage
     browser.storage.local.get("shortcuts").then((result) => {
       if (result.shortcuts) {
@@ -39,165 +31,103 @@ function App() {
       }
     })
 
-    // Check native app connection status
-    const checkNativeApp = () => {
-      browser.runtime
-        .sendMessage({ type: "CHECK_NATIVE_APP" })
-        .then((response) => {
-          setNativeAppConnected(response?.connected || false)
-        })
-        .catch(() => {
-          setNativeAppConnected(false)
-        })
-    }
+    // Load sort order from storage
+    browser.storage.local.get("sortOrder").then((result) => {
+      if (result.sortOrder) {
+        setSortOrder(result.sortOrder)
+      }
+    })
 
-    checkNativeApp()
-    // Check periodically
-    const interval = setInterval(checkNativeApp, 5000)
-    return () => clearInterval(interval)
+    // Get extension version
+    const manifest = browser.runtime.getManifest()
+    setVersion(manifest.version || "")
   }, [])
 
   const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
     setShortcuts(newShortcuts)
-    // Save to storage - auto-save on every change
     browser.storage.local.set({ shortcuts: newShortcuts })
   }
 
-  const openShortcutsPage = () => {
-    if (browserType === "edge") {
-      browser.tabs.create({ url: "edge://extensions/shortcuts" })
-    } else {
-      browser.tabs.create({ url: "chrome://extensions/shortcuts" })
-    }
+  const handleThemeChange = async (newTheme: Theme) => {
+    setTheme(newTheme)
+    await saveTheme(newTheme)
+    loadAndApplyTheme()
   }
+
+  const handleSortOrderChange = (newOrder: SortOrder) => {
+    setSortOrder(newOrder)
+    browser.storage.local.set({ sortOrder: newOrder })
+  }
+
+  const tabTriggerClass =
+    "flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-muted rounded-lg text-muted-foreground data-[state=active]:text-foreground"
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-2xl py-8 px-4">
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Tab Application Switcher</h1>
-            <p className="text-muted-foreground">Configure your extension settings</p>
-          </div>
-          <ThemeToggle />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-1">Tab Application Switcher</h1>
+          <p className="text-sm text-muted-foreground">Configure your extension settings</p>
         </div>
 
-        {/* Status Cards */}
-        <div className="space-y-4 mb-8">
-          {/* Keyboard Shortcut Configuration - only show for Chromium browsers */}
-          {isChromium && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  <BrowserIcon browser={browserType} className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">Keyboard Shortcut Configuration</CardTitle>
-                    <CardDescription>Recommended: Set shortcut to "Global" scope</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    For the best experience, configure your keyboard shortcut to use "Global" scope instead of "In
-                    {browserType === "edge" ? " Edge" : " Chrome"}". This fixes an issue where modifier key releases
-                    aren't always detected.
-                  </p>
-                  <Button onClick={openShortcutsPage} variant="outline" className="gap-2">
-                    <BrowserIcon browser={browserType} className="w-4 h-4" />
-                    Open Keyboard Shortcuts
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SettingsTab)}>
+          <TabsList className="w-full justify-center gap-1 mb-4 bg-transparent p-0 h-auto">
+            <TabsTrigger value="about" className={tabTriggerClass}>
+              <Info className="w-5 h-5" />
+              <span className="text-xs">About</span>
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className={tabTriggerClass}>
+              <Palette className="w-5 h-5" />
+              <span className="text-xs">Appearance</span>
+            </TabsTrigger>
+            <TabsTrigger value="keys" className={tabTriggerClass}>
+              <Keyboard className="w-5 h-5" />
+              <span className="text-xs">Keys</span>
+            </TabsTrigger>
+            <TabsTrigger value="native" className={tabTriggerClass}>
+              <Download className="w-5 h-5" />
+              <span className="text-xs">Native</span>
+            </TabsTrigger>
+            <TabsTrigger value="sorting" className={tabTriggerClass}>
+              <ArrowUpDown className="w-5 h-5" />
+              <span className="text-xs">Sorting</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Native App Status */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start gap-3">
-                {nativeAppConnected ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
-                ) : (
-                  <AlertCircle className="w-6 h-6 text-orange-500 mt-1 flex-shrink-0" />
-                )}
-                <div className="flex-1">
-                  <CardTitle className="text-lg">
-                    {nativeAppConnected ? "Native App Connected" : "Native App Not Connected"}
-                  </CardTitle>
-                  <CardDescription>
-                    {nativeAppConnected
-                      ? "You have the complete TAS experience with OS-level shortcuts"
-                      : "Install the native app for enhanced experience"}
-                  </CardDescription>
-                </div>
+          <TabsContent value="about" className="mt-0">
+            <AboutSettings version={version} />
+          </TabsContent>
+
+          <TabsContent value="appearance" className="mt-0">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-3">Theme</h3>
+                <ThemeSettings value={theme} onChange={handleThemeChange} />
               </div>
-            </CardHeader>
-            {!nativeAppConnected && (
-              <CardContent>
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    The native app provides OS-level keyboard shortcuts and a system-wide overlay, just like your
-                    system's application switcher.
-                  </p>
-                  <Button variant="outline" className="gap-2" asChild>
-                    <a
-                      href="https://github.com/mckinley/tab-app-switcher/releases"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Native App
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        </div>
+            </div>
+          </TabsContent>
 
-        {/* Settings */}
-        <div className="bg-card border rounded-lg p-6 mb-8">
-          <Settings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
-        </div>
+          <TabsContent value="keys" className="mt-0 space-y-6">
+            <ChromiumShortcutNote />
+            <KeyboardSettings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
+          </TabsContent>
 
-        {/* Advanced Section - Collapsible */}
-        <div className="mb-8">
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            Advanced: Timing Comparison
-          </button>
-          {showAdvanced && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle className="text-lg">Timing Comparison</CardTitle>
-                <CardDescription>
-                  Compare different methods of tracking tab activity to understand MRU ordering
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TimingComparison />
-              </CardContent>
-            </Card>
-          )}
-        </div>
+          <TabsContent value="native" className="mt-0">
+            <NativeStatus />
+          </TabsContent>
 
-        {/* Help Links */}
-        <div className="text-center space-y-2">
-          <a
-            href="https://tabappswitcher.com/getting-started"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline text-sm"
-          >
-            View Getting Started Guide →
-          </a>
-        </div>
+          <TabsContent value="sorting" className="mt-0">
+            <SortSettings value={sortOrder} onChange={handleSortOrderChange}>
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-sm font-medium mb-3">Preview</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  This shows how your tabs will be sorted with the current settings
+                </p>
+                <SortPreview />
+              </div>
+            </SortSettings>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -1,18 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react"
-import {
-  Search,
-  X,
-  Clock,
-  Link as LinkIcon,
-  Type,
-  Settings as SettingsIcon,
-  User,
-  ArrowUpDown,
-  RefreshCw,
-  Plus,
-  Layers,
-} from "lucide-react"
-import { Tab, KeyboardShortcuts } from "../types/tabs"
+import { Search, X, Clock, Link as LinkIcon, Type, User, ArrowUpDown, RefreshCw, Plus, Layers } from "lucide-react"
+import { Tab } from "../types/tabs"
 import type { Collection } from "../types/collections"
 import {
   loadCollections,
@@ -28,7 +16,6 @@ import { formatRelativeTime } from "../utils/relativeTime"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Input } from "@tab-app-switcher/ui/components/input"
 import { Button } from "@tab-app-switcher/ui/components/button"
-import { Settings } from "./Settings"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@tab-app-switcher/ui/components/select"
 import {
   DndContext,
@@ -54,9 +41,6 @@ interface TabManagementProps {
   onCloseTab?: (tabId: string) => void
   onReorderTabs?: (tabId: string, newIndex: number, targetWindowId?: number) => void // Extension: move tab to new position/window
   onSendCollectionToWindow?: (tabUrls: string[]) => void // Extension: create new window with these URLs
-  shortcuts: KeyboardShortcuts
-  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void
-  settingsThemeToggle?: ReactNode
   /** URL to redirect to after OAuth (website only - uses redirect flow) */
   authRedirectUrl?: string
   /** Custom sign in function (extension uses browser identity API) */
@@ -70,7 +54,7 @@ interface TabManagementProps {
 }
 
 type SortOption = "mru" | "url" | "title"
-type ViewMode = "search" | "collections" | "account" | "settings"
+type ViewMode = "search" | "collections" | "account"
 
 interface SortableTabProps {
   tab: Tab
@@ -137,9 +121,6 @@ export const TabManagement = ({
   onCloseTab,
   onReorderTabs,
   onSendCollectionToWindow,
-  shortcuts,
-  onShortcutsChange,
-  settingsThemeToggle,
   authRedirectUrl,
   onSignIn,
   onSignOut,
@@ -566,7 +547,6 @@ export const TabManagement = ({
               <MobileNavButton mode="search" icon={Search} label="Search" />
               <MobileNavButton mode="collections" icon={LinkIcon} label="Collections" />
               <MobileNavButton mode="account" icon={User} label="Account" />
-              <MobileNavButton mode="settings" icon={SettingsIcon} label="Settings" />
               <button
                 onClick={() => setShowMobileTabsPanel(!showMobileTabsPanel)}
                 className={cn(
@@ -623,16 +603,6 @@ export const TabManagement = ({
               >
                 <User className="inline-block w-4 h-4 mr-2" />
                 Account
-              </button>
-              <button
-                onClick={() => setViewMode("settings")}
-                className={cn(
-                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                  viewMode === "settings" ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                <SettingsIcon className="inline-block w-4 h-4 mr-2" />
-                Settings
               </button>
             </div>
           </div>
@@ -696,12 +666,6 @@ export const TabManagement = ({
             {viewMode === "account" && (
               <div className="flex-1">
                 <h2 className="text-lg font-semibold">Account</h2>
-              </div>
-            )}
-
-            {viewMode === "settings" && (
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold">Settings</h2>
               </div>
             )}
           </div>
@@ -834,14 +798,6 @@ export const TabManagement = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {viewMode === "settings" && (
-                <Settings
-                  shortcuts={shortcuts}
-                  onShortcutsChange={onShortcutsChange}
-                  themeToggle={settingsThemeToggle}
-                />
               )}
             </div>
           </ScrollArea>
