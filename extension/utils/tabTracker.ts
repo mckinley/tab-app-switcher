@@ -393,7 +393,6 @@ export function createTabTracker(): TabTracker {
             const aug = state.augmentation.get(tab.id)
             if (aug) {
               aug.faviconDataUrl = dataUrl
-              // Emit augmentation update for the favicon
               emit({
                 event: "augmentation.updated",
                 tabId: tab.id,
@@ -415,7 +414,6 @@ export function createTabTracker(): TabTracker {
           lastModified: session.lastModified,
         }))
 
-      // Process tabs from other devices
       // Process tabs from other devices
       // Sessions can have either .tab or .window - we need to extract tabs from both
       state.otherDevices = devices.map((device) => {

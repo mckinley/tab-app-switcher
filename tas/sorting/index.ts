@@ -77,7 +77,14 @@ export interface SortTabsOptions {
  * @returns Sorted array of display-ready Tab objects with section assignments
  */
 export function sortTabsWithSections(options: SortTabsOptions): Tab[] {
-  const { sessionTabs, sessionWindows = [], augmentation, recentlyClosed = [], otherDevices = [], strategy = "lastActivated" } = options
+  const {
+    sessionTabs,
+    sessionWindows = [],
+    augmentation,
+    recentlyClosed = [],
+    otherDevices = [],
+    strategy = "lastActivated",
+  } = options
 
   // Build a set of app window IDs
   const appWindowIds = new Set<number>()
@@ -114,7 +121,9 @@ export function sortTabsWithSections(options: SortTabsOptions): Tab[] {
   })
 
   // Transform recently closed tabs
-  const recentlyClosedDisplayTabs = recentlyClosed.map((sessionTab) => transformSessionTab(sessionTab, "recentlyClosed"))
+  const recentlyClosedDisplayTabs = recentlyClosed.map((sessionTab) =>
+    transformSessionTab(sessionTab, "recentlyClosed"),
+  )
 
   // Transform other device tabs
   const otherDevicesDisplayTabs: Tab[] = []

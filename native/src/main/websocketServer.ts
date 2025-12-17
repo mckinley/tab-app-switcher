@@ -299,10 +299,19 @@ function handleSnapshot(
   session.hasSnapshot = true
   session.lastSnapshotSeq = envelope.seq
 
+  // Count how many tabs have favicon data in augmentation
+  let faviconsInSnapshot = 0
+  session.augmentation.forEach((aug) => {
+    if (aug.faviconDataUrl) {
+      faviconsInSnapshot++
+    }
+  })
+
   console.log(
     `[TAS Server] Snapshot received for ${session.browserType}: ` +
       `${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows, ` +
-      `${session.recentlyClosed.length} recently closed, ${session.otherDevices.length} devices`
+      `${session.recentlyClosed.length} recently closed, ${session.otherDevices.length} devices, ` +
+      `${faviconsInSnapshot} favicons in augmentation`
   )
 
   snapshotCallback?.(sessionKey, session)

@@ -80,7 +80,6 @@ export default defineBackground(() => {
   // Tab activated (user clicks/switches to tab)
   browser.tabs.onActivated.addListener((activeInfo) => {
     if (!tabTracker) return
-    console.log("[TAS] Tab activated:", activeInfo.tabId)
     tabTracker.handleTabActivated(activeInfo.tabId, activeInfo.windowId)
     broadcastTabsUpdate()
   })
@@ -96,7 +95,6 @@ export default defineBackground(() => {
     try {
       const tabs = await browser.tabs.query({ active: true, windowId })
       if (tabs.length > 0 && tabs[0].id) {
-        console.log("[TAS] Window focused, active tab:", tabs[0].id)
         tabTracker.handleTabActivated(tabs[0].id, windowId)
         broadcastTabsUpdate()
       }

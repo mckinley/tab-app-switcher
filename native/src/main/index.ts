@@ -27,7 +27,14 @@ import { setupAutoUpdater } from './autoUpdater'
 import { setupAuthHandlers } from './auth'
 import { loadTabData, saveTabData } from './tabStorage'
 import type { Tab, BrowserType } from '@tas/types/tabs'
-import type { EventPayload, BrowserTab, BrowserWindow as ProtocolBrowserWindow, TabAugmentation, SessionTab, DeviceSession } from '@tas/types/protocol'
+import type {
+  EventPayload,
+  BrowserTab,
+  BrowserWindow as ProtocolBrowserWindow,
+  TabAugmentation,
+  SessionTab,
+  DeviceSession
+} from '@tas/types/protocol'
 import { sortTabsWithSections } from '@tas/sorting'
 
 let tray: Tray | null = null
@@ -38,6 +45,14 @@ let aboutWindow: BrowserWindow | null = null
 
 // Display-ready tabs cache (pre-sorted, ready for immediate display)
 let displayTabs: Tab[] = []
+
+/**
+ * Build a display ID from session and tab ID
+ * Format: "instancePrefix:originalTabId" (e.g., "a1b2c3d4:42")
+ */
+function buildDisplayId(session: Session, tabId: number): string {
+  return `${session.instanceId.substring(0, 8)}:${tabId}`
+}
 
 // App settings store with preferences
 interface AppSettingsSchema {
@@ -94,34 +109,53 @@ function activateBrowserApp(browser: BrowserType): void {
 function rebuildDisplayTabs(): void {
   const sessions = getActiveSessions()
 
+  // Temporary lookup: sorting ID -> { displayId, browserType }
+  // Used to replace numeric sorting IDs with proper string display IDs after sorting
+  const sortingIdToInfo: Map<
+    number,
+    {
+      displayId: string
+      browserType: BrowserType
+    }
+  > = new Map()
+
   // Collect all data from all sessions
   const allSessionTabs: BrowserTab[] = []
   const allSessionWindows: ProtocolBrowserWindow[] = []
   const allAugmentation: Record<string, TabAugmentation> = {}
   const allRecentlyClosed: SessionTab[] = []
   const allOtherDevices: DeviceSession[] = []
-  const browserTypeByTabId: Record<string, BrowserType> = {}
 
   sessions.forEach((session) => {
-    // Collect tabs with unique IDs
     session.sessionTabs.forEach((browserTab) => {
-      const tabId = browserTab.id
-      if (tabId === undefined) return
+      const originalTabId = browserTab.id
+      if (originalTabId === undefined) return
 
-      const uniqueId = `${session.instanceId.substring(0, 8)}:${tabId}`
-      const augData = session.augmentation.get(String(tabId))
+      // Create a numeric ID for sorting (sortTabsWithSections expects numeric BrowserTab.id)
+      const sortingId = parseInt(
+        `${session.instanceId.substring(0, 8)}${originalTabId}`.replace(/[^0-9]/g, '').slice(0, 10)
+      )
 
-      // Create a copy with unique ID
-      allSessionTabs.push({
-        ...browserTab,
-        id: parseInt(uniqueId.replace(/[^0-9]/g, '').slice(0, 10)) // Create numeric ID from unique string
+      // Build the proper display ID (format: "prefix:tabId")
+      const displayId = buildDisplayId(session, originalTabId)
+
+      // Store lookup info for post-processing
+      sortingIdToInfo.set(sortingId, {
+        displayId,
+        browserType: session.browserType
       })
 
-      if (augData) {
-        allAugmentation[String(browserTab.id)] = augData
-      }
+      // Create tab with sorting ID for sortTabsWithSections
+      allSessionTabs.push({
+        ...browserTab,
+        id: sortingId
+      })
 
-      browserTypeByTabId[String(browserTab.id)] = session.browserType
+      // Augmentation keyed by sorting ID (for sortTabsWithSections)
+      const augData = session.augmentation.get(String(originalTabId))
+      if (augData) {
+        allAugmentation[String(sortingId)] = augData
+      }
     })
 
     // Collect windows
@@ -150,11 +184,22 @@ function rebuildDisplayTabs(): void {
     strategy: 'lastActivated'
   })
 
-  // Add browser type to each tab
-  displayTabs = sortedTabs.map((tab) => ({
-    ...tab,
-    browser: browserTypeByTabId[tab.id] ?? 'chrome'
-  }))
+  // Post-process: replace sorting IDs with proper display IDs
+  displayTabs = sortedTabs.map((tab) => {
+    const sortingId = parseInt(tab.id, 10)
+    const info = sortingIdToInfo.get(sortingId)
+
+    if (info) {
+      return {
+        ...tab,
+        id: info.displayId,
+        browser: info.browserType
+      }
+    }
+
+    // Session/device tabs (recently closed, other devices) don't need transformation
+    return tab
+  })
 
   // Persist to disk (debounced via tabStorage)
   saveTabData(displayTabs)
@@ -534,24 +579,28 @@ function updateTrayMenu(): void {
 }
 
 /**
- * Find the session that owns a tab by its display ID
- * Display IDs are formatted as "instancePrefix:tabId"
+ * Find the session that owns a tab by parsing its display ID
+ * Display IDs are formatted as "instancePrefix:originalTabId" (e.g., "a1b2c3d4:42")
  */
 function findSessionForTab(displayTabId: string): {
   session: Session
   sessionKey: SessionKey
   tabId: number
 } | null {
-  const sessions = getActiveSessions()
+  // Parse "prefix:tabId" format
+  const colonIndex = displayTabId.indexOf(':')
+  if (colonIndex === -1) return null
 
+  const prefix = displayTabId.substring(0, colonIndex)
+  const tabId = parseInt(displayTabId.substring(colonIndex + 1), 10)
+  if (isNaN(tabId)) return null
+
+  // Find session with matching prefix
+  const sessions = getActiveSessions()
   for (const session of sessions) {
-    const prefix = session.instanceId.substring(0, 8)
-    if (displayTabId.startsWith(`${prefix}:`)) {
-      const tabId = parseInt(displayTabId.substring(prefix.length + 1), 10)
-      if (!isNaN(tabId)) {
-        const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
-        return { session, sessionKey, tabId }
-      }
+    if (session.instanceId.startsWith(prefix)) {
+      const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+      return { session, sessionKey, tabId }
     }
   }
 
