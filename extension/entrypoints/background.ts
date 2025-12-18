@@ -103,7 +103,6 @@ export default defineBackground(() => {
   // Tab created
   browser.tabs.onCreated.addListener((tab) => {
     if (!tabTracker || tab.id === undefined) return
-    console.log("[TAS] Tab created:", tab.id)
     tabTracker.handleTabCreated(tab)
     broadcastTabsUpdate()
   })
@@ -122,7 +121,6 @@ export default defineBackground(() => {
   // Tab removed
   browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
     if (!tabTracker) return
-    console.log("[TAS] Tab removed:", tabId)
     tabTracker.handleTabRemoved(tabId, removeInfo.windowId)
     broadcastTabsUpdate()
   })
@@ -130,7 +128,6 @@ export default defineBackground(() => {
   // Tab replaced (rare, during certain browser operations)
   browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
     if (!tabTracker) return
-    console.log("[TAS] Tab replaced:", removedTabId, "->", addedTabId)
     // Handle as remove + create
     const state = tabTracker.getState()
     const oldTab = state.sessionTabs.get(removedTabId)
@@ -161,7 +158,6 @@ export default defineBackground(() => {
   // Storage changed - broadcast when sort order changes
   browser.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local" && changes.sortOrder) {
-      console.log("[TAS] Sort order changed:", changes.sortOrder.newValue)
       broadcastTabsUpdate()
     }
   })
@@ -172,22 +168,18 @@ export default defineBackground(() => {
 
   browser.commands.onCommand.addListener(async (command) => {
     if (command === "tas_activate") {
-      console.log("[TAS] TAS activate command received")
-
       // Try to advance selection in existing popup
       try {
         await browser.runtime.sendMessage({
           type: "ADVANCE_SELECTION",
           direction: "next",
         })
-        console.log("[TAS] Advanced selection - popup was open")
       } catch (_error) {
         // Popup not open, so open it
-        console.log("[TAS] Opening TAS popup")
         try {
           await browser.action.openPopup()
-        } catch (openError) {
-          console.log("[TAS] Error opening popup:", openError, "Opening fallback window...")
+        } catch (_openError) {
+          // Fallback: open as a popup window
           const popupUrl = browser.runtime.getURL("/popup.html")
           await browser.windows.create({
             url: popupUrl,
@@ -253,7 +245,6 @@ export default defineBackground(() => {
   // ============================================================================
 
   browser.runtime.onConnect.addListener((port) => {
-    console.log("[TAS] Extension page connected:", port.name)
     connectedPorts.add(port)
 
     // Send initial tabs immediately
@@ -266,7 +257,6 @@ export default defineBackground(() => {
     })
 
     port.onDisconnect.addListener(() => {
-      console.log("[TAS] Extension page disconnected:", port.name)
       connectedPorts.delete(port)
     })
   })
@@ -301,7 +291,6 @@ function handleCommand(command: CommandPayload): void {
       const uiSortOrder = strategyToSortOrder[command.strategy]
       browser.storage.local.set({ sortOrder: uiSortOrder })
       // Storage change listener will trigger broadcastTabsUpdate()
-      console.log("[TAS] Sort strategy synced from native app:", command.strategy)
       break
     }
   }
@@ -313,7 +302,6 @@ function handleCommand(command: CommandPayload): void {
 async function refreshTabs(): Promise<void> {
   if (!tabTracker) return
 
-  console.log("[TAS] Refreshing tabs...")
   await tabTracker.refresh()
 
   // Send new snapshot to native app
@@ -324,7 +312,6 @@ async function refreshTabs(): Promise<void> {
 
   // Broadcast to popup and other extension pages
   broadcastTabsUpdate()
-  console.log("[TAS] Refresh complete")
 }
 
 /**

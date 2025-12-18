@@ -2,6 +2,12 @@ import { useEffect } from "react"
 import { KeyboardShortcuts } from "../types/tabs"
 import { getKeyCode } from "../utils/keyCodeMapping"
 import { createLogger } from "../utils/logger"
+import {
+  isModifierPressed,
+  isModifierRelease,
+  getShortcutBindings,
+  type TasAction,
+} from "../keyboard"
 
 const logger = createLogger("use-keyboard-shortcuts")
 
@@ -38,6 +44,7 @@ export interface UseKeyboardShortcutsOptions {
 /**
  * Custom hook for handling keyboard shortcuts in the TabSwitcher
  *
+ * Uses shared shortcut bindings from tas/keyboard for consistency with native app.
  * Handles both keydown and keyup events with proper modifier detection.
  * Uses e.code instead of e.key to handle macOS Option key special characters.
  *
@@ -74,21 +81,42 @@ export function useKeyboardShortcuts({
   useEffect(() => {
     if (!enabled) return
 
+    /**
+     * Execute a TAS action by calling the appropriate callback
+     */
+    const executeAction = (action: TasAction): void => {
+      switch (action) {
+        case "navigateNext":
+          onNavigateNext()
+          break
+        case "navigatePrev":
+          onNavigatePrev()
+          break
+        case "activateSelected":
+          onActivateSelected()
+          break
+        case "closeSelectedTab":
+          onCloseTab()
+          break
+        case "dismiss":
+          onClose()
+          break
+        case "focusSearch":
+          onFocusSearch()
+          break
+        case "blurSearch":
+          onBlurSearch()
+          break
+      }
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       logger.log("Key down:", e.key, "Code:", e.code)
+
       // Don't handle ANY keys when settings dialog or tab management panel is open
       if (isSettingsOpen || isTabManagementOpen) return
 
-      // Search key to focus search (works even with modifier held)
-      // Use e.code to detect physical key, not the character it produces
-      if (e.code === getKeyCode(shortcuts.search) && !isSearchFocused) {
-        e.preventDefault()
-        e.stopPropagation()
-        onFocusSearch()
-        return
-      }
-
-      // If search is focused, allow normal typing except for Escape
+      // If search is focused, only handle Escape to exit
       if (isSearchFocused) {
         if (e.key === "Escape") {
           e.preventDefault()
@@ -97,67 +125,48 @@ export function useKeyboardShortcuts({
         return
       }
 
-      // Check if modifier key is pressed
-      const isModifierPressed = checkModifierKeyPressed(e, shortcuts.modifier)
+      // Get bindings and check modifier state using shared utilities
+      const bindings = getShortcutBindings(shortcuts)
+      const primaryModifierPressed = isModifierPressed(
+        shortcuts.modifier,
+        e.altKey,
+        e.metaKey,
+        e.ctrlKey,
+        e.shiftKey,
+      )
 
-      // Modifier+ActivateForward to navigate forward
-      // Use e.code to detect Tab key regardless of what character it produces
-      if (isModifierPressed && e.code === getKeyCode(shortcuts.activateForward)) {
+      // Match against all bindings (data-driven approach)
+      for (const binding of bindings) {
+        // Check primary modifier requirement
+        if (binding.withModifier !== primaryModifierPressed) continue
+
+        // Check shift requirement (if specified in the binding)
+        if (binding.withShift !== undefined && binding.withShift !== e.shiftKey) continue
+
+        // Check key match using e.code for physical key detection (handles macOS Option key)
+        // Also fall back to e.key for special keys like Enter, Escape, Arrow keys
+        const keyMatches = e.code === getKeyCode(binding.key) || e.key === binding.key
+        if (!keyMatches) continue
+
+        // Match found - execute action
         e.preventDefault()
         e.stopPropagation()
-        onNavigateNext()
+        executeAction(binding.action)
         return
-      }
-
-      // Modifier+ActivateBackward to navigate backward
-      // Use e.code to detect backtick key regardless of what character it produces
-      if (isModifierPressed && e.code === getKeyCode(shortcuts.activateBackward)) {
-        e.preventDefault()
-        e.stopPropagation()
-        onNavigatePrev()
-        return
-      }
-
-      // Modifier+CloseTab to close tab
-      // Use e.code to detect W key regardless of what character it produces (e.g., ∑ on macOS)
-      if (isModifierPressed && e.code === getKeyCode(shortcuts.closeTab)) {
-        e.preventDefault()
-        e.stopPropagation()
-        onCloseTab()
-        return
-      }
-
-      // Handle non-modifier shortcuts
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault()
-          onNavigateNext()
-          break
-        case "ArrowUp":
-          e.preventDefault()
-          onNavigatePrev()
-          break
-        case "Enter":
-          e.preventDefault()
-          onActivateSelected()
-          break
-        case "Escape":
-          e.preventDefault()
-          onClose()
-          break
       }
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
       logger.log("Key up:", e.key, "Code:", e.code)
+
       // Don't handle when settings dialog or tab management panel is open
       if (isSettingsOpen || isTabManagementOpen) return
 
       // Don't activate tab if search is focused (user might be typing)
       if (isSearchFocused) return
 
-      // Detect modifier key release
-      if (checkModifierKeyRelease(e, shortcuts.modifier)) {
+      // Detect modifier key release using shared utility
+      if (isModifierRelease(e.key, shortcuts.modifier)) {
         onActivateSelected()
       }
     }
@@ -183,42 +192,4 @@ export function useKeyboardShortcuts({
     onBlurSearch,
     onCloseTab,
   ])
-}
-
-/**
- * Check if the specified modifier key is currently pressed
- *
- * @param e - The keyboard event
- * @param modifier - The modifier key name ('Alt', 'Cmd', 'Ctrl', or 'Shift')
- * @returns True if the modifier key is pressed
- */
-function checkModifierKeyPressed(e: KeyboardEvent, modifier: string): boolean {
-  switch (modifier) {
-    case "Alt":
-      return e.altKey
-    case "Cmd":
-      return e.metaKey
-    case "Ctrl":
-      return e.ctrlKey
-    case "Shift":
-      return e.shiftKey
-    default:
-      return false
-  }
-}
-
-/**
- * Check if the specified modifier key was just released
- *
- * @param e - The keyboard event
- * @param modifier - The modifier key name ('Alt', 'Cmd', 'Ctrl', or 'Shift')
- * @returns True if the modifier key was released
- */
-function checkModifierKeyRelease(e: KeyboardEvent, modifier: string): boolean {
-  return (
-    e.key === modifier ||
-    (modifier === "Cmd" && e.key === "Meta") ||
-    (modifier === "Ctrl" && e.key === "Control") ||
-    (modifier === "Alt" && e.key === "Alt")
-  )
 }

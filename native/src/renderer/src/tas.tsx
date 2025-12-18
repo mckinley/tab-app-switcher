@@ -47,15 +47,77 @@ function TasApp(): JSX.Element {
       setSwitcherKey((prev) => prev + 1)
     }
 
+    // Handle navigation from main process (global shortcuts when window doesn't have focus)
+    const handleNavigateFromMain = (_event: unknown, direction: 'next' | 'prev'): void => {
+      setSelectedIndex((prev) => {
+        if (tabs.length === 0) return prev
+        if (direction === 'next') {
+          return (prev + 1) % tabs.length
+        } else {
+          return prev === 0 ? tabs.length - 1 : prev - 1
+        }
+      })
+    }
+
+    // Handle select from main process (Enter key via global shortcut)
+    const handleSelectFromMain = (): void => {
+      // We need to get current tabs and selectedIndex to select the right tab
+      // This is a bit tricky with closures, so we'll use a ref pattern or just trigger click
+      setTabs((currentTabs) => {
+        setSelectedIndex((currentIndex) => {
+          if (currentTabs.length > 0 && currentIndex < currentTabs.length) {
+            const tab = currentTabs[currentIndex]
+            window.electron.ipcRenderer.send('activate-tab', tab.id)
+            window.electron.ipcRenderer.send('hide-tas')
+          }
+          return currentIndex
+        })
+        return currentTabs
+      })
+    }
+
+    // Handle close selected tab from main process (Alt+W global shortcut)
+    const handleCloseSelectedTabFromMain = (): void => {
+      setTabs((currentTabs) => {
+        setSelectedIndex((currentIndex) => {
+          if (currentTabs.length > 0 && currentIndex < currentTabs.length) {
+            const tab = currentTabs[currentIndex]
+            window.electron.ipcRenderer.send('close-tab', tab.id)
+            // Return filtered tabs and adjust index
+            const newTabs = currentTabs.filter((t) => t.id !== tab.id)
+            setTabs(newTabs)
+            // Adjust selection if needed
+            if (currentIndex >= newTabs.length && newTabs.length > 0) {
+              return newTabs.length - 1
+            }
+          }
+          return currentIndex
+        })
+        return currentTabs
+      })
+    }
+
     const unsubscribeTabsUpdated = window.electron.ipcRenderer.on('tabs-updated', handleTabsUpdated)
     const unsubscribeResetSelection = window.electron.ipcRenderer.on(
       'reset-selection',
       handleResetSelection
     )
+    const unsubscribeNavigate = window.electron.ipcRenderer.on('navigate', handleNavigateFromMain)
+    const unsubscribeSelectCurrent = window.electron.ipcRenderer.on(
+      'select-current',
+      handleSelectFromMain
+    )
+    const unsubscribeCloseSelectedTab = window.electron.ipcRenderer.on(
+      'close-selected-tab',
+      handleCloseSelectedTabFromMain
+    )
 
     return () => {
       unsubscribeTabsUpdated()
       unsubscribeResetSelection()
+      unsubscribeNavigate()
+      unsubscribeSelectCurrent()
+      unsubscribeCloseSelectedTab()
     }
   }, [tabs.length])
 
@@ -99,21 +161,37 @@ function TasApp(): JSX.Element {
     window.electron.ipcRenderer.send('refresh-tabs')
   }
 
+  // Handle clicks on the transparent background (dismiss overlay)
+  const handleBackgroundClick = (e: React.MouseEvent): void => {
+    // Only dismiss if clicking the background itself, not the content
+    if (e.target === e.currentTarget) {
+      handleClose()
+    }
+  }
+
   return (
-    <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
-      <TabSwitcher
-        key={switcherKey}
-        tabs={tabs}
-        selectedIndex={selectedIndex}
-        onSelectTab={handleSelectTab}
-        onClose={handleClose}
-        onNavigate={handleNavigate}
-        onCloseTab={handleCloseTab}
-        shortcuts={shortcuts}
-        onOpenSettings={handleOpenSettings}
-        onOpenTabManagement={handleOpenTabManagement}
-        onRefresh={handleRefresh}
-      />
+    // Full-screen container to capture all clicks (like macOS app switcher)
+    // Clicking anywhere on the background dismisses the overlay
+    <div
+      className="w-screen h-screen flex items-center justify-center cursor-default"
+      onClick={handleBackgroundClick}
+    >
+      {/* The actual overlay content */}
+      <div className="w-[600px] h-[400px] bg-background/95 backdrop-blur-md rounded-lg shadow-2xl border border-border">
+        <TabSwitcher
+          key={switcherKey}
+          tabs={tabs}
+          selectedIndex={selectedIndex}
+          onSelectTab={handleSelectTab}
+          onClose={handleClose}
+          onNavigate={handleNavigate}
+          onCloseTab={handleCloseTab}
+          shortcuts={shortcuts}
+          onOpenSettings={handleOpenSettings}
+          onOpenTabManagement={handleOpenTabManagement}
+          onRefresh={handleRefresh}
+        />
+      </div>
     </div>
   )
 }

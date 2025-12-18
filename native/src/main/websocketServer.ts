@@ -114,7 +114,6 @@ export function startWebSocketServer(options?: {
   })
 
   wss.on('connection', (ws: WebSocket) => {
-    console.log('[TAS Server] New connection (awaiting handshake)')
 
     ws.on('message', (data: Buffer) => {
       try {
@@ -303,21 +302,6 @@ function handleSnapshot(
   session.hasSnapshot = true
   session.lastSnapshotSeq = envelope.seq
 
-  // Count how many tabs have favicon data in augmentation
-  let faviconsInSnapshot = 0
-  session.augmentation.forEach((aug) => {
-    if (aug.faviconDataUrl) {
-      faviconsInSnapshot++
-    }
-  })
-
-  console.log(
-    `[TAS Server] Snapshot received for ${session.browserType}: ` +
-      `${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows, ` +
-      `${session.recentlyClosed.length} recently closed, ${session.otherDevices.length} devices, ` +
-      `${faviconsInSnapshot} favicons in augmentation`
-  )
-
   snapshotCallback?.(sessionKey, session)
 }
 
@@ -327,7 +311,6 @@ function handleSnapshot(
 function handleEvent(sessionKey: SessionKey, session: Session, envelope: ProtocolEnvelope): void {
   // Ignore events before snapshot
   if (!session.hasSnapshot) {
-    console.log('[TAS Server] Ignoring event before snapshot')
     return
   }
 
@@ -349,7 +332,14 @@ function handleEvent(sessionKey: SessionKey, session: Session, envelope: Protoco
     }
 
     case 'tab.created': {
-      session.sessionTabs.push(event.tab)
+      // Check if tab already exists to prevent duplicates
+      const existingIndex = session.sessionTabs.findIndex((t) => t.id === event.tab.id)
+      if (existingIndex === -1) {
+        session.sessionTabs.push(event.tab)
+      } else {
+        // Update existing tab instead of creating duplicate
+        session.sessionTabs[existingIndex] = event.tab
+      }
       break
     }
 
@@ -387,7 +377,14 @@ function handleEvent(sessionKey: SessionKey, session: Session, envelope: Protoco
     }
 
     case 'window.created': {
-      session.sessionWindows.push(event.window)
+      // Check if window already exists to prevent duplicates
+      const existingIndex = session.sessionWindows.findIndex((w) => w.id === event.window.id)
+      if (existingIndex === -1) {
+        session.sessionWindows.push(event.window)
+      } else {
+        // Update existing window instead of creating duplicate
+        session.sessionWindows[existingIndex] = event.window
+      }
       break
     }
 

@@ -7,8 +7,10 @@ import {
   Menu,
   globalShortcut,
   screen,
-  nativeImage
+  nativeImage,
+  systemPreferences
 } from 'electron'
+import { uIOhook, UiohookKey } from 'uiohook-napi'
 import Store from 'electron-store'
 import { join } from 'path'
 import { exec } from 'child_process'
@@ -36,12 +38,18 @@ import type {
   DeviceSession
 } from '@tas/types/protocol'
 import { sortTabsWithSections, type SortStrategy } from '@tas/sorting'
+import {
+  type TasAction,
+  getShortcutBindings,
+  DEFAULT_SHORTCUTS
+} from '@tas/keyboard'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let tabManagementWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
+let tasOverlayActive = false // Track if TAS overlay is actively shown (for Alt release detection)
 
 // Display-ready tabs cache (pre-sorted, ready for immediate display)
 let displayTabs: Tab[] = []
@@ -128,15 +136,17 @@ function rebuildDisplayTabs(): void {
   const allRecentlyClosed: SessionTab[] = []
   const allOtherDevices: DeviceSession[] = []
 
+  // Use a simple incrementing counter for sortingId to guarantee uniqueness
+  // This avoids collisions from the previous hash-based approach
+  let sortingIdCounter = 1
+
   sessions.forEach((session) => {
     session.sessionTabs.forEach((browserTab) => {
       const originalTabId = browserTab.id
       if (originalTabId === undefined) return
 
-      // Create a numeric ID for sorting (sortTabsWithSections expects numeric BrowserTab.id)
-      const sortingId = parseInt(
-        `${session.instanceId.substring(0, 8)}${originalTabId}`.replace(/[^0-9]/g, '').slice(0, 10)
-      )
+      // Create a unique numeric ID for sorting (simple counter guarantees no collisions)
+      const sortingId = sortingIdCounter++
 
       // Build the proper display ID (format: "prefix:tabId")
       const displayId = buildDisplayId(session, originalTabId)
@@ -276,32 +286,196 @@ if (process.platform === 'darwin' && app.dock) {
   app.dock.hide()
 }
 
+/**
+ * Check if the app has Accessibility permissions on macOS.
+ * This is required for global shortcuts like Tab/Enter to work when our window doesn't have focus.
+ * If not trusted, opens System Preferences to the Accessibility pane.
+ */
+function checkAccessibilityPermissions(): boolean {
+  if (process.platform !== 'darwin') {
+    return true // Not needed on other platforms
+  }
+
+  // Check if trusted, and if not, prompt user by opening System Preferences
+  const trusted = systemPreferences.isTrustedAccessibilityClient(true)
+
+  if (!trusted) {
+    console.log('[TAS] Accessibility permissions not granted. Opening System Preferences...')
+    console.log('[TAS] In dev mode, grant access to "Electron" or your terminal app')
+    console.log('[TAS] The app binary is typically at: node_modules/electron/dist/Electron.app')
+  } else {
+    console.log('[TAS] Accessibility permissions granted')
+  }
+
+  return trusted
+}
+
+/**
+ * Execute a TAS action
+ * Maps shared TasAction types to native app behavior
+ */
+function executeTasAction(action: TasAction): void {
+  switch (action) {
+    case 'navigateNext':
+      tasWindow?.webContents.send('navigate', 'next')
+      break
+    case 'navigatePrev':
+      tasWindow?.webContents.send('navigate', 'prev')
+      break
+    case 'activateSelected':
+      tasWindow?.webContents.send('select-current')
+      break
+    case 'closeSelectedTab':
+      tasWindow?.webContents.send('close-selected-tab')
+      break
+    case 'dismiss':
+      hideTasOverlay()
+      break
+    case 'focusSearch':
+      // Give window focus so user can type in search
+      if (tasWindow && !tasWindow.isDestroyed()) {
+        tasWindow.focus()
+        tasWindow.webContents.send('focus-search')
+      }
+      break
+    case 'blurSearch':
+      tasWindow?.webContents.send('blur-search')
+      break
+  }
+}
+
+/**
+ * Build Electron accelerator string from a shortcut binding
+ */
+function toElectronAccelerator(
+  key: string,
+  withModifier: boolean,
+  withShift?: boolean,
+  modifier: string = 'Alt'
+): string {
+  const parts: string[] = []
+  if (withModifier) parts.push(modifier)
+  if (withShift) parts.push('Shift')
+
+  // Map key names to Electron accelerator format
+  const keyMap: Record<string, string> = {
+    ArrowUp: 'Up',
+    ArrowDown: 'Down',
+    ArrowLeft: 'Left',
+    ArrowRight: 'Right',
+    Enter: 'Return'
+  }
+  parts.push(keyMap[key] ?? key)
+
+  return parts.join('+')
+}
+
+// Track registered accelerators for cleanup
+const registeredAccelerators: string[] = []
+
+function registerTasNavigationShortcuts(): void {
+  const bindings = getShortcutBindings(DEFAULT_SHORTCUTS)
+  const modifier = DEFAULT_SHORTCUTS.modifier
+
+  // Build unique accelerators from bindings
+  const acceleratorActions = new Map<string, TasAction>()
+
+  for (const binding of bindings) {
+    const accelerator = toElectronAccelerator(
+      binding.key,
+      binding.withModifier,
+      binding.withShift,
+      modifier
+    )
+    // First binding for each accelerator wins
+    if (!acceleratorActions.has(accelerator)) {
+      acceleratorActions.set(accelerator, binding.action)
+    }
+  }
+
+  // Register each unique accelerator
+  for (const [accelerator, action] of acceleratorActions) {
+    const success = globalShortcut.register(accelerator, () => {
+      executeTasAction(action)
+    })
+    if (success) {
+      registeredAccelerators.push(accelerator)
+    }
+  }
+}
+
+function unregisterTasNavigationShortcuts(): void {
+  for (const accelerator of registeredAccelerators) {
+    globalShortcut.unregister(accelerator)
+  }
+  registeredAccelerators.length = 0
+}
+
+function selectCurrentTabAndHide(): void {
+  // Immediately disable Alt-release behavior to prevent re-entrant calls
+  tasOverlayActive = false
+
+  // Send select-current to renderer, then hide
+  if (tasWindow && !tasWindow.isDestroyed()) {
+    tasWindow.webContents.send('select-current')
+  }
+  // Small delay to let the select-current message be processed
+  setTimeout(() => {
+    hideTasOverlay()
+  }, 50)
+}
+
+function hideTasOverlay(): void {
+  if (tasWindow && !tasWindow.isDestroyed()) {
+    tasOverlayActive = false
+    tasWindow.hide()
+    unregisterTasNavigationShortcuts()
+    // Re-register Alt+Tab trigger
+    if (!globalShortcut.isRegistered('Alt+Tab')) {
+      globalShortcut.register('Alt+Tab', () => {
+        createTasOverlay()
+      })
+    }
+  }
+}
+
 function createTasOverlay(): void {
   if (tasWindow) {
     // Send cached displayTabs immediately - should be fresh from event updates
     if (displayTabs.length > 0) {
       tasWindow.webContents.send('tabs-updated', displayTabs)
     }
-    // Don't request snapshot here - the event system keeps displayTabs up-to-date
-    // This avoids flooding when rapidly showing/hiding the overlay
     // Reset selection to second tab when reopening
     tasWindow.webContents.send('reset-selection')
-    tasWindow.show()
-    tasWindow.focus()
-    // Unregister global shortcut so the window can handle Alt+Tab
+
+    // Show without stealing focus on macOS (like native app switcher)
+    if (process.platform === 'darwin') {
+      tasWindow.showInactive()
+    } else {
+      tasWindow.show()
+      tasWindow.focus()
+    }
+
+    // Mark overlay as active for Alt release detection
+    tasOverlayActive = true
+
+    // Unregister Alt+Tab trigger, register navigation shortcuts
     globalShortcut.unregister('Alt+Tab')
+    registerTasNavigationShortcuts()
     return
   }
 
   const primaryDisplay = screen.getPrimaryDisplay()
-  const { width, height } = primaryDisplay.workAreaSize
+  const { width, height } = primaryDisplay.size // Use full display size, not workArea
 
-  // Create frameless, always-on-top overlay window (like macOS app switcher)
+  // Create frameless, always-on-top, full-screen overlay window
+  // Full-screen ensures we capture ALL clicks (like macOS app switcher)
+  // The transparent background catches clicks and dismisses the overlay
   tasWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
-    x: Math.floor((width - 600) / 2),
-    y: Math.floor((height - 400) / 2),
+    width,
+    height,
+    x: 0,
+    y: 0,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -313,6 +487,7 @@ function createTasOverlay(): void {
     fullscreenable: false,
     show: false,
     acceptFirstMouse: true, // Allow clicks without focusing first
+    hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -322,46 +497,55 @@ function createTasOverlay(): void {
   })
 
   tasWindow.on('ready-to-show', () => {
-    // Unregister global shortcut so the window can handle Alt+Tab
+    // Unregister Alt+Tab trigger, register navigation shortcuts
     globalShortcut.unregister('Alt+Tab')
+    registerTasNavigationShortcuts()
 
     // Send cached displayTabs to the window
     if (tasWindow && displayTabs.length > 0) {
       tasWindow.webContents.send('tabs-updated', displayTabs)
     }
 
-    tasWindow?.show()
-    tasWindow?.focus()
+    // Mark overlay as active for Alt release detection
+    tasOverlayActive = true
+
+    // Show without stealing focus on macOS (like native app switcher)
+    if (process.platform === 'darwin') {
+      tasWindow?.showInactive()
+    } else {
+      tasWindow?.show()
+      tasWindow?.focus()
+    }
   })
 
   tasWindow.on('blur', () => {
-    // Hide when focus is lost (like macOS app switcher)
-    // Delay slightly to allow clicks to register
-    setTimeout(() => {
-      if (tasWindow && !tasWindow.isDestroyed()) {
-        tasWindow.hide()
-      }
-    }, 100)
+    // Only hide on blur if we're taking focus (non-macOS or if user clicks elsewhere)
+    // On macOS with showInactive, blur may not fire, so we rely on Escape/Enter
+    if (process.platform !== 'darwin') {
+      setTimeout(() => {
+        hideTasOverlay()
+      }, 100)
+    }
   })
 
   tasWindow.on('hide', () => {
-    // Re-register global shortcut when window is hidden
-    const registered = globalShortcut.register('Alt+Tab', () => {
-      createTasOverlay()
-    })
-    if (!registered) {
-      console.error('Failed to re-register global shortcut Alt+Tab')
+    // Cleanup is handled by hideTasOverlay, but ensure shortcuts are correct
+    unregisterTasNavigationShortcuts()
+    if (!globalShortcut.isRegistered('Alt+Tab')) {
+      globalShortcut.register('Alt+Tab', () => {
+        createTasOverlay()
+      })
     }
   })
 
   tasWindow.on('closed', () => {
     tasWindow = null
+    unregisterTasNavigationShortcuts()
     // Re-register global shortcut when window is closed
-    const registered = globalShortcut.register('Alt+Tab', () => {
-      createTasOverlay()
-    })
-    if (!registered) {
-      console.error('Failed to re-register global shortcut Alt+Tab')
+    if (!globalShortcut.isRegistered('Alt+Tab')) {
+      globalShortcut.register('Alt+Tab', () => {
+        createTasOverlay()
+      })
     }
   })
 
@@ -619,10 +803,22 @@ function findSessionForTab(displayTabId: string): {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.tab-app-switcher')
 
+  // Check accessibility permissions on macOS (needed for global shortcuts)
+  checkAccessibilityPermissions()
+
+  // Set up uIOhook for Alt key release detection
+  // This allows us to select the current tab when the user releases Alt (like native Alt+Tab)
+  uIOhook.on('keyup', (e) => {
+    // Alt key codes: 56 = Left Alt, 3640 = Right Alt (AltGr)
+    if ((e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) && tasOverlayActive) {
+      selectCurrentTabAndHide()
+    }
+  })
+  uIOhook.start()
+
   // Load persisted tab data from disk for instant startup display
   const persistedData = loadTabData()
   displayTabs = persistedData.displayTabs
-  console.log(`[TAS] Restored ${displayTabs.length} tabs from disk on startup`)
 
   // Start WebSocket server with new session-based callbacks
   startWebSocketServer({
@@ -660,10 +856,13 @@ app.whenReady().then(() => {
   setupAuthHandlers()
 
   // IPC handlers
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on('ping', () => {
+    // No-op: ping handler for keep-alive
+  })
 
   ipcMain.on('hide-tas', () => {
-    tasWindow?.hide()
+    // Use the proper hide function to clean up state (including tasOverlayActive)
+    hideTasOverlay()
   })
 
   ipcMain.on('show-settings', () => {
@@ -746,7 +945,6 @@ app.whenReady().then(() => {
   ipcMain.on('check-for-updates', () => {
     // Trigger manual update check via autoUpdater
     // The autoUpdater module should export a function for this
-    console.log('[TAS] Manual update check requested')
   })
 
   // Sort strategy sync IPC handlers
@@ -785,12 +983,15 @@ app.whenReady().then(() => {
       }
     })
 
-    console.log(`[TAS] Synced sort strategy to ${syncedCount} browser(s)`)
     return { syncedCount }
   })
 
   // Tab management IPC handlers - route to correct session
   ipcMain.on('activate-tab', (_event, tabId: string, browser?: BrowserType) => {
+    // Immediately disable Alt-release behavior since a selection was made
+    // This prevents double-triggering if user releases Alt after clicking
+    tasOverlayActive = false
+
     const found = findSessionForTab(tabId)
 
     if (found) {
@@ -855,13 +1056,11 @@ app.whenReady().then(() => {
 
   // Send displayTabs when requested
   ipcMain.on('request-tabs', (event) => {
-    console.log('[TAS] Tab Management requested tabs, sending:', displayTabs.length, 'tabs')
     event.sender.send('tabs-updated', displayTabs)
   })
 
   // Refresh tabs: send refresh command to all connected sessions
   ipcMain.on('refresh-tabs', () => {
-    console.log('[TAS] Refresh tabs requested')
     const sessions = getActiveSessions()
     sessions.forEach((session) => {
       const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
@@ -887,6 +1086,9 @@ process.on('unhandledRejection', (reason) => {
 })
 
 app.on('will-quit', () => {
+  // Stop uIOhook
+  uIOhook.stop()
+
   // Unregister all shortcuts
   globalShortcut.unregisterAll()
 

@@ -38,6 +38,7 @@
     "@types/ws": "^8.18.1",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
+    "uiohook-napi": "^1.5.4",
     "ws": "^8.18.3"
   },
   "devDependencies": {

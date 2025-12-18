@@ -88,10 +88,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
   const identity = await getIdentity()
   state.instanceId = identity.instanceId
   state.runtimeSessionId = identity.runtimeSessionId
-  console.log("[TAS] Identity initialized:", {
-    instanceId: state.instanceId.substring(0, 8) + "...",
-    runtimeSessionId: state.runtimeSessionId.substring(0, 8) + "...",
-  })
 
   function nextSeq(): number {
     return ++state.seq
@@ -117,7 +113,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
     if (state.reconnectScheduled) return
     state.reconnectScheduled = true
 
-    console.log(`[TAS] Scheduling reconnect in ${state.reconnectDelay / 1000}s...`)
     setTimeout(() => {
       state.reconnectScheduled = false
       state.reconnectDelay = Math.min(state.reconnectDelay * 2, MAX_RECONNECT_DELAY)
@@ -154,7 +149,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
         case "connected": {
           const payload = envelope.payload as ConnectedPayload
           if (payload.ok) {
-            console.log("[TAS] Handshake complete, server version:", payload.serverVersion)
             state.hasConnected = true
             state.reconnectDelay = INITIAL_RECONNECT_DELAY
             startPingTimer()
@@ -162,9 +156,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
             // Send initial snapshot
             const snapshot = tabTracker.getSnapshot()
             send("snapshot", snapshot)
-            console.log(
-              `[TAS] Sent snapshot: ${snapshot.sessionTabs.length} tabs, ${snapshot.sessionWindows.length} windows`,
-            )
           } else {
             console.error("[TAS] Handshake failed:", payload.error)
           }
@@ -174,7 +165,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
         case "command": {
           if (isCommandPayload(envelope.payload)) {
             const cmd = envelope.payload
-            console.log("[TAS] Received command:", cmd.command)
             commandHandlers.forEach((handler) => handler(cmd))
           }
           break
@@ -199,7 +189,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
   function attemptConnection(): void {
     // Don't attempt if already connected or connecting
     if (state.ws && (state.ws.readyState === WebSocket.CONNECTING || state.ws.readyState === WebSocket.OPEN)) {
-      console.log("[TAS] WebSocket already connected or connecting")
       return
     }
 
@@ -208,16 +197,10 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
     state.seq = 0
     state.hasConnected = false
 
-    console.log("[TAS] Connecting to native app...", {
-      connectionId: state.connectionId.substring(0, 8) + "...",
-    })
-
     try {
       state.ws = new WebSocket(WS_URL)
 
       state.ws.onopen = async () => {
-        console.log("[TAS] WebSocket connected, sending handshake")
-
         const sortStrategy = await getCurrentSortStrategy()
         const connectPayload: ConnectPayload = {
           browserType: detectBrowserType(),
@@ -231,7 +214,6 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
       state.ws.onmessage = handleMessage
 
       state.ws.onclose = () => {
-        console.log("[TAS] WebSocket closed")
         state.ws = null
         state.hasConnected = false
         stopPingTimer()

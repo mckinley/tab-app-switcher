@@ -9,13 +9,18 @@
     @apply border-border;
   }
 
-  /* Make body transparent for overlay window */
+  /* Full-screen transparent overlay (like macOS app switcher) */
+  html,
   body {
     @apply text-foreground;
     background: transparent;
     margin: 0;
     padding: 0;
     overflow: hidden;
+    width: 100%;
+    height: 100%;
+    /* Default cursor everywhere - like macOS app switcher */
+    cursor: default;
   }
 
   #root {
