@@ -36,6 +36,7 @@ interface AppOptions {
   hideMenuBarIcon: boolean
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
+  sortStrategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated'
 }
 
 interface OptionsAPI {
@@ -43,6 +44,21 @@ interface OptionsAPI {
   setAppOption: (key: string, value: unknown) => Promise<boolean>
   checkForUpdates: () => void
   onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void) => void
+}
+
+interface SortSyncStatus {
+  nativeStrategy: string
+  sessions: Array<{
+    browserType: string
+    strategy?: string
+    inSync: boolean
+  }>
+  allInSync: boolean
+}
+
+interface SortingAPI {
+  getSyncStatus: () => Promise<SortSyncStatus>
+  syncSortStrategy: () => Promise<{ syncedCount: number }>
 }
 
 declare global {
@@ -53,6 +69,7 @@ declare global {
       settings: SettingsAPI
       about: AboutAPI
       options: OptionsAPI
+      sorting: SortingAPI
     }
   }
 }

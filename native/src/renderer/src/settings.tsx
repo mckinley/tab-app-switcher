@@ -2,14 +2,15 @@ import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { KeyboardSettings, ThemeSettings, AboutSettings } from '@tas/components/settings'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@tab-app-switcher/ui/components/tabs'
-import { Info, Palette, Keyboard, SlidersHorizontal, Plug2 } from 'lucide-react'
+import { Info, Palette, Keyboard, SlidersHorizontal, Plug2, ListOrdered } from 'lucide-react'
 import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
 import { NativeSettings } from './components/NativeSettings'
 import { Setup } from './components/Setup'
+import { SortSettingsPanel } from './components/SortSettingsPanel'
 import './assets/globals.css'
 
 // Tab values in alphabetical order
-type SettingsTab = 'about' | 'appearance' | 'keys' | 'options' | 'setup'
+type SettingsTab = 'about' | 'appearance' | 'keys' | 'options' | 'setup' | 'sorting'
 
 // Get initial tab from URL query parameter
 function getInitialTab(): SettingsTab {
@@ -19,6 +20,7 @@ function getInitialTab(): SettingsTab {
   if (tab === 'appearance') return 'appearance'
   if (tab === 'options') return 'options'
   if (tab === 'setup') return 'setup'
+  if (tab === 'sorting') return 'sorting'
   return 'keys' // Default to keys
 }
 
@@ -120,6 +122,10 @@ function SettingsApp(): JSX.Element {
             <Plug2 className="w-5 h-5" />
             <span className="text-xs">Setup</span>
           </TabsTrigger>
+          <TabsTrigger value="sorting" className={tabTriggerClass}>
+            <ListOrdered className="w-5 h-5" />
+            <span className="text-xs">Sorting</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="about" className="mt-0">
@@ -149,6 +155,10 @@ function SettingsApp(): JSX.Element {
 
         <TabsContent value="setup" className="mt-0">
           <Setup getConnectionStatus={window.api?.settings?.getConnectionStatus} />
+        </TabsContent>
+
+        <TabsContent value="sorting" className="mt-0">
+          <SortSettingsPanel />
         </TabsContent>
       </Tabs>
     </div>

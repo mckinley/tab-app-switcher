@@ -10,6 +10,7 @@
 
 import { WebSocketServer, WebSocket } from 'ws'
 import type { BrowserType } from '@tas/types/tabs'
+import type { SortStrategy } from '@tas/sorting'
 import {
   type ProtocolEnvelope,
   type ConnectPayload,
@@ -53,6 +54,7 @@ export interface Session {
   runtimeSessionId: string
   browserType: BrowserType
   extensionVersion: string
+  sortStrategy?: SortStrategy // Extension's current sort strategy
   hasSnapshot: boolean
   lastSnapshotSeq: number
   sessionTabs: BrowserTab[]
@@ -227,6 +229,7 @@ function handleConnect(
       runtimeSessionId,
       browserType: payload.browserType,
       extensionVersion: payload.extensionVersion,
+      sortStrategy: payload.sortStrategy,
       hasSnapshot: false,
       lastSnapshotSeq: -1,
       sessionTabs: [],
@@ -242,6 +245,7 @@ function handleConnect(
   } else {
     // Update metadata (extension might have been updated)
     session.extensionVersion = payload.extensionVersion
+    session.sortStrategy = payload.sortStrategy
     session.lastActivity = Date.now()
   }
 

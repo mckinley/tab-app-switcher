@@ -11,18 +11,15 @@
 
 import type { Tab } from "@tas/types/tabs"
 import type { CommandPayload } from "@tas/types/protocol"
-import { sortTabsWithSections, type SortStrategy } from "@tas/sorting"
+import {
+  sortTabsWithSections,
+  sortOrderToStrategy,
+  strategyToSortOrder,
+  type SortStrategy,
+  type SortOrder,
+} from "@tas/sorting"
 import { handleLogMessage } from "@tas/utils/logger"
 import { createTabTracker, type TabTracker } from "../utils/tabTracker"
-
-// Map UI SortOrder values to internal SortStrategy values
-type UISortOrder = "activated" | "activated-by-window" | "accessed" | "deactivated"
-const sortOrderToStrategy: Record<UISortOrder, SortStrategy> = {
-  activated: "lastActivated",
-  "activated-by-window": "windowGrouped",
-  accessed: "lastAccessed",
-  deactivated: "lastDeactivated",
-}
 import { createNativeAppTransport, type NativeAppTransport } from "../utils/nativeAppConnection"
 import { getFaviconDataUrl } from "../utils/faviconCache"
 
@@ -299,6 +296,14 @@ function handleCommand(command: CommandPayload): void {
     case "refresh":
       refreshTabs()
       break
+    case "setSortStrategy": {
+      // Native app is syncing sort strategy to this extension
+      const uiSortOrder = strategyToSortOrder[command.strategy]
+      browser.storage.local.set({ sortOrder: uiSortOrder })
+      // Storage change listener will trigger broadcastTabsUpdate()
+      console.log("[TAS] Sort strategy synced from native app:", command.strategy)
+      break
+    }
   }
 }
 
@@ -347,7 +352,7 @@ async function closeTab(tabId: number): Promise<void> {
  */
 async function getSortStrategy(): Promise<SortStrategy> {
   const result = await browser.storage.local.get("sortOrder")
-  const sortOrder = result.sortOrder as UISortOrder | undefined
+  const sortOrder = result.sortOrder as SortOrder | undefined
   return sortOrder ? (sortOrderToStrategy[sortOrder] ?? "lastActivated") : "lastActivated"
 }
 

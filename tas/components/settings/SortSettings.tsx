@@ -1,7 +1,8 @@
 import { Label } from "@tab-app-switcher/ui/components/label"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
+import type { SortOrder } from "@tas/sorting"
 
-export type SortOrder = "activated" | "activated-by-window" | "accessed" | "deactivated"
+export type { SortOrder }
 
 interface SortSettingsProps {
   value: SortOrder

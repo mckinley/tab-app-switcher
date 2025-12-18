@@ -6,6 +6,7 @@
  */
 
 import type { BrowserType } from "./tabs"
+import type { SortStrategy } from "../sorting/strategies"
 
 // Protocol version - increment when making breaking changes
 export const PROTOCOL_VERSION = 1
@@ -45,6 +46,7 @@ export interface ProtocolEnvelope<T = unknown> {
 export interface ConnectPayload {
   browserType: BrowserType
   extensionVersion: string
+  sortStrategy?: SortStrategy // Extension's current sort strategy setting
 }
 
 /**
@@ -111,6 +113,7 @@ export type CommandPayload =
   | { command: "closeTab"; tabId: number }
   | { command: "requestSnapshot" } // Force a full resync
   | { command: "refresh" } // Clear state and re-query all tabs from browser API
+  | { command: "setSortStrategy"; strategy: SortStrategy } // Set extension's sort strategy
 
 // ============================================================================
 // Browser API Types (preserved exactly as returned by browser APIs)

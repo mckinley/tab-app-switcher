@@ -23,9 +23,19 @@ import {
   isValidEnvelope,
   isCommandPayload,
 } from "@tas/types/protocol"
+import { sortOrderToStrategy, type SortOrder, type SortStrategy } from "@tas/sorting"
 import { getIdentity, generateConnectionId } from "./identity"
 import { detectBrowserType, getExtensionVersion } from "./browserDetection"
 import type { TabTracker } from "./tabTracker"
+
+/**
+ * Get the current sort strategy from browser storage
+ */
+async function getCurrentSortStrategy(): Promise<SortStrategy> {
+  const result = await browser.storage.local.get("sortOrder")
+  const sortOrder = result.sortOrder as SortOrder | undefined
+  return sortOrder ? (sortOrderToStrategy[sortOrder] ?? "lastActivated") : "lastActivated"
+}
 
 const WS_URL = "ws://localhost:48125"
 const INITIAL_RECONNECT_DELAY = 1000 // 1 second
@@ -205,12 +215,14 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
     try {
       state.ws = new WebSocket(WS_URL)
 
-      state.ws.onopen = () => {
+      state.ws.onopen = async () => {
         console.log("[TAS] WebSocket connected, sending handshake")
 
+        const sortStrategy = await getCurrentSortStrategy()
         const connectPayload: ConnectPayload = {
           browserType: detectBrowserType(),
           extensionVersion: getExtensionVersion(),
+          sortStrategy,
         }
 
         send("connect", connectPayload)

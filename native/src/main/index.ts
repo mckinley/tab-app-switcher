@@ -35,7 +35,7 @@ import type {
   SessionTab,
   DeviceSession
 } from '@tas/types/protocol'
-import { sortTabsWithSections } from '@tas/sorting'
+import { sortTabsWithSections, type SortStrategy } from '@tas/sorting'
 
 let tray: Tray | null = null
 let tasWindow: BrowserWindow | null = null
@@ -61,6 +61,7 @@ interface AppSettingsSchema {
   hideMenuBarIcon: boolean
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
+  sortStrategy: SortStrategy
 }
 
 const appSettingsStore = new Store<AppSettingsSchema>({
@@ -70,7 +71,8 @@ const appSettingsStore = new Store<AppSettingsSchema>({
     launchOnLogin: false,
     hideMenuBarIcon: false,
     checkUpdatesAutomatically: true,
-    theme: 'system'
+    theme: 'system',
+    sortStrategy: 'lastActivated'
   }
 })
 
@@ -181,7 +183,7 @@ function rebuildDisplayTabs(): void {
     augmentation: allAugmentation,
     recentlyClosed: allRecentlyClosed.slice(0, 10), // Limit to 10
     otherDevices: allOtherDevices.slice(0, 5), // Limit to 5 devices
-    strategy: 'lastActivated'
+    strategy: appSettingsStore.get('sortStrategy')
   })
 
   // Post-process: replace sorting IDs with proper display IDs
@@ -248,8 +250,15 @@ function handleEvent(_sessionKey: SessionKey, _session: Session, event: EventPay
     // For tab and augmentation changes (including favicon updates), update display
     rebuildDisplayTabs()
     broadcastDisplayTabs()
+  } else if (
+    event.event === 'window.created' ||
+    event.event === 'window.removed' ||
+    event.event === 'window.focused'
+  ) {
+    // Window changes affect app tab detection and windowGrouped sorting
+    rebuildDisplayTabs()
+    broadcastDisplayTabs()
   }
-  // Window events don't necessarily need display update
 }
 
 /**
@@ -692,7 +701,8 @@ app.whenReady().then(() => {
       launchOnLogin: appSettingsStore.get('launchOnLogin'),
       hideMenuBarIcon: appSettingsStore.get('hideMenuBarIcon'),
       checkUpdatesAutomatically: appSettingsStore.get('checkUpdatesAutomatically'),
-      theme: appSettingsStore.get('theme')
+      theme: appSettingsStore.get('theme'),
+      sortStrategy: appSettingsStore.get('sortStrategy')
     }
   })
 
@@ -719,6 +729,16 @@ app.whenReady().then(() => {
       windows.forEach((win) => {
         win.webContents.send('theme-changed', value)
       })
+    } else if (
+      key === 'sortStrategy' &&
+      ['lastActivated', 'windowGrouped', 'lastAccessed', 'lastDeactivated'].includes(
+        value as string
+      )
+    ) {
+      appSettingsStore.set('sortStrategy', value as SortStrategy)
+      // Rebuild with new strategy and broadcast to all windows
+      rebuildDisplayTabs()
+      broadcastDisplayTabs()
     }
     return true
   })
@@ -727,6 +747,46 @@ app.whenReady().then(() => {
     // Trigger manual update check via autoUpdater
     // The autoUpdater module should export a function for this
     console.log('[TAS] Manual update check requested')
+  })
+
+  // Sort strategy sync IPC handlers
+  ipcMain.handle('get-sort-sync-status', () => {
+    const nativeStrategy = appSettingsStore.get('sortStrategy')
+    const sessions = getActiveSessions()
+
+    const sessionStatuses = sessions.map((session) => ({
+      browserType: session.browserType,
+      strategy: session.sortStrategy,
+      inSync: session.sortStrategy === nativeStrategy
+    }))
+
+    return {
+      nativeStrategy,
+      sessions: sessionStatuses,
+      allInSync: sessionStatuses.every((s) => s.inSync)
+    }
+  })
+
+  ipcMain.handle('sync-sort-strategy', () => {
+    const nativeStrategy = appSettingsStore.get('sortStrategy')
+    const sessions = getActiveSessions()
+    let syncedCount = 0
+
+    sessions.forEach((session) => {
+      if (session.sortStrategy !== nativeStrategy) {
+        const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
+        sendCommand(sessionKey, {
+          command: 'setSortStrategy',
+          strategy: nativeStrategy
+        })
+        // Update local tracking (will be confirmed on next connect)
+        session.sortStrategy = nativeStrategy
+        syncedCount++
+      }
+    })
+
+    console.log(`[TAS] Synced sort strategy to ${syncedCount} browser(s)`)
+    return { syncedCount }
   })
 
   // Tab management IPC handlers - route to correct session

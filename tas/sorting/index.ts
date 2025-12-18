@@ -15,9 +15,37 @@ export {
   getTabTimestamp,
 } from "./strategies"
 
+import type { SortStrategy } from "./strategies"
+
+/**
+ * UI-facing sort order type used by the SortSettings component.
+ * Maps to internal SortStrategy values.
+ */
+export type SortOrder = "activated" | "activated-by-window" | "accessed" | "deactivated"
+
+/**
+ * Map UI sort order values to internal sort strategy values
+ */
+export const sortOrderToStrategy: Record<SortOrder, SortStrategy> = {
+  activated: "lastActivated",
+  "activated-by-window": "windowGrouped",
+  accessed: "lastAccessed",
+  deactivated: "lastDeactivated",
+}
+
+/**
+ * Map internal sort strategy values to UI sort order values
+ */
+export const strategyToSortOrder: Record<SortStrategy, SortOrder> = {
+  lastActivated: "activated",
+  windowGrouped: "activated-by-window",
+  lastAccessed: "accessed",
+  lastDeactivated: "deactivated",
+}
+
 import type { BrowserTab, BrowserWindow, TabAugmentation, SessionTab, DeviceSession } from "../types/protocol"
 import type { Tab, TabSection } from "../types/tabs"
-import { applySortStrategy, type SortStrategy } from "./strategies"
+import { applySortStrategy } from "./strategies"
 
 /**
  * Transform a BrowserTab + TabAugmentation into a display-ready Tab

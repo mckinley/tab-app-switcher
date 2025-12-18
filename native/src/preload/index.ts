@@ -23,6 +23,18 @@ interface AppOptions {
   hideMenuBarIcon: boolean
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
+  sortStrategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated'
+}
+
+// Sort sync status type
+interface SortSyncStatus {
+  nativeStrategy: string
+  sessions: Array<{
+    browserType: string
+    strategy?: string
+    inSync: boolean
+  }>
+  allInSync: boolean
 }
 
 // Custom APIs for renderer
@@ -58,6 +70,11 @@ const api = {
     onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void): void => {
       ipcRenderer.on('theme-changed', (_event, theme) => callback(theme))
     }
+  },
+  sorting: {
+    getSyncStatus: (): Promise<SortSyncStatus> => ipcRenderer.invoke('get-sort-sync-status'),
+    syncSortStrategy: (): Promise<{ syncedCount: number }> =>
+      ipcRenderer.invoke('sync-sort-strategy')
   }
 }
 
