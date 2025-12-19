@@ -114,7 +114,6 @@ export function startWebSocketServer(options?: {
   })
 
   wss.on('connection', (ws: WebSocket) => {
-
     ws.on('message', (data: Buffer) => {
       try {
         const msg = JSON.parse(data.toString())

@@ -1,5 +1,5 @@
-import { Button } from "@tab-app-switcher/ui/components/button"
 import { Sun, Moon, Monitor } from "lucide-react"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 
 type Theme = "light" | "dark" | "system"
 
@@ -16,24 +16,25 @@ export const ThemeSettings = ({ value, onChange }: ThemeSettingsProps) => {
   ]
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        {themes.map((theme) => {
-          const Icon = theme.icon
-          return (
-            <Button
-              key={theme.value}
-              variant={value === theme.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => onChange(theme.value)}
-              className="flex-1 gap-2"
-            >
-              <Icon className="w-4 h-4" />
-              {theme.label}
-            </Button>
-          )
-        })}
-      </div>
+    <div className="inline-flex rounded-lg border bg-muted/30 p-0.5">
+      {themes.map((theme) => {
+        const Icon = theme.icon
+        const isSelected = value === theme.value
+        return (
+          <button
+            key={theme.value}
+            type="button"
+            onClick={() => onChange(theme.value)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-1.5 text-sm rounded-md transition-colors",
+              isSelected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="w-4 h-4" />
+            {theme.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

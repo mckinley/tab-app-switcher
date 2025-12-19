@@ -1,12 +1,12 @@
 /**
  * TAS Keyboard Actions & Behaviors
  *
- * Defines all keyboard-triggered actions in TAS and how shortcuts map to them.
+ * Defines all keyboard-triggered actions in TAS and how key bindings map to them.
  * This is the single source of truth for keyboard behavior, used by both
  * the browser extension and native app implementations.
  */
 
-import { KeyboardShortcuts, DEFAULT_SHORTCUTS } from "../types/tabs"
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from "../types/tabs"
 
 /**
  * All possible keyboard-triggered actions in TAS
@@ -21,9 +21,9 @@ export type TasAction =
   | "blurSearch" // Blur/exit the search input
 
 /**
- * A keyboard shortcut binding
+ * A keyboard key binding
  */
-export interface ShortcutBinding {
+export interface KeyBinding {
   /** The key (e.g., "Tab", "Escape", "ArrowUp", "W") */
   key: string
   /** Whether the modifier key (Alt/Cmd/Ctrl) must be held */
@@ -41,22 +41,22 @@ export interface ShortcutBinding {
 export const MODIFIER_RELEASE_ACTION: TasAction = "activateSelected"
 
 /**
- * Build the complete list of shortcut bindings from user settings
+ * Build the complete list of key bindings from user settings
  *
- * @param shortcuts - User's keyboard shortcut configuration
- * @returns Array of all shortcut bindings
+ * @param keyboard - User's keyboard configuration
+ * @returns Array of all key bindings
  */
-export function getShortcutBindings(shortcuts: KeyboardShortcuts = DEFAULT_SHORTCUTS): ShortcutBinding[] {
+export function getKeyBindings(keyboard: KeyboardSettings = DEFAULT_KEYBOARD_SETTINGS): KeyBinding[] {
   return [
     // === Modifier + Key combinations ===
     // Navigation while holding modifier
-    { key: shortcuts.activateForward, withModifier: true, action: "navigateNext" },
-    { key: shortcuts.activateForward, withModifier: true, withShift: true, action: "navigatePrev" },
-    { key: shortcuts.activateBackward, withModifier: true, action: "navigatePrev" },
+    { key: keyboard.activateForward, withModifier: true, action: "navigateNext" },
+    { key: keyboard.activateForward, withModifier: true, withShift: true, action: "navigatePrev" },
+    { key: keyboard.activateBackward, withModifier: true, action: "navigatePrev" },
 
     // Tab management while holding modifier
-    { key: shortcuts.closeTab, withModifier: true, action: "closeSelectedTab" },
-    { key: shortcuts.search, withModifier: true, action: "focusSearch" },
+    { key: keyboard.closeTab, withModifier: true, action: "closeSelectedTab" },
+    { key: keyboard.search, withModifier: true, action: "focusSearch" },
 
     // Activation with modifier
     { key: "Enter", withModifier: true, action: "activateSelected" },
@@ -65,7 +65,7 @@ export function getShortcutBindings(shortcuts: KeyboardShortcuts = DEFAULT_SHORT
     // Dismiss with modifier
     { key: "Escape", withModifier: true, action: "dismiss" },
 
-    // === Non-modifier shortcuts ===
+    // === Non-modifier key bindings ===
     // Arrow navigation (works with or without modifier)
     { key: "ArrowUp", withModifier: false, action: "navigatePrev" },
     { key: "ArrowDown", withModifier: false, action: "navigateNext" },
@@ -134,5 +134,5 @@ export function isModifierRelease(key: string, modifier: string): boolean {
 }
 
 // Re-export types for convenience
-export type { KeyboardShortcuts } from "../types/tabs"
-export { DEFAULT_SHORTCUTS } from "../types/tabs"
+export type { KeyboardSettings } from "../types/tabs"
+export { DEFAULT_KEYBOARD_SETTINGS } from "../types/tabs"

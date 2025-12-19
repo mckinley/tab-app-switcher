@@ -1,13 +1,18 @@
-import { StrictMode, useState, useEffect } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabManagement } from '@tas/components/TabManagement'
-import { Tab } from '@tas/types/tabs'
 import { supabase } from '@tas/utils/supabase'
+import {
+  NativePlatformProvider,
+  useTabs,
+  useTabActions,
+  nativeTabManagementAdapter
+} from './lib/platform'
 import './assets/globals.css'
 
-// eslint-disable-next-line react-refresh/only-export-components
-function TabManagementApp(): JSX.Element {
-  const [tabs, setTabs] = useState<Tab[]>([])
+function TabManagementContent(): JSX.Element {
+  const { tabs } = useTabs()
+  const { activateTab, closeTab, reorderTabs, createWindowWithTabs } = useTabActions()
 
   // Listen for auth tokens from main process
   useEffect(() => {
@@ -33,35 +38,13 @@ function TabManagementApp(): JSX.Element {
     }
   }, [])
 
-  // Load tabs from cached data (sent from main process)
-  useEffect(() => {
-    console.log('Tab Management: Requesting tabs from main process')
-    // Request initial tabs from main process
-    window.electron.ipcRenderer.send('request-tabs')
-
-    // Listen for tab updates from main process
-    const unsubscribe = window.electron.ipcRenderer.on(
-      'tabs-updated',
-      (_event: unknown, updatedTabs: Tab[]): void => {
-        console.log('Tab Management: Received tabs update:', updatedTabs.length, 'tabs')
-        setTabs(updatedTabs)
-      }
-    )
-
-    return () => {
-      unsubscribe()
-    }
-  }, [])
-
   const handleSelectTab = (tabId: string): void => {
-    // TODO: Send message to extension to activate tab
-    console.log('Activate tab:', tabId)
+    activateTab(tabId)
   }
 
   const handleCloseTab = (tabId: string): void => {
-    // TODO: Send message to extension to close tab
-    console.log('Close tab:', tabId)
-    setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
+    // Close tab via adapter - tabs will update via useTabs() subscription
+    closeTab(tabId)
   }
 
   const handleReorderTabs = async (
@@ -69,13 +52,11 @@ function TabManagementApp(): JSX.Element {
     newIndex: number,
     targetWindowId?: number
   ): Promise<void> => {
-    // TODO: Send message to extension to reorder tab
-    console.log('Reorder tab:', tabId, 'to index:', newIndex, 'in window:', targetWindowId)
+    await reorderTabs(tabId, newIndex, targetWindowId)
   }
 
   const handleSendCollectionToWindow = async (tabUrls: string[]): Promise<void> => {
-    // TODO: Send message to extension to create new window with tabs
-    console.log('Create window with tabs:', tabUrls)
+    await createWindowWithTabs(tabUrls)
   }
 
   const handleClose = (): void => {
@@ -104,6 +85,14 @@ function TabManagementApp(): JSX.Element {
         onSignOut={handleSignOut}
       />
     </div>
+  )
+}
+
+function TabManagementApp(): JSX.Element {
+  return (
+    <NativePlatformProvider adapter={nativeTabManagementAdapter}>
+      <TabManagementContent />
+    </NativePlatformProvider>
   )
 }
 

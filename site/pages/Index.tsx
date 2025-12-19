@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { TabSwitcher } from "@tas/components/TabSwitcher"
 import { KeyboardSettings, ThemeSettings } from "@tas/components/settings"
 import { TabManagement } from "@tas/components/TabManagement"
-import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
+import { Tab, KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 import type { Collection } from "@tas/types/collections"
 import { DEMO_TAB_POOL } from "@tas/utils/demoTabs"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
@@ -123,23 +123,23 @@ const Index = () => {
   // Use the demo tab management hook
   const { tabs, activeTabId, getTabsInMruOrder, activateTab, closeTab, addTab } = useDemoTabs()
 
-  // Load shortcuts from localStorage or use defaults
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(() => {
-    const saved = localStorage.getItem("tas-shortcuts")
+  // Load keyboard settings from localStorage or use defaults
+  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(() => {
+    const saved = localStorage.getItem("tas-keyboard")
     if (saved) {
       try {
         return JSON.parse(saved)
       } catch (e) {
-        console.error("Failed to parse shortcuts from localStorage", e)
+        console.error("Failed to parse keyboard settings from localStorage", e)
       }
     }
-    return DEFAULT_SHORTCUTS
+    return DEFAULT_KEYBOARD_SETTINGS
   })
 
-  // Save shortcuts to localStorage when they change
+  // Save keyboard settings to localStorage when they change
   useEffect(() => {
-    localStorage.setItem("tas-shortcuts", JSON.stringify(shortcuts))
-  }, [shortcuts])
+    localStorage.setItem("tas-keyboard", JSON.stringify(keyboard))
+  }, [keyboard])
 
   const [isSwitcherActive, setIsSwitcherActive] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(1)
@@ -192,13 +192,13 @@ const Index = () => {
 
       // Check if modifier key is pressed
       const isModifierPressed =
-        (shortcuts.modifier === "Alt" && e.altKey) ||
-        (shortcuts.modifier === "Cmd" && e.metaKey) ||
-        (shortcuts.modifier === "Ctrl" && e.ctrlKey) ||
-        (shortcuts.modifier === "Shift" && e.shiftKey)
+        (keyboard.modifier === "Alt" && e.altKey) ||
+        (keyboard.modifier === "Cmd" && e.metaKey) ||
+        (keyboard.modifier === "Ctrl" && e.ctrlKey) ||
+        (keyboard.modifier === "Shift" && e.shiftKey)
 
       // Modifier+ActivateForward to open switcher or cycle forward
-      if (isModifierPressed && e.key === shortcuts.activateForward) {
+      if (isModifierPressed && e.key === keyboard.activateForward) {
         e.preventDefault()
         if (!isSwitcherActive) {
           setIsSwitcherActive(true)
@@ -213,7 +213,7 @@ const Index = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [isSwitcherActive, selectedIndex, isPanelOpen, shortcuts, handleNavigate])
+  }, [isSwitcherActive, selectedIndex, isPanelOpen, keyboard, handleNavigate])
 
   const demoTabsSlot = (
     <ChromeTabsPreview
@@ -310,9 +310,8 @@ const Index = () => {
               Try it live →
             </Button>
             <p className="text-sm text-muted-foreground mt-3">
-              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{shortcuts.modifier}</kbd> +{" "}
-              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{shortcuts.activateForward}</kbd> to
-              activate
+              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{keyboard.modifier}</kbd> +{" "}
+              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{keyboard.activateForward}</kbd> to activate
             </p>
           </div>
         </div>
@@ -394,13 +393,13 @@ const Index = () => {
           <div className="space-y-4 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
-                {shortcuts.modifier} + {shortcuts.activateForward}
+                {keyboard.modifier} + {keyboard.activateForward}
               </kbd>
               <span className="text-muted-foreground">Activate TAS and move forward through tabs</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
-                {shortcuts.modifier} + {shortcuts.activateBackward}
+                {keyboard.modifier} + {keyboard.activateBackward}
               </kbd>
               <span className="text-muted-foreground">Move backward through the list of tabs</span>
             </div>
@@ -418,13 +417,13 @@ const Index = () => {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
-                Release {shortcuts.modifier}
+                Release {keyboard.modifier}
               </kbd>
               <span className="text-muted-foreground">Select the highlighted tab</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
-                {shortcuts.modifier} + {shortcuts.closeTab}
+                {keyboard.modifier} + {keyboard.closeTab}
               </kbd>
               <span className="text-muted-foreground">Close the highlighted tab</span>
             </div>
@@ -530,7 +529,7 @@ const Index = () => {
           onClose={() => setIsSwitcherActive(false)}
           onNavigate={handleNavigate}
           onCloseTab={handleCloseTab}
-          shortcuts={shortcuts}
+          keyboard={keyboard}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenTabManagement={() => setIsTabManagementOpen(true)}
           isEnabled={!isPanelOpen}
@@ -548,7 +547,7 @@ const Index = () => {
             <h3 className="text-sm font-medium mb-3">Theme</h3>
             <ThemeSettings value={(theme as "light" | "dark" | "system") ?? "system"} onChange={setTheme} />
           </div>
-          <KeyboardSettings shortcuts={shortcuts} onShortcutsChange={setShortcuts} />
+          <KeyboardSettings keyboard={keyboard} onKeyboardChange={setKeyboard} />
         </div>
       </Container>
 

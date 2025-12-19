@@ -1,16 +1,34 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { KeyboardSettings, ThemeSettings, AboutSettings } from '@tas/components/settings'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@tab-app-switcher/ui/components/tabs'
-import { Info, Palette, Keyboard, SlidersHorizontal, Plug2, ListOrdered } from 'lucide-react'
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from '@tas/types/tabs'
-import { NativeSettings } from './components/NativeSettings'
-import { Setup } from './components/Setup'
-import { SortSettingsPanel } from './components/SortSettingsPanel'
+import {
+  KeyboardSettings,
+  ThemeSettings,
+  AboutSettings,
+  NativeSettings,
+  NativeConnectionStatus,
+  SettingsLayout,
+  SortSettings,
+  SortPreview,
+  SettingsSync,
+  type SettingsTabConfig
+} from '@tas/components/settings'
+import { Info, Palette, Keyboard, SlidersHorizontal, Plug2, ArrowUpDown } from 'lucide-react'
+import {
+  DEFAULT_KEYBOARD_SETTINGS,
+  KeyboardSettings as KeyboardSettingsType
+} from '@tas/types/tabs'
+import {
+  NativePlatformProvider,
+  useSettings,
+  useSyncStatus,
+  useSortOrder,
+  useTabs
+} from './lib/platform'
+import type { NativeSettings as NativeSettingsType } from '@tas/lib/settings'
 import './assets/globals.css'
 
 // Tab values in alphabetical order
-type SettingsTab = 'about' | 'appearance' | 'keys' | 'options' | 'setup' | 'sorting'
+type SettingsTab = 'about' | 'appearance' | 'connection' | 'keys' | 'options' | 'sorting'
 
 // Get initial tab from URL query parameter
 function getInitialTab(): SettingsTab {
@@ -18,49 +36,52 @@ function getInitialTab(): SettingsTab {
   const tab = params.get('tab')
   if (tab === 'about') return 'about'
   if (tab === 'appearance') return 'appearance'
+  if (tab === 'connection' || tab === 'setup') return 'connection'
   if (tab === 'options') return 'options'
-  if (tab === 'setup') return 'setup'
   if (tab === 'sorting') return 'sorting'
-  return 'keys' // Default to keys
+  return 'about' // Default to about
 }
 
-// Apply theme to document (defined outside component to avoid hooks dependency issues)
-function applyTheme(newTheme: 'light' | 'dark' | 'system'): void {
-  if (newTheme === 'dark') {
-    document.documentElement.classList.add('dark')
-  } else if (newTheme === 'light') {
-    document.documentElement.classList.remove('dark')
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (prefersDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
+/**
+ * Connection tab content - NativeConnectionStatus + Sync
+ */
+function ConnectionTabContent(): JSX.Element {
+  const { syncStatus, sync, isSyncing } = useSyncStatus()
+
+  return (
+    <div className="space-y-6">
+      <NativeConnectionStatus getConnectionStatus={window.api?.settings?.getConnectionStatus} />
+      <SettingsSync
+        syncStatus={syncStatus}
+        onSync={sync}
+        isSyncing={isSyncing}
+        settingsLabel="sorting"
+      />
+    </div>
+  )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-function SettingsApp(): JSX.Element {
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
+/**
+ * Sorting tab content - sort settings with preview
+ */
+function SortingTabContent(): JSX.Element {
+  const { sortOrder, setSortOrder } = useSortOrder()
+  const { tabs } = useTabs()
+
+  return (
+    <SortSettings value={sortOrder} onChange={setSortOrder}>
+      <div className="pt-4 border-t">
+        <h3 className="text-xs font-medium text-muted-foreground mb-3">Preview</h3>
+        <SortPreview tabs={tabs} />
+      </div>
+    </SortSettings>
+  )
+}
+
+function SettingsContent(): JSX.Element {
+  const { settings, updateSetting, isLoading, version } = useSettings<NativeSettingsType>()
+  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(DEFAULT_KEYBOARD_SETTINGS)
   const [activeTab, setActiveTab] = useState<SettingsTab>(getInitialTab)
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
-  const [version, setVersion] = useState<string>('')
-
-  // Load initial theme and version
-  useEffect(() => {
-    if (window.api?.options?.getAppOptions) {
-      window.api.options.getAppOptions().then((opts) => {
-        setTheme(opts.theme)
-        applyTheme(opts.theme)
-      })
-    }
-    if (window.api?.about?.getAboutInfo) {
-      window.api.about.getAboutInfo().then((info) => {
-        setVersion(info.version)
-      })
-    }
-  }, [])
 
   // Listen for tab switch messages from main process
   useEffect(() => {
@@ -71,97 +92,91 @@ function SettingsApp(): JSX.Element {
     }
   }, [])
 
-  // Listen for theme changes from main process
-  useEffect(() => {
-    if (window.api?.options?.onThemeChanged) {
-      window.api.options.onThemeChanged((newTheme) => {
-        setTheme(newTheme)
-        applyTheme(newTheme)
-      })
-    }
-  }, [])
-
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts): void => {
-    setShortcuts(newShortcuts)
+  const handleKeyboardChange = (newKeyboard: KeyboardSettingsType): void => {
+    setKeyboard(newKeyboard)
     // TODO: Save to electron store and update global shortcuts
-    console.log('Shortcuts changed:', newShortcuts)
+    console.log('Keyboard settings changed:', newKeyboard)
   }
 
-  const handleThemeChange = async (newTheme: 'light' | 'dark' | 'system'): Promise<void> => {
-    if (window.api?.options?.setAppOption) {
-      await window.api.options.setAppOption('theme', newTheme)
+  if (isLoading || !settings) {
+    return (
+      <div className="w-full h-full bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading settings...</p>
+      </div>
+    )
+  }
+
+  const tabs: SettingsTabConfig[] = [
+    {
+      id: 'about',
+      label: 'About',
+      icon: Info,
+      content: <AboutSettings version={version || ''} />
+    },
+    {
+      id: 'appearance',
+      label: 'Appearance',
+      icon: Palette,
+      content: (
+        <div className="flex justify-center">
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-muted-foreground mb-3">Theme</h3>
+            <ThemeSettings
+              value={settings.theme}
+              onChange={(theme) => updateSetting('theme', theme)}
+            />
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'keys',
+      label: 'Keys',
+      icon: Keyboard,
+      content: <KeyboardSettings keyboard={keyboard} onKeyboardChange={handleKeyboardChange} />
+    },
+    {
+      id: 'connection',
+      label: 'Connection',
+      icon: Plug2,
+      content: <ConnectionTabContent />
+    },
+    {
+      id: 'options',
+      label: 'Options',
+      icon: SlidersHorizontal,
+      content: (
+        <NativeSettings
+          getOptions={window.api?.options?.getAppOptions}
+          setOption={window.api?.options?.setAppOption}
+          checkForUpdates={window.api?.options?.checkForUpdates}
+        />
+      )
+    },
+    {
+      id: 'sorting',
+      label: 'Sorting',
+      icon: ArrowUpDown,
+      content: <SortingTabContent />
     }
-    setTheme(newTheme)
-    applyTheme(newTheme)
-  }
-
-  const tabTriggerClass =
-    'flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-muted rounded-lg text-muted-foreground data-[state=active]:text-foreground'
+  ]
 
   return (
-    <div className="w-full h-full bg-background p-4">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SettingsTab)}>
-        <TabsList className="w-full justify-center gap-1 mb-4 bg-transparent p-0 h-auto">
-          <TabsTrigger value="about" className={tabTriggerClass}>
-            <Info className="w-5 h-5" />
-            <span className="text-xs">About</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className={tabTriggerClass}>
-            <Palette className="w-5 h-5" />
-            <span className="text-xs">Appearance</span>
-          </TabsTrigger>
-          <TabsTrigger value="keys" className={tabTriggerClass}>
-            <Keyboard className="w-5 h-5" />
-            <span className="text-xs">Keys</span>
-          </TabsTrigger>
-          <TabsTrigger value="options" className={tabTriggerClass}>
-            <SlidersHorizontal className="w-5 h-5" />
-            <span className="text-xs">Options</span>
-          </TabsTrigger>
-          <TabsTrigger value="setup" className={tabTriggerClass}>
-            <Plug2 className="w-5 h-5" />
-            <span className="text-xs">Setup</span>
-          </TabsTrigger>
-          <TabsTrigger value="sorting" className={tabTriggerClass}>
-            <ListOrdered className="w-5 h-5" />
-            <span className="text-xs">Sorting</span>
-          </TabsTrigger>
-        </TabsList>
+    <SettingsLayout
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(tab) => setActiveTab(tab as SettingsTab)}
+      containerClassName="w-full h-full bg-background"
+      className="p-5"
+    />
+  )
+}
 
-        <TabsContent value="about" className="mt-0">
-          <AboutSettings version={version} />
-        </TabsContent>
-
-        <TabsContent value="appearance" className="mt-0">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-3">Theme</h3>
-              <ThemeSettings value={theme} onChange={handleThemeChange} />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="keys" className="mt-0">
-          <KeyboardSettings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
-        </TabsContent>
-
-        <TabsContent value="options" className="mt-0">
-          <NativeSettings
-            getOptions={window.api?.options?.getAppOptions}
-            setOption={window.api?.options?.setAppOption}
-            checkForUpdates={window.api?.options?.checkForUpdates}
-          />
-        </TabsContent>
-
-        <TabsContent value="setup" className="mt-0">
-          <Setup getConnectionStatus={window.api?.settings?.getConnectionStatus} />
-        </TabsContent>
-
-        <TabsContent value="sorting" className="mt-0">
-          <SortSettingsPanel />
-        </TabsContent>
-      </Tabs>
-    </div>
+function SettingsApp(): JSX.Element {
+  return (
+    <NativePlatformProvider>
+      <SettingsContent />
+    </NativePlatformProvider>
   )
 }
 

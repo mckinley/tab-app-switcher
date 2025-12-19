@@ -1,135 +1,159 @@
-import { useState, useEffect } from "react"
-import { KeyboardSettings, ThemeSettings, SortSettings, AboutSettings, SortOrder } from "@tas/components/settings"
-import { DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tab-app-switcher/ui/components/tabs"
-import { Info, Palette, Keyboard, Download, ArrowUpDown } from "lucide-react"
-import { ChromiumShortcutNote } from "../../components/ChromiumShortcutNote"
-import { NativeStatus } from "../../components/NativeStatus"
-import { SortPreview } from "../../components/SortPreview"
-import { loadAndApplyTheme, saveTheme, getTheme, type Theme } from "../../utils/theme"
+import { useState } from "react"
+import {
+  KeyboardSettings,
+  ThemeSettings,
+  AboutSettings,
+  SettingsLayout,
+  ExtensionConnectionStatus,
+  ExtensionKeyboardNotes,
+  SortSettings,
+  SortPreview,
+  type SettingsTabConfig,
+} from "@tas/components/settings"
+import { Info, Palette, Keyboard, Plug2, ArrowUpDown } from "lucide-react"
+import {
+  ExtensionPlatformProvider,
+  useSettings,
+  useApplyTheme,
+  useNativeConnection,
+  useBrowser,
+  useSortOrder,
+  useTabs,
+} from "../../lib/platform"
+import type { ExtensionSettings } from "@tas/lib/settings"
 import "./globals.css"
 
 // Tab values in alphabetical order
-type SettingsTab = "about" | "appearance" | "keys" | "native" | "sorting"
+type SettingsTab = "about" | "appearance" | "connection" | "keys" | "sorting"
 
-function App() {
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
-  const [activeTab, setActiveTab] = useState<SettingsTab>("keys")
-  const [theme, setTheme] = useState<Theme>("system")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("activated")
-  const [version, setVersion] = useState<string>("")
-
-  // Load initial settings
-  useEffect(() => {
-    loadAndApplyTheme()
-    getTheme().then(setTheme)
-
-    // Load shortcuts from storage
-    browser.storage.local.get("shortcuts").then((result) => {
-      if (result.shortcuts) {
-        setShortcuts(result.shortcuts)
-      }
-    })
-
-    // Load sort order from storage
-    browser.storage.local.get("sortOrder").then((result) => {
-      if (result.sortOrder) {
-        setSortOrder(result.sortOrder)
-      }
-    })
-
-    // Get extension version
-    const manifest = browser.runtime.getManifest()
-    setVersion(manifest.version || "")
-  }, [])
-
-  const handleShortcutsChange = (newShortcuts: KeyboardShortcuts) => {
-    setShortcuts(newShortcuts)
-    browser.storage.local.set({ shortcuts: newShortcuts })
-  }
-
-  const handleThemeChange = async (newTheme: Theme) => {
-    setTheme(newTheme)
-    await saveTheme(newTheme)
-    loadAndApplyTheme()
-  }
-
-  const handleSortOrderChange = (newOrder: SortOrder) => {
-    setSortOrder(newOrder)
-    browser.storage.local.set({ sortOrder: newOrder })
-  }
-
-  const tabTriggerClass =
-    "flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-muted rounded-lg text-muted-foreground data-[state=active]:text-foreground"
+/**
+ * Keys tab content - uses browser hook for shortcut note
+ */
+function KeysTabContent({
+  keyboard,
+  onKeyboardChange,
+}: {
+  keyboard: ExtensionSettings["keyboard"]
+  onKeyboardChange: (keyboard: ExtensionSettings["keyboard"]) => void
+}) {
+  const { browserType, openShortcutsPage } = useBrowser()
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-2xl py-8 px-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">Tab Application Switcher</h1>
-          <p className="text-sm text-muted-foreground">Configure your extension settings</p>
+    <div className="space-y-6">
+      <ExtensionKeyboardNotes browserType={browserType} onOpenShortcuts={openShortcutsPage} />
+      <KeyboardSettings keyboard={keyboard} onKeyboardChange={onKeyboardChange} />
+    </div>
+  )
+}
+
+/**
+ * Connection tab content - uses native connection hook
+ */
+function ConnectionTabContent() {
+  const { isConnected, downloadUrl } = useNativeConnection()
+
+  return <ExtensionConnectionStatus isConnected={isConnected} downloadUrl={downloadUrl} />
+}
+
+/**
+ * Sorting tab content - sort settings with preview
+ */
+function SortingTabContent() {
+  const { sortOrder, setSortOrder } = useSortOrder()
+  const { tabs } = useTabs()
+
+  return (
+    <SortSettings value={sortOrder} onChange={setSortOrder}>
+      <div className="pt-4 border-t">
+        <h3 className="text-xs font-medium text-muted-foreground mb-3">Preview</h3>
+        <SortPreview tabs={tabs} />
+      </div>
+    </SortSettings>
+  )
+}
+
+function SettingsContent() {
+  const { settings, updateSetting, isLoading, version } = useSettings<ExtensionSettings>()
+  const [activeTab, setActiveTab] = useState<SettingsTab>("about")
+
+  // Apply theme from settings
+  useApplyTheme()
+
+  if (isLoading || !settings) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading settings...</p>
+      </div>
+    )
+  }
+
+  const tabs: SettingsTabConfig[] = [
+    {
+      id: "about",
+      label: "About",
+      icon: Info,
+      content: <AboutSettings version={version || ""} />,
+    },
+    {
+      id: "appearance",
+      label: "Appearance",
+      icon: Palette,
+      content: (
+        <div className="flex justify-center">
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-muted-foreground mb-3">Theme</h3>
+            <ThemeSettings value={settings.theme} onChange={(theme) => updateSetting("theme", theme)} />
+          </div>
         </div>
+      ),
+    },
+    {
+      id: "keys",
+      label: "Keys",
+      icon: Keyboard,
+      content: (
+        <KeysTabContent
+          keyboard={settings.keyboard}
+          onKeyboardChange={(keyboard) => updateSetting("keyboard", keyboard)}
+        />
+      ),
+    },
+    {
+      id: "connection",
+      label: "Connection",
+      icon: Plug2,
+      content: <ConnectionTabContent />,
+    },
+    {
+      id: "sorting",
+      label: "Sorting",
+      icon: ArrowUpDown,
+      content: <SortingTabContent />,
+    },
+  ]
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SettingsTab)}>
-          <TabsList className="w-full justify-center gap-1 mb-4 bg-transparent p-0 h-auto">
-            <TabsTrigger value="about" className={tabTriggerClass}>
-              <Info className="w-5 h-5" />
-              <span className="text-xs">About</span>
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className={tabTriggerClass}>
-              <Palette className="w-5 h-5" />
-              <span className="text-xs">Appearance</span>
-            </TabsTrigger>
-            <TabsTrigger value="keys" className={tabTriggerClass}>
-              <Keyboard className="w-5 h-5" />
-              <span className="text-xs">Keys</span>
-            </TabsTrigger>
-            <TabsTrigger value="native" className={tabTriggerClass}>
-              <Download className="w-5 h-5" />
-              <span className="text-xs">Native</span>
-            </TabsTrigger>
-            <TabsTrigger value="sorting" className={tabTriggerClass}>
-              <ArrowUpDown className="w-5 h-5" />
-              <span className="text-xs">Sorting</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="about" className="mt-0">
-            <AboutSettings version={version} />
-          </TabsContent>
-
-          <TabsContent value="appearance" className="mt-0">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-3">Theme</h3>
-                <ThemeSettings value={theme} onChange={handleThemeChange} />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="keys" className="mt-0 space-y-6">
-            <ChromiumShortcutNote />
-            <KeyboardSettings shortcuts={shortcuts} onShortcutsChange={handleShortcutsChange} />
-          </TabsContent>
-
-          <TabsContent value="native" className="mt-0">
-            <NativeStatus />
-          </TabsContent>
-
-          <TabsContent value="sorting" className="mt-0">
-            <SortSettings value={sortOrder} onChange={handleSortOrderChange}>
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="text-sm font-medium mb-3">Preview</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  This shows how your tabs will be sorted with the current settings
-                </p>
-                <SortPreview />
-              </div>
-            </SortSettings>
-          </TabsContent>
-        </Tabs>
+  return (
+    <div className="min-h-screen bg-muted/30 flex items-start justify-center pt-8 pb-8 px-4">
+      <div className="w-full max-w-xl min-h-[420px] bg-background border rounded-lg shadow-sm">
+        <SettingsLayout
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab as SettingsTab)}
+          showHeader
+          title="Tab Application Switcher"
+          description="Extension Settings"
+          className="p-6"
+        />
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <ExtensionPlatformProvider>
+      <SettingsContent />
+    </ExtensionPlatformProvider>
   )
 }
 

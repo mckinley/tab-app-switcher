@@ -1,73 +1,36 @@
 import { useState, useEffect, useCallback } from "react"
 import { TabSwitcher } from "@tas/components/TabSwitcher"
-import { Tab, DEFAULT_SHORTCUTS, KeyboardShortcuts } from "@tas/types/tabs"
-import { Container } from "../../components/Container"
+import { SwitcherContainer } from "@tas/components/SwitcherContainer"
+import { DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 import { createLogger } from "@tas/utils/logger"
-import { loadAndApplyTheme } from "../../utils/theme"
+import { ExtensionPlatformProvider, useTabs, useTabActions, useApplyTheme, useSettings } from "../../lib/platform"
+import type { ExtensionSettings } from "@tas/lib/settings"
 import "./globals.css"
 
 const logger = createLogger("popup-app")
 
-function App() {
-  const [tabs, setTabs] = useState<Tab[]>([])
+function PopupContent() {
+  const { tabs } = useTabs()
+  const { activateTab, closeTab, refreshTabs } = useTabActions()
+  const { settings } = useSettings<ExtensionSettings>()
   const [selectedIndex, setSelectedIndex] = useState(1) // Start with second tab (index 1)
-  const [shortcuts, setShortcuts] = useState<KeyboardShortcuts>(DEFAULT_SHORTCUTS)
 
-  // Apply theme on mount
-  useEffect(() => {
-    loadAndApplyTheme()
-  }, [])
+  // Apply theme from settings
+  useApplyTheme()
 
-  // Connect to background script for real-time tab updates
-  useEffect(() => {
-    const port = browser.runtime.connect({ name: "popup" })
-
-    // Listen for tab updates from background
-    port.onMessage.addListener((message: { type: string; tabs?: Tab[] }) => {
-      if (message.type === "TABS_UPDATED" && message.tabs) {
-        setTabs(message.tabs)
-      }
-    })
-
-    // Cleanup on unmount
-    return () => {
-      port.disconnect()
-    }
-  }, [])
-
-  // Load shortcuts from storage
-  useEffect(() => {
-    browser.storage.local.get("shortcuts").then((result) => {
-      if (result.shortcuts) {
-        setShortcuts(result.shortcuts)
-      }
-    })
-  }, [])
+  // Get keyboard config from settings, falling back to defaults
+  const keyboard = settings?.keyboard ?? DEFAULT_KEYBOARD_SETTINGS
 
   const handleSelectTab = (tabId: string) => {
-    // Send message to background to activate tab
-    browser.runtime
-      .sendMessage({
-        type: "ACTIVATE_TAB",
-        tabId,
-      })
-      .then(() => {
-        // Close popup after selection
-        window.close()
-      })
+    // Activate tab via adapter, then close popup (context-specific behavior)
+    activateTab(tabId).then(() => {
+      window.close()
+    })
   }
 
   const handleCloseTab = (tabId: string) => {
-    // Send message to background to close tab
-    browser.runtime
-      .sendMessage({
-        type: "CLOSE_TAB",
-        tabId,
-      })
-      .then(() => {
-        // Update local state
-        setTabs((prev) => prev.filter((tab) => tab.id !== tabId))
-      })
+    // Close tab via adapter - tab list will update via useTabs() subscription
+    closeTab(tabId)
   }
 
   const handleNavigate = useCallback(
@@ -127,8 +90,7 @@ function App() {
 
   const handleRefresh = () => {
     setIsRefreshing(true)
-    browser.runtime
-      .sendMessage({ type: "REFRESH_TABS" })
+    refreshTabs()
       .then(() => {
         // Give a brief visual feedback before clearing state
         setTimeout(() => setIsRefreshing(false), 500)
@@ -140,7 +102,7 @@ function App() {
 
   return (
     <div className="w-[360px] h-[480px] bg-background">
-      <Container variant="fill" onClose={() => window.close()}>
+      <SwitcherContainer variant="fill" onClose={() => window.close()}>
         <TabSwitcher
           tabs={tabs}
           selectedIndex={selectedIndex}
@@ -148,14 +110,22 @@ function App() {
           onClose={() => window.close()}
           onNavigate={handleNavigate}
           onCloseTab={handleCloseTab}
-          shortcuts={shortcuts}
+          keyboard={keyboard}
           onOpenSettings={handleOpenSettingsPage}
           onOpenTabManagement={handleOpenTabManagementPage}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
         />
-      </Container>
+      </SwitcherContainer>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <ExtensionPlatformProvider>
+      <PopupContent />
+    </ExtensionPlatformProvider>
   )
 }
 

@@ -3,18 +3,18 @@ import { Label } from "@tab-app-switcher/ui/components/label"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Separator } from "@tab-app-switcher/ui/components/separator"
 import { KeyButton } from "../KeyButton"
-import { KeyboardShortcuts, DEFAULT_SHORTCUTS } from "../../types/tabs"
+import { KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "../../types/tabs"
 
 interface KeyboardSettingsProps {
-  shortcuts: KeyboardShortcuts
-  onShortcutsChange: (shortcuts: KeyboardShortcuts) => void
+  keyboard: KeyboardSettingsType
+  onKeyboardChange: (keyboard: KeyboardSettingsType) => void
 }
 
-export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSettingsProps) => {
+export const KeyboardSettings = ({ keyboard, onKeyboardChange }: KeyboardSettingsProps) => {
   const [capturingKey, setCapturingKey] = useState<string | null>(null)
 
   const handleReset = () => {
-    onShortcutsChange(DEFAULT_SHORTCUTS)
+    onKeyboardChange(DEFAULT_KEYBOARD_SETTINGS)
   }
 
   return (
@@ -31,8 +31,8 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
           </div>
           <div className="flex gap-2 items-center">
             <KeyButton
-              value={shortcuts.modifier}
-              onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, modifier: key })}
+              value={keyboard.modifier}
+              onKeyCapture={(key) => onKeyboardChange({ ...keyboard, modifier: key })}
               isCapturing={capturingKey === "modifier"}
               onCaptureStart={() => setCapturingKey("modifier")}
               onCaptureEnd={() => setCapturingKey(null)}
@@ -42,7 +42,7 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
 
         <Separator />
 
-        {/* Navigation Shortcuts Grid */}
+        {/* Navigation Keys Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Next */}
           <div className="space-y-2">
@@ -53,15 +53,15 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
             <div className="flex gap-2 items-start">
               <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
                 <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                  {shortcuts.modifier}
+                  {keyboard.modifier}
                 </div>
               </div>
               <div className="h-11 flex items-center">
                 <span className="text-muted-foreground text-sm">+</span>
               </div>
               <KeyButton
-                value={shortcuts.activateForward}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateForward: key })}
+                value={keyboard.activateForward}
+                onKeyCapture={(key) => onKeyboardChange({ ...keyboard, activateForward: key })}
                 isCapturing={capturingKey === "forward"}
                 onCaptureStart={() => setCapturingKey("forward")}
                 onCaptureEnd={() => setCapturingKey(null)}
@@ -78,15 +78,15 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
             <div className="flex gap-2 items-start">
               <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
                 <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                  {shortcuts.modifier}
+                  {keyboard.modifier}
                 </div>
               </div>
               <div className="h-11 flex items-center">
                 <span className="text-muted-foreground text-sm">+</span>
               </div>
               <KeyButton
-                value={shortcuts.activateBackward}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, activateBackward: key })}
+                value={keyboard.activateBackward}
+                onKeyCapture={(key) => onKeyboardChange({ ...keyboard, activateBackward: key })}
                 isCapturing={capturingKey === "backward"}
                 onCaptureStart={() => setCapturingKey("backward")}
                 onCaptureEnd={() => setCapturingKey(null)}
@@ -95,7 +95,7 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
           </div>
         </div>
 
-        {/* Actions Shortcuts Grid */}
+        {/* Action Keys Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Search */}
           <div className="space-y-2">
@@ -106,15 +106,15 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
             <div className="flex gap-2 items-start">
               <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
                 <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                  {shortcuts.modifier}
+                  {keyboard.modifier}
                 </div>
               </div>
               <div className="h-11 flex items-center">
                 <span className="text-muted-foreground text-sm">+</span>
               </div>
               <KeyButton
-                value={shortcuts.search}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, search: key })}
+                value={keyboard.search}
+                onKeyCapture={(key) => onKeyboardChange({ ...keyboard, search: key })}
                 isCapturing={capturingKey === "search"}
                 onCaptureStart={() => setCapturingKey("search")}
                 onCaptureEnd={() => setCapturingKey(null)}
@@ -131,15 +131,15 @@ export const KeyboardSettings = ({ shortcuts, onShortcutsChange }: KeyboardSetti
             <div className="flex gap-2 items-start">
               <div className="flex flex-col items-center gap-1 relative min-h-[60px]">
                 <div className="w-11 h-11 rounded-md bg-muted font-mono text-sm flex items-center justify-center border-2 border-transparent">
-                  {shortcuts.modifier}
+                  {keyboard.modifier}
                 </div>
               </div>
               <div className="h-11 flex items-center">
                 <span className="text-muted-foreground text-sm">+</span>
               </div>
               <KeyButton
-                value={shortcuts.closeTab}
-                onKeyCapture={(key) => onShortcutsChange({ ...shortcuts, closeTab: key })}
+                value={keyboard.closeTab}
+                onKeyCapture={(key) => onKeyboardChange({ ...keyboard, closeTab: key })}
                 isCapturing={capturingKey === "close"}
                 onCaptureStart={() => setCapturingKey("close")}
                 onCaptureEnd={() => setCapturingKey(null)}

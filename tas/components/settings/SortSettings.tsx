@@ -1,5 +1,4 @@
-import { Label } from "@tab-app-switcher/ui/components/label"
-import { cn } from "@tab-app-switcher/ui/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@tab-app-switcher/ui/components/select"
 import type { SortOrder } from "@tas/sorting"
 
 export type { SortOrder }
@@ -7,7 +6,7 @@ export type { SortOrder }
 interface SortSettingsProps {
   value: SortOrder
   onChange: (order: SortOrder) => void
-  children?: React.ReactNode // For timing comparison or other debug views
+  children?: React.ReactNode // For preview section
 }
 
 const sortOptions: { value: SortOrder; label: string; description: string }[] = [
@@ -34,38 +33,28 @@ const sortOptions: { value: SortOrder; label: string; description: string }[] = 
 ]
 
 export const SortSettings = ({ value, onChange, children }: SortSettingsProps) => {
+  const selectedOption = sortOptions.find((o) => o.value === value)
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Sort Order</Label>
-        <div className="space-y-2">
-          {sortOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onChange(option.value)}
-              className={cn(
-                "w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors",
-                value === option.value ? "border-primary bg-primary/5" : "hover:bg-muted/50",
-              )}
-            >
-              <div
-                className={cn(
-                  "mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                  value === option.value ? "border-primary" : "border-muted-foreground",
-                )}
-              >
-                {value === option.value && <div className="w-2 h-2 rounded-full bg-primary" />}
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-sm font-medium">{option.label}</div>
-                <div className="text-xs text-muted-foreground">{option.description}</div>
-              </div>
-            </button>
-          ))}
-        </div>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-muted-foreground">Sort Order</label>
+        <Select value={value} onValueChange={(v) => onChange(v as SortOrder)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select sort order" />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedOption && <p className="text-xs text-muted-foreground">{selectedOption.description}</p>}
       </div>
 
-      {children && <div className="pt-4 border-t">{children}</div>}
+      {children}
     </div>
   )
 }

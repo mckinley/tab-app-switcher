@@ -8,7 +8,6 @@ interface AboutInfo {
   commitHash: string
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 function AboutApp(): JSX.Element {
   const [aboutInfo, setAboutInfo] = useState<AboutInfo | null>(null)
 

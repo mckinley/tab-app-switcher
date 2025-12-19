@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { Search, LayoutGrid, Settings as SettingsIcon, RefreshCw } from "lucide-react"
 import { TabItem } from "./TabItem"
-import { Tab, KeyboardShortcuts, TabSection } from "../types/tabs"
-import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts"
+import { Tab, KeyboardSettings, TabSection } from "../types/tabs"
+import { useKeyboard } from "../hooks/useKeyboard"
 
 const SECTION_LABELS: Record<TabSection, string> = {
   tabs: "Tabs",
@@ -28,10 +28,10 @@ interface TabSwitcherProps {
   onClose: () => void
   onNavigate: (direction: "next" | "prev") => void
   onCloseTab: (tabId: string) => void
-  shortcuts: KeyboardShortcuts
+  keyboard: KeyboardSettings
   onOpenSettings: () => void // Called when user clicks settings button
   onOpenTabManagement: () => void // Called when user clicks tab management button
-  isEnabled?: boolean // Optional: Whether keyboard shortcuts are enabled - defaults to true
+  isEnabled?: boolean // Optional: Whether keyboard handling is enabled - defaults to true
   onRefresh?: () => void // Called when user clicks refresh button
   isRefreshing?: boolean // Whether a refresh is in progress
 }
@@ -43,7 +43,7 @@ export const TabSwitcher = ({
   onClose,
   onNavigate,
   onCloseTab,
-  shortcuts,
+  keyboard,
   onOpenSettings,
   onOpenTabManagement,
   isEnabled = true,
@@ -124,10 +124,10 @@ export const TabSwitcher = ({
     previousSelectedIndex.current = selectedIndex
   }, [selectedIndex])
 
-  // Use the keyboard shortcuts hook to handle all keyboard events
-  useKeyboardShortcuts({
+  // Use the keyboard hook to handle all keyboard events
+  useKeyboard({
     enabled: isEnabled,
-    shortcuts,
+    keyboard,
     isSearchFocused,
     // Panel state is managed by parent, but we still need to pass these for the hook
     isSettingsOpen: false,
@@ -169,7 +169,7 @@ export const TabSwitcher = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              placeholder={`Press '${shortcuts.search}' to search tabs...`}
+              placeholder={`Press '${keyboard.search}' to search tabs...`}
               className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-input text-foreground placeholder:text-muted-foreground border border-transparent focus:border-ring/30 outline-none transition-colors"
             />
           </div>
@@ -248,11 +248,11 @@ export const TabSwitcher = ({
         <div className="flex items-center">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.search}</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{keyboard.search}</kbd>
               <span>Search</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{shortcuts.closeTab}</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{keyboard.closeTab}</kbd>
               <span>Close</span>
             </div>
             <div className="flex items-center gap-1.5">

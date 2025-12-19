@@ -24,7 +24,7 @@ export interface Tab {
   lastDeactivated?: number // When TAS detected this tab lost focus
 }
 
-export interface KeyboardShortcuts {
+export interface KeyboardSettings {
   modifier: string
   activateForward: string
   activateBackward: string
@@ -33,7 +33,7 @@ export interface KeyboardShortcuts {
   tabManagement?: string
 }
 
-export const DEFAULT_SHORTCUTS: KeyboardShortcuts = {
+export const DEFAULT_KEYBOARD_SETTINGS: KeyboardSettings = {
   modifier: "Alt",
   activateForward: "Tab",
   activateBackward: "`",

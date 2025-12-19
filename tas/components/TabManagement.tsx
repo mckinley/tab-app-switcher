@@ -11,7 +11,7 @@ import {
 } from "../utils/collectionsStorage"
 import { useAuth } from "../hooks/useAuth"
 import { useCollectionsSync } from "../hooks/useCollectionsSync"
-import { useIsMobile } from "../hooks/useIsMobile"
+import { useSmallViewport } from "../hooks/useSmallViewport"
 import { formatRelativeTime } from "../utils/relativeTime"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { Input } from "@tab-app-switcher/ui/components/input"
@@ -130,8 +130,8 @@ export const TabManagement = ({
   // Determine if we're in controlled mode
   const isControlled = controlledCollections !== undefined
 
-  // Check if we're on mobile
-  const isMobile = useIsMobile()
+  // Check if we're on a small viewport
+  const isMobile = useSmallViewport()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortOption>("mru")

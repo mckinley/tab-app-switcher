@@ -18,7 +18,6 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'src/renderer/index.html'),
           tas: resolve(__dirname, 'src/renderer/tas.html'),
           settings: resolve(__dirname, 'src/renderer/settings.html'),
           'tab-management': resolve(__dirname, 'src/renderer/tab-management.html'),

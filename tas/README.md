@@ -6,9 +6,9 @@ Shared component library for Tab Application Switcher. Used by the site, extensi
 
 ```typescript
 import { TabSwitcher } from "@tas/components/TabSwitcher"
-import { Settings } from "@tas/components/Settings"
+import { KeyboardSettings } from "@tas/components/settings"
 import { TabManagement } from "@tas/components/TabManagement"
-import { Tab, KeyboardShortcuts, DEFAULT_SHORTCUTS } from "@tas/types/tabs"
+import { Tab, KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 ```
 
 ## Components
@@ -24,18 +24,18 @@ Main tab switcher interface displaying tabs in MRU order.
   onSelectTab={(id) => {}}
   onNavigate={(direction) => {}}
   onCloseTab={(id) => {}}
-  shortcuts={shortcuts}
+  keyboard={keyboard}
 />
 ```
 
-### Settings
+### KeyboardSettings
 
-Keyboard shortcut configuration panel.
+Keyboard configuration panel.
 
 ```typescript
-<Settings
-  shortcuts={shortcuts}
-  onShortcutsChange={(shortcuts) => {}}
+<KeyboardSettings
+  keyboard={keyboard}
+  onKeyboardChange={(keyboard) => {}}
 />
 ```
 
@@ -62,7 +62,7 @@ interface Tab {
   favicon: string
 }
 
-interface KeyboardShortcuts {
+interface KeyboardSettings {
   modifier: string
   activateForward: string
   activateBackward: string
