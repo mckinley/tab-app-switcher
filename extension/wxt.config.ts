@@ -32,6 +32,11 @@ export default defineConfig({
         32: "/icon/32.png",
       },
     },
+    // Make tabs.html accessible to other extensions (e.g., new tab redirectors)
+    web_accessible_resources:
+      browser === "firefox" || browser === "safari"
+        ? ["tabs.html"]
+        : [{ resources: ["tabs.html"], matches: ["<all_urls>"] }],
     // Commands - Firefox and Safari don't support Alt+Tab (OS-reserved), use Alt+1 instead
     commands: {
       tas_activate: {
@@ -41,14 +46,6 @@ export default defineConfig({
         description: "Activate Tab Application Switcher",
       },
     },
-    // Only include chrome_url_overrides for Chrome/Edge (not supported in Firefox/Safari)
-    ...(browser !== "firefox" && browser !== "safari"
-      ? {
-          chrome_url_overrides: {
-            newtab: "/tabs.html",
-          },
-        }
-      : {}),
     // Firefox-specific settings
     ...(browser === "firefox"
       ? {
