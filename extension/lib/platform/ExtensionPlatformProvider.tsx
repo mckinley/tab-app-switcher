@@ -2,10 +2,11 @@
  * Extension Platform Provider
  *
  * Pre-configured PlatformProvider for browser extensions.
+ * Automatically applies theme from settings.
  */
 
 import type { ReactNode } from "react"
-import { PlatformProvider } from "@tas/lib/platform"
+import { PlatformProvider, ThemeApplier } from "@tas/lib/platform"
 import type { PlatformAdapter } from "@tas/lib/platform"
 import type { ExtensionSettings } from "@tas/lib/settings"
 import { extensionPlatformAdapter } from "./ExtensionPlatformAdapter"
@@ -18,7 +19,8 @@ interface ExtensionPlatformProviderProps {
 
 /**
  * Extension-specific platform provider
- * Wraps children with platform context pre-configured for browser extensions
+ * Wraps children with platform context pre-configured for browser extensions.
+ * Automatically applies theme from settings.
  *
  * @example
  * // Default (popup/options)
@@ -36,5 +38,9 @@ export function ExtensionPlatformProvider({
   children,
   adapter = extensionPlatformAdapter,
 }: ExtensionPlatformProviderProps): JSX.Element {
-  return <PlatformProvider<ExtensionSettings> adapter={adapter}>{children}</PlatformProvider>
+  return (
+    <PlatformProvider<ExtensionSettings> adapter={adapter}>
+      <ThemeApplier>{children}</ThemeApplier>
+    </PlatformProvider>
+  )
 }

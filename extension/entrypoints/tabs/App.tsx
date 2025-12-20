@@ -1,21 +1,12 @@
 import { TabManagement } from "@tas/components/TabManagement"
 import { SwitcherContainer } from "@tas/components/SwitcherContainer"
-import {
-  ExtensionPlatformProvider,
-  useTabs,
-  useTabActions,
-  useApplyTheme,
-  extensionTabManagementAdapter,
-} from "../../lib/platform"
+import { ExtensionPlatformProvider, useTabs, useTabActions, extensionTabManagementAdapter } from "../../lib/platform"
 import { signInWithGoogleExtension, signOutExtension } from "../../utils/auth"
 import "./globals.css"
 
 function TabManagementContent() {
   const { tabs } = useTabs()
   const { activateTab, closeTab, reorderTabs, createWindowWithTabs } = useTabActions()
-
-  // Apply theme from settings
-  useApplyTheme()
 
   const handleSelectTab = (tabId: string) => {
     activateTab(tabId)

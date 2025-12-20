@@ -56,6 +56,8 @@ export interface PlatformCapabilities {
   hasBrowserInfo: boolean
   /** Can sync settings across connected browsers (native only) */
   hasSync: boolean
+  /** Can open settings/tab management windows */
+  hasWindowActions: boolean
   /** Which tab actions are supported */
   actions: ActionCapabilities
 }
@@ -127,6 +129,20 @@ export interface PlatformAdapter<T extends CommonSettings = CommonSettings> exte
    * Returns an unsubscribe function
    */
   subscribeSyncStatus?(callback: (status: SyncStatus) => void): () => void
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Window Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Open the settings UI
+   */
+  openSettings?(): void
+
+  /**
+   * Open the tab management UI
+   */
+  openTabManagement?(): void
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Tab Actions
@@ -224,6 +240,15 @@ export interface PlatformContextValue<T extends CommonSettings = CommonSettings>
   sync: () => Promise<void>
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Window Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Open the settings UI */
+  openSettings: () => void
+  /** Open the tab management UI */
+  openTabManagement: () => void
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tab Actions
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -247,6 +272,7 @@ export const DEFAULT_CAPABILITIES: PlatformCapabilities = {
   hasNativeConnection: false,
   hasBrowserInfo: false,
   hasSync: false,
+  hasWindowActions: false,
   actions: DEFAULT_ACTION_CAPABILITIES,
 }
 

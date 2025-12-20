@@ -1,30 +1,20 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
+import { NativePlatformProvider, useSettings } from './lib/platform'
+import type { NativeSettings } from '@tas/lib/settings'
 import appIcon from '../../../resources/icon.png'
 import './assets/globals.css'
 
-interface AboutInfo {
-  version: string
-  commitHash: string
-}
+function AboutContent(): JSX.Element {
+  const { version } = useSettings<NativeSettings>()
+  const [commitHash, setCommitHash] = useState<string | null>(null)
 
-function AboutApp(): JSX.Element {
-  const [aboutInfo, setAboutInfo] = useState<AboutInfo | null>(null)
-
-  // Apply system theme on mount
-  useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (prefersDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [])
-
-  // Load about info
+  // Load commit hash from about API
   useEffect(() => {
     if (window.api?.about?.getAboutInfo) {
-      window.api.about.getAboutInfo().then(setAboutInfo)
+      window.api.about.getAboutInfo().then((info) => {
+        setCommitHash(info.commitHash)
+      })
     }
   }, [])
 
@@ -39,12 +29,12 @@ function AboutApp(): JSX.Element {
       <h1 className="text-lg font-semibold text-foreground mb-1">TAS</h1>
 
       {/* Version */}
-      <p className="text-sm text-muted-foreground mb-1">Version {aboutInfo?.version ?? '...'}</p>
+      <p className="text-sm text-muted-foreground mb-1">Version {version ?? '...'}</p>
 
       {/* Build Info */}
-      {aboutInfo?.commitHash && (
+      {commitHash && (
         <p className="text-xs text-muted-foreground/70 font-mono mb-6">
-          Build {aboutInfo.commitHash.substring(0, 7)}
+          Build {commitHash.substring(0, 7)}
         </p>
       )}
 
@@ -54,6 +44,14 @@ function AboutApp(): JSX.Element {
       </p>
       <p className="text-xs text-muted-foreground text-center mt-1">All rights reserved.</p>
     </div>
+  )
+}
+
+function AboutApp(): JSX.Element {
+  return (
+    <NativePlatformProvider>
+      <AboutContent />
+    </NativePlatformProvider>
   )
 }
 

@@ -15,6 +15,7 @@ import {
 import { createTray, destroyTray, getTray } from './tray'
 import type { Tab, BrowserType } from '@tas/types/tabs'
 import type { SortStrategy } from '@tas/sorting'
+import type { KeyboardSettings } from '@tas/keyboard'
 
 // Git commit hash (injected at build time or fallback)
 const GIT_COMMIT_HASH = process.env.GIT_COMMIT_HASH || 'dev'
@@ -40,6 +41,7 @@ interface IpcDependencies {
   rebuildDisplayTabs: () => void
   broadcastDisplayTabs: () => void
   activateBrowserApp: (browser: BrowserType) => void
+  updateKeyboardShortcuts: (keyboard: KeyboardSettings) => void
 }
 
 interface AppSettingsSchema {
@@ -49,6 +51,7 @@ interface AppSettingsSchema {
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
   sortStrategy: SortStrategy
+  keyboard: KeyboardSettings
 }
 
 let deps: IpcDependencies | null = null
@@ -106,7 +109,8 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
       hideMenuBarIcon: appSettingsStore.get('hideMenuBarIcon'),
       checkUpdatesAutomatically: appSettingsStore.get('checkUpdatesAutomatically'),
       theme: appSettingsStore.get('theme'),
-      sortStrategy: appSettingsStore.get('sortStrategy')
+      sortStrategy: appSettingsStore.get('sortStrategy'),
+      keyboard: appSettingsStore.get('keyboard')
     }
   })
 
@@ -143,6 +147,21 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
       // Rebuild with new strategy and broadcast to all windows
       deps?.rebuildDisplayTabs()
       deps?.broadcastDisplayTabs()
+      // Broadcast sort strategy change to all windows
+      const windows = BrowserWindow.getAllWindows()
+      windows.forEach((win) => {
+        win.webContents.send('sort-strategy-changed', value)
+      })
+    } else if (key === 'keyboard' && typeof value === 'object' && value !== null) {
+      const keyboard = value as KeyboardSettings
+      appSettingsStore.set('keyboard', keyboard)
+      // Update global shortcuts with new keyboard settings
+      deps?.updateKeyboardShortcuts(keyboard)
+      // Broadcast keyboard change to all windows
+      const windows = BrowserWindow.getAllWindows()
+      windows.forEach((win) => {
+        win.webContents.send('keyboard-changed', keyboard)
+      })
     }
     return true
   })

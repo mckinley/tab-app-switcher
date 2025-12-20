@@ -31,12 +31,22 @@ interface AboutAPI {
   getAboutInfo: () => Promise<AboutInfo>
 }
 
+interface KeyboardSettings {
+  modifier: string
+  activateForward: string
+  activateBackward: string
+  closeTab: string
+  search: string
+  tabManagement?: string
+}
+
 interface AppOptions {
   launchOnLogin: boolean
   hideMenuBarIcon: boolean
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
   sortStrategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated'
+  keyboard: KeyboardSettings
 }
 
 interface OptionsAPI {
@@ -44,6 +54,10 @@ interface OptionsAPI {
   setAppOption: (key: string, value: unknown) => Promise<boolean>
   checkForUpdates: () => void
   onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void) => void
+  onKeyboardChanged: (callback: (keyboard: KeyboardSettings) => void) => void
+  onSortStrategyChanged: (
+    callback: (strategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated') => void
+  ) => void
 }
 
 interface SortSyncStatus {

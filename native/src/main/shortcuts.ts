@@ -4,11 +4,19 @@
  */
 
 import { globalShortcut } from 'electron'
-import { type TasAction, getKeyBindings, DEFAULT_KEYBOARD_SETTINGS } from '@tas/keyboard'
+import {
+  type TasAction,
+  type KeyboardSettings,
+  getKeyBindings,
+  DEFAULT_KEYBOARD_SETTINGS
+} from '@tas/keyboard'
 import { getTasWindow, hideTasOverlay } from './windows'
 
 // Track registered accelerators for cleanup
 const registeredAccelerators: string[] = []
+
+// Current keyboard settings (updated when user changes settings)
+let currentKeyboardSettings: KeyboardSettings = DEFAULT_KEYBOARD_SETTINGS
 
 /**
  * Build Electron accelerator string from a shortcut binding
@@ -73,11 +81,11 @@ export function executeTasAction(action: TasAction): void {
 }
 
 /**
- * Register navigation shortcuts for TAS overlay
+ * Register navigation shortcuts for TAS overlay using current keyboard settings
  */
 export function registerTasNavigationShortcuts(): void {
-  const bindings = getKeyBindings(DEFAULT_KEYBOARD_SETTINGS)
-  const modifier = DEFAULT_KEYBOARD_SETTINGS.modifier
+  const bindings = getKeyBindings(currentKeyboardSettings)
+  const modifier = currentKeyboardSettings.modifier
 
   // Build unique accelerators from bindings
   const acceleratorActions = new Map<string, TasAction>()
@@ -104,6 +112,24 @@ export function registerTasNavigationShortcuts(): void {
       registeredAccelerators.push(accelerator)
     }
   }
+}
+
+/**
+ * Update keyboard settings and re-register shortcuts if TAS overlay is visible
+ * Called when user changes keyboard settings in the settings UI
+ */
+export function updateKeyboardSettings(keyboard: KeyboardSettings): void {
+  currentKeyboardSettings = keyboard
+  // Note: Shortcuts are only active when TAS overlay is shown,
+  // so they will automatically use the new settings next time the overlay opens
+}
+
+/**
+ * Initialize keyboard settings from stored value
+ * Should be called on app startup with settings from electron-store
+ */
+export function initKeyboardSettings(keyboard: KeyboardSettings): void {
+  currentKeyboardSettings = keyboard
 }
 
 /**

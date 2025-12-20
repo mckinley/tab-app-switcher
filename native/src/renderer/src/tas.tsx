@@ -1,114 +1,48 @@
-import { StrictMode, useState, useEffect, useCallback, useRef } from 'react'
+import { StrictMode, useState, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabSwitcher } from '@tas/components/TabSwitcher'
 import { DEFAULT_KEYBOARD_SETTINGS, KeyboardSettings } from '@tas/types/tabs'
-import { NativePlatformProvider, useTabs, useTabActions } from './lib/platform'
+import { useTabNavigation } from '@tas/hooks/useTabNavigation'
+import { useTasIpc } from './lib/hooks/useTasIpc'
+import { NativePlatformProvider, useTabs, useTabActions, useWindowActions } from './lib/platform'
 import './assets/tas.css'
 
 function TasContent(): JSX.Element {
   const { tabs } = useTabs()
   const { activateTab, closeTab, refreshTabs } = useTabActions()
-  const [selectedIndex, setSelectedIndex] = useState(1)
+  const { openSettings, openTabManagement } = useWindowActions()
+  const { selectedIndex, setSelectedIndex, navigate, reset } = useTabNavigation(tabs)
   const [keyboard] = useState<KeyboardSettings>(DEFAULT_KEYBOARD_SETTINGS)
   // Key to force TabSwitcher remount when window is shown
   const [switcherKey, setSwitcherKey] = useState(0)
 
-  // Refs to track current values for IPC handlers
-  const tabsRef = useRef(tabs)
-  const selectedIndexRef = useRef(selectedIndex)
-
-  // Keep refs in sync
-  useEffect(() => {
-    tabsRef.current = tabs
-  }, [tabs])
-
-  useEffect(() => {
-    selectedIndexRef.current = selectedIndex
-  }, [selectedIndex])
-
-  // Apply system theme on mount
-  useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (prefersDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [])
-
-  // Handle window-specific IPC events (not tabs - those come from useTabs)
-  useEffect(() => {
-    const handleResetSelection = (): void => {
-      const currentTabs = tabsRef.current
-      // Reset selection to second tab when window is shown
-      if (currentTabs.length > 1) {
-        setSelectedIndex(1)
-      } else if (currentTabs.length === 1) {
-        setSelectedIndex(0)
-      }
-      // Force TabSwitcher to remount to reset scroll position
-      setSwitcherKey((prev) => prev + 1)
-    }
-
-    // Handle navigation from main process (global shortcuts when window doesn't have focus)
-    const handleNavigateFromMain = (_event: unknown, direction: 'next' | 'prev'): void => {
-      const currentTabs = tabsRef.current
-      if (currentTabs.length === 0) return
-      setSelectedIndex((prev) => {
-        if (direction === 'next') {
-          return (prev + 1) % currentTabs.length
-        } else {
-          return prev === 0 ? currentTabs.length - 1 : prev - 1
+  // IPC handlers for global shortcuts from main process
+  const ipcHandlers = useMemo(
+    () => ({
+      onResetSelection: () => {
+        reset()
+        setSwitcherKey((prev) => prev + 1)
+      },
+      onNavigate: navigate,
+      onSelectCurrent: () => {
+        if (tabs.length > 0 && selectedIndex < tabs.length) {
+          window.electron.ipcRenderer.send('activate-tab', tabs[selectedIndex].id)
+          window.electron.ipcRenderer.send('hide-tas')
         }
-      })
-    }
-
-    // Handle select from main process (Enter key via global shortcut)
-    const handleSelectFromMain = (): void => {
-      const currentTabs = tabsRef.current
-      const currentIndex = selectedIndexRef.current
-      if (currentTabs.length > 0 && currentIndex < currentTabs.length) {
-        const tab = currentTabs[currentIndex]
-        window.electron.ipcRenderer.send('activate-tab', tab.id)
-        window.electron.ipcRenderer.send('hide-tas')
-      }
-    }
-
-    // Handle close selected tab from main process (Alt+W global shortcut)
-    const handleCloseSelectedTabFromMain = (): void => {
-      const currentTabs = tabsRef.current
-      const currentIndex = selectedIndexRef.current
-      if (currentTabs.length > 0 && currentIndex < currentTabs.length) {
-        const tab = currentTabs[currentIndex]
-        window.electron.ipcRenderer.send('close-tab', tab.id)
-        // Adjust selection if needed (tabs will update via useTabs subscription)
-        if (currentIndex >= currentTabs.length - 1 && currentTabs.length > 1) {
-          setSelectedIndex(currentTabs.length - 2)
+      },
+      onCloseSelected: () => {
+        if (tabs.length > 0 && selectedIndex < tabs.length) {
+          window.electron.ipcRenderer.send('close-tab', tabs[selectedIndex].id)
+          if (selectedIndex >= tabs.length - 1 && tabs.length > 1) {
+            setSelectedIndex(tabs.length - 2)
+          }
         }
       }
-    }
+    }),
+    [tabs, selectedIndex, navigate, reset, setSelectedIndex]
+  )
 
-    const unsubscribeResetSelection = window.electron.ipcRenderer.on(
-      'reset-selection',
-      handleResetSelection
-    )
-    const unsubscribeNavigate = window.electron.ipcRenderer.on('navigate', handleNavigateFromMain)
-    const unsubscribeSelectCurrent = window.electron.ipcRenderer.on(
-      'select-current',
-      handleSelectFromMain
-    )
-    const unsubscribeCloseSelectedTab = window.electron.ipcRenderer.on(
-      'close-selected-tab',
-      handleCloseSelectedTabFromMain
-    )
-
-    return () => {
-      unsubscribeResetSelection()
-      unsubscribeNavigate()
-      unsubscribeSelectCurrent()
-      unsubscribeCloseSelectedTab()
-    }
-  }, [])
+  useTasIpc(tabs, selectedIndex, ipcHandlers)
 
   const handleSelectTab = (tabId: string): void => {
     // Activate tab via adapter, then hide overlay (context-specific behavior)
@@ -121,28 +55,7 @@ function TasContent(): JSX.Element {
     closeTab(tabId)
   }
 
-  const handleNavigate = useCallback(
-    (direction: 'next' | 'prev'): void => {
-      setSelectedIndex((prev) => {
-        const newIndex =
-          direction === 'next' ? (prev + 1) % tabs.length : prev === 0 ? tabs.length - 1 : prev - 1
-        return newIndex
-      })
-    },
-    [tabs.length]
-  )
-
   const handleClose = (): void => {
-    window.electron.ipcRenderer.send('hide-tas')
-  }
-
-  const handleOpenSettings = (): void => {
-    window.electron.ipcRenderer.send('show-settings')
-    window.electron.ipcRenderer.send('hide-tas')
-  }
-
-  const handleOpenTabManagement = (): void => {
-    window.electron.ipcRenderer.send('show-tab-management')
     window.electron.ipcRenderer.send('hide-tas')
   }
 
@@ -173,11 +86,11 @@ function TasContent(): JSX.Element {
           selectedIndex={selectedIndex}
           onSelectTab={handleSelectTab}
           onClose={handleClose}
-          onNavigate={handleNavigate}
+          onNavigate={navigate}
           onCloseTab={handleCloseTab}
           keyboard={keyboard}
-          onOpenSettings={handleOpenSettings}
-          onOpenTabManagement={handleOpenTabManagement}
+          onOpenSettings={openSettings}
+          onOpenTabManagement={openTabManagement}
           onRefresh={handleRefresh}
         />
       </div>

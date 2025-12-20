@@ -27,6 +27,7 @@ import type {
   DeviceSession
 } from '@tas/types/protocol'
 import { sortTabsWithSections, type SortStrategy } from '@tas/sorting'
+import { DEFAULT_KEYBOARD_SETTINGS, type KeyboardSettings } from '@tas/keyboard'
 
 // Import extracted modules
 import {
@@ -39,7 +40,12 @@ import {
   selectCurrentTabAndHide
 } from './windows'
 import { createTray, updateTrayMenu, destroyTray } from './tray'
-import { registerTasNavigationShortcuts, unregisterTasNavigationShortcuts } from './shortcuts'
+import {
+  registerTasNavigationShortcuts,
+  unregisterTasNavigationShortcuts,
+  updateKeyboardSettings,
+  initKeyboardSettings
+} from './shortcuts'
 import { registerIpcHandlers, browserAppNames } from './ipc'
 
 // =============================================================================
@@ -53,6 +59,7 @@ interface AppSettingsSchema {
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
   sortStrategy: SortStrategy
+  keyboard: KeyboardSettings
 }
 
 const appSettingsStore = new Store<AppSettingsSchema>({
@@ -63,7 +70,8 @@ const appSettingsStore = new Store<AppSettingsSchema>({
     hideMenuBarIcon: false,
     checkUpdatesAutomatically: true,
     theme: 'system',
-    sortStrategy: 'lastActivated'
+    sortStrategy: 'lastActivated',
+    keyboard: DEFAULT_KEYBOARD_SETTINGS
   }
 })
 
@@ -361,6 +369,9 @@ app.whenReady().then(() => {
   // Check accessibility permissions on macOS (needed for global shortcuts)
   checkAccessibilityPermissions()
 
+  // Initialize keyboard settings from store before registering shortcuts
+  initKeyboardSettings(appSettingsStore.get('keyboard'))
+
   // Initialize windows module with dependencies
   initWindows({
     getDisplayTabs,
@@ -427,7 +438,8 @@ app.whenReady().then(() => {
     findSessionForTab,
     rebuildDisplayTabs,
     broadcastDisplayTabs,
-    activateBrowserApp
+    activateBrowserApp,
+    updateKeyboardShortcuts: updateKeyboardSettings
   })
 })
 

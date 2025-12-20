@@ -16,9 +16,15 @@ export type {
 
 export { DEFAULT_CAPABILITIES, DEFAULT_NATIVE_DOWNLOAD_URL, DEFAULT_ACTION_CAPABILITIES } from "./types"
 
+// Base Adapter
+export { BasePlatformAdapter } from "./BasePlatformAdapter"
+
 // Context and Provider
 export { PlatformContext, PlatformProvider } from "./PlatformContext"
 export type { PlatformProviderProps } from "./PlatformContext"
+
+// Components
+export { ThemeApplier } from "./ThemeApplier"
 
 // Hooks
 export {
@@ -31,6 +37,7 @@ export {
   useNativeConnection,
   useBrowser,
   useSyncStatus,
+  useWindowActions,
   useTabActions,
   useEscapeKey,
 } from "./hooks"

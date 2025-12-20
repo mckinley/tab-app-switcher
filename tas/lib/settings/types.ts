@@ -28,6 +28,7 @@ export interface ExtensionSettings extends CommonSettings {
  * Native app settings (electron-store via window.api.options)
  */
 export interface NativeSettings extends CommonSettings {
+  keyboard: KeyboardSettings
   launchOnLogin: boolean
   hideMenuBarIcon: boolean
   checkUpdatesAutomatically: boolean

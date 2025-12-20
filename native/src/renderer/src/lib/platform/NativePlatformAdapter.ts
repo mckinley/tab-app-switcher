@@ -2,32 +2,23 @@
  * Native Platform Adapter
  *
  * Implements PlatformAdapter for Electron native app.
- * Extends NativeSettingsAdapter with sync functionality.
+ * Provides sync functionality and native window actions.
  */
 
-import type {
-  PlatformAdapter,
-  PlatformCapabilities,
-  ActionResult,
-  ActionCapabilities
-} from '@tas/lib/platform'
+import type { PlatformCapabilities, ActionResult, ActionCapabilities } from '@tas/lib/platform'
+import { BasePlatformAdapter } from '@tas/lib/platform'
 import type { NativeSettings } from '@tas/lib/settings'
 import type { SyncStatus } from '@tas/components/settings'
-import type { Tab } from '@tas/types/tabs'
+import type { Tab, KeyboardSettings } from '@tas/types/tabs'
 import {
   sortOrderToStrategy,
   strategyToSortOrder,
   type SortOrder,
   type SortStrategy
 } from '@tas/sorting'
-import {
-  applyThemeToDocument,
-  resolveTheme,
-  getSystemPrefersDark,
-  type Theme
-} from '@tas/lib/theme'
+import type { Theme } from '@tas/lib/theme'
 
-export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
+export class NativePlatformAdapter extends BasePlatformAdapter<NativeSettings> {
   // ─────────────────────────────────────────────────────────────────────────────
   // Platform Capabilities
   // ─────────────────────────────────────────────────────────────────────────────
@@ -48,6 +39,7 @@ export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
     hasNativeConnection: false,
     hasBrowserInfo: false,
     hasSync: true,
+    hasWindowActions: true,
     actions: this.actionCapabilities
   }
 
@@ -62,13 +54,10 @@ export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
 
     const opts = await window.api.options.getAppOptions()
 
-    // Apply theme on load
-    const resolved = resolveTheme(opts.theme as Theme, getSystemPrefersDark())
-    applyThemeToDocument(resolved)
-
     return {
       theme: opts.theme as Theme,
       sortOrder: strategyToSortOrder[opts.sortStrategy as SortStrategy],
+      keyboard: opts.keyboard as KeyboardSettings,
       launchOnLogin: opts.launchOnLogin,
       hideMenuBarIcon: opts.hideMenuBarIcon,
       checkUpdatesAutomatically: opts.checkUpdatesAutomatically
@@ -86,20 +75,12 @@ export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
     } else {
       await window.api.options.setAppOption(key, value)
     }
-
-    // Apply theme changes immediately
-    if (key === 'theme') {
-      const resolved = resolveTheme(value as Theme, getSystemPrefersDark())
-      applyThemeToDocument(resolved)
-    }
   }
 
   subscribe(callback: (settings: Partial<NativeSettings>) => void): () => void {
     // Listen for theme changes from main process
     if (window.api?.options?.onThemeChanged) {
       window.api.options.onThemeChanged((theme) => {
-        const resolved = resolveTheme(theme as Theme, getSystemPrefersDark())
-        applyThemeToDocument(resolved)
         callback({ theme: theme as Theme })
       })
     }
@@ -192,6 +173,20 @@ export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Window Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  openSettings(): void {
+    window.electron.ipcRenderer.send('show-settings')
+    window.electron.ipcRenderer.send('hide-tas')
+  }
+
+  openTabManagement(): void {
+    window.electron.ipcRenderer.send('show-tab-management')
+    window.electron.ipcRenderer.send('hide-tas')
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tab Actions
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -208,18 +203,6 @@ export class NativePlatformAdapter implements PlatformAdapter<NativeSettings> {
   async refreshTabs(): Promise<ActionResult> {
     window.electron.ipcRenderer.send('refresh-tabs')
     return { success: true }
-  }
-
-  async reorderTabs(
-    _tabId: string,
-    _newIndex: number,
-    _targetWindowId?: number
-  ): Promise<ActionResult> {
-    return { success: false, error: 'Not supported in this context' }
-  }
-
-  async createWindowWithTabs(_urls: string[]): Promise<ActionResult> {
-    return { success: false, error: 'Not supported in this context' }
   }
 }
 

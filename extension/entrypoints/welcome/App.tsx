@@ -1,29 +1,17 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
 import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
-import { loadAndApplyTheme } from "../../utils/theme"
-import { BrowserType } from "@tas/types/tabs"
+import { ExtensionPlatformProvider, useBrowser } from "../../lib/platform"
 import "./globals.css"
 
-function detectBrowser(): BrowserType {
-  const userAgent = navigator.userAgent.toLowerCase()
-  if (userAgent.includes("edg/")) return "edge"
-  if (userAgent.includes("firefox")) return "firefox"
-  if (userAgent.includes("safari") && !userAgent.includes("chrome")) return "safari"
-  if (userAgent.includes("chrome")) return "chrome"
-  return "unknown"
-}
-
-function App() {
+function WelcomeContent() {
   const [nativeAppConnected, setNativeAppConnected] = useState(false)
-  const browserType = useMemo(() => detectBrowser(), [])
+  const { browserType, openShortcutsPage } = useBrowser()
   const isChromium = browserType === "chrome" || browserType === "edge"
 
   useEffect(() => {
-    loadAndApplyTheme()
-
     // Check if native app is connected
     browser.runtime
       .sendMessage({ type: "CHECK_NATIVE_APP" })
@@ -37,14 +25,6 @@ function App() {
         setNativeAppConnected(false)
       })
   }, [])
-
-  const openShortcutsPage = () => {
-    if (browserType === "edge") {
-      browser.tabs.create({ url: "edge://extensions/shortcuts" })
-    } else {
-      browser.tabs.create({ url: "chrome://extensions/shortcuts" })
-    }
-  }
 
   const openOptionsPage = () => {
     browser.tabs.create({ url: browser.runtime.getURL("/options.html") })
@@ -188,6 +168,14 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <ExtensionPlatformProvider>
+      <WelcomeContent />
+    </ExtensionPlatformProvider>
   )
 }
 

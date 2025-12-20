@@ -226,6 +226,32 @@ export function useSyncStatus(): {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Window Actions Hook
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Hook for opening settings and tab management windows
+ *
+ * @example
+ * const { openSettings, openTabManagement, isSupported } = useWindowActions()
+ * if (!isSupported) return null
+ * return <Button onClick={openSettings}>Settings</Button>
+ */
+export function useWindowActions(): {
+  openSettings: () => void
+  openTabManagement: () => void
+  isSupported: boolean
+} {
+  const { openSettings, openTabManagement, capabilities } = usePlatform()
+
+  return {
+    openSettings,
+    openTabManagement,
+    isSupported: capabilities.hasWindowActions,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tab Actions Hook
 // ─────────────────────────────────────────────────────────────────────────────
 

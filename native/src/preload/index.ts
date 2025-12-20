@@ -17,6 +17,16 @@ interface AboutInfo {
   commitHash: string
 }
 
+// Keyboard settings type (matches @tas/types/tabs KeyboardSettings)
+interface KeyboardSettings {
+  modifier: string
+  activateForward: string
+  activateBackward: string
+  closeTab: string
+  search: string
+  tabManagement?: string
+}
+
 // App options type
 interface AppOptions {
   launchOnLogin: boolean
@@ -24,6 +34,7 @@ interface AppOptions {
   checkUpdatesAutomatically: boolean
   theme: 'light' | 'dark' | 'system'
   sortStrategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated'
+  keyboard: KeyboardSettings
 }
 
 // Sort sync status type
@@ -69,6 +80,16 @@ const api = {
     checkForUpdates: (): void => ipcRenderer.send('check-for-updates'),
     onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void): void => {
       ipcRenderer.on('theme-changed', (_event, theme) => callback(theme))
+    },
+    onKeyboardChanged: (callback: (keyboard: KeyboardSettings) => void): void => {
+      ipcRenderer.on('keyboard-changed', (_event, keyboard) => callback(keyboard))
+    },
+    onSortStrategyChanged: (
+      callback: (
+        strategy: 'lastActivated' | 'windowGrouped' | 'lastAccessed' | 'lastDeactivated'
+      ) => void
+    ): void => {
+      ipcRenderer.on('sort-strategy-changed', (_event, strategy) => callback(strategy))
     }
   },
   sorting: {

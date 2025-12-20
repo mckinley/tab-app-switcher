@@ -22,5 +22,6 @@ export {
   useNativeConnection,
   useBrowser,
   useSyncStatus,
-  useTabActions
+  useTabActions,
+  useWindowActions
 } from '@tas/lib/platform'

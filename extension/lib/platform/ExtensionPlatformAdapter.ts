@@ -2,14 +2,14 @@
  * Extension Platform Adapter
  *
  * Implements PlatformAdapter for browser extensions.
- * Extends ExtensionSettingsAdapter with tabs, native connection, and browser info.
+ * Provides tabs, native connection, and browser info capabilities.
  */
 
-import type { PlatformAdapter, PlatformCapabilities, ActionResult, ActionCapabilities } from "@tas/lib/platform"
+import type { PlatformCapabilities, ActionResult, ActionCapabilities } from "@tas/lib/platform"
+import { BasePlatformAdapter } from "@tas/lib/platform"
 import type { ExtensionSettings } from "@tas/lib/settings"
 import type { Tab, BrowserType } from "@tas/types/tabs"
 import { DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
-import { applyTheme, loadAndApplyTheme } from "../../utils/theme"
 
 // Native app download URL
 const NATIVE_APP_URL = "https://github.com/mckinley/tab-app-switcher/releases/latest"
@@ -33,10 +33,11 @@ function detectBrowser(): BrowserType {
   return "unknown"
 }
 
-export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettings> {
+export class ExtensionPlatformAdapter extends BasePlatformAdapter<ExtensionSettings> {
   private browserType: BrowserType
 
   constructor() {
+    super()
     this.browserType = detectBrowser()
   }
 
@@ -60,6 +61,7 @@ export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettin
     hasNativeConnection: true,
     hasBrowserInfo: true,
     hasSync: false,
+    hasWindowActions: true,
     actions: this.actionCapabilities,
   }
 
@@ -70,9 +72,6 @@ export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettin
   async load(): Promise<ExtensionSettings> {
     const result = await browser.storage.local.get([STORAGE_KEYS.theme, STORAGE_KEYS.keyboard, STORAGE_KEYS.sortOrder])
 
-    // Apply theme on load
-    await loadAndApplyTheme()
-
     return {
       theme: result[STORAGE_KEYS.theme] ?? "system",
       keyboard: result[STORAGE_KEYS.keyboard] ?? DEFAULT_KEYBOARD_SETTINGS,
@@ -82,11 +81,6 @@ export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettin
 
   async save<K extends keyof ExtensionSettings>(key: K, value: ExtensionSettings[K]): Promise<void> {
     await browser.storage.local.set({ [key]: value })
-
-    // Apply theme changes immediately
-    if (key === "theme") {
-      applyTheme(value as ExtensionSettings["theme"])
-    }
   }
 
   subscribe(callback: (settings: Partial<ExtensionSettings>) => void): () => void {
@@ -189,6 +183,20 @@ export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettin
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Window Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  openSettings(): void {
+    browser.tabs.create({ url: browser.runtime.getURL("/options.html") })
+    window.close()
+  }
+
+  openTabManagement(): void {
+    browser.tabs.create({ url: browser.runtime.getURL("/tabs.html") })
+    window.close()
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tab Actions
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -217,14 +225,6 @@ export class ExtensionPlatformAdapter implements PlatformAdapter<ExtensionSettin
     } catch (error) {
       return { success: false, error: String(error) }
     }
-  }
-
-  async reorderTabs(_tabId: string, _newIndex: number, _targetWindowId?: number): Promise<ActionResult> {
-    return { success: false, error: "Not supported in this context" }
-  }
-
-  async createWindowWithTabs(_urls: string[]): Promise<ActionResult> {
-    return { success: false, error: "Not supported in this context" }
   }
 }
 

@@ -14,7 +14,6 @@ import { Info, Palette, Keyboard, Plug2, ArrowUpDown } from "lucide-react"
 import {
   ExtensionPlatformProvider,
   useSettings,
-  useApplyTheme,
   useNativeConnection,
   useBrowser,
   useSortOrder,
@@ -75,9 +74,6 @@ function SortingTabContent() {
 function SettingsContent() {
   const { settings, updateSetting, isLoading, version } = useSettings<ExtensionSettings>()
   const [activeTab, setActiveTab] = useState<SettingsTab>("about")
-
-  // Apply theme from settings
-  useApplyTheme()
 
   if (isLoading || !settings) {
     return (

@@ -3,6 +3,8 @@
  * Used by both extension and native implementations
  */
 
+import { useEffect } from "react"
+
 export type Theme = "light" | "dark" | "system"
 
 /**
@@ -35,4 +37,26 @@ export function applyThemeToDocument(resolvedTheme: "light" | "dark"): void {
 export function getSystemPrefersDark(): boolean {
   if (typeof window === "undefined") return false
   return window.matchMedia("(prefers-color-scheme: dark)").matches
+}
+
+/**
+ * Standalone hook that applies system theme preference.
+ * Use this for windows without a PlatformProvider (e.g., about window).
+ * For windows with a provider, use useApplyTheme() from hooks.ts instead.
+ */
+export function useSystemTheme(): void {
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+
+    const applySystemTheme = (): void => {
+      applyThemeToDocument(mediaQuery.matches ? "dark" : "light")
+    }
+
+    // Apply immediately
+    applySystemTheme()
+
+    // Listen for changes
+    mediaQuery.addEventListener("change", applySystemTheme)
+    return () => mediaQuery.removeEventListener("change", applySystemTheme)
+  }, [])
 }

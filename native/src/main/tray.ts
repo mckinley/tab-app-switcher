@@ -95,7 +95,7 @@ export function updateTrayMenu(): void {
     },
     { type: 'separator' },
     {
-      label: 'Show Tab Switcher',
+      label: 'Tab Switcher',
       click: () => createTasOverlay(),
       enabled: isConnected
     },
@@ -106,16 +106,11 @@ export function updateTrayMenu(): void {
     },
     { type: 'separator' },
     {
-      label: 'Setup...',
-      click: () => createSettingsWindow('setup')
-    },
-    {
       label: 'Settings...',
       click: () => createSettingsWindow('keys')
     },
-    { type: 'separator' },
     {
-      label: 'About TAS',
+      label: 'About',
       click: () => createAboutWindow()
     },
     { type: 'separator' },

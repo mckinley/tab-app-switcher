@@ -188,6 +188,18 @@ export function PlatformProvider<T extends CommonSettings>({
   }, [adapter, capabilities.hasSync])
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Window Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const openSettings = useCallback(() => {
+    adapter.openSettings?.()
+  }, [adapter])
+
+  const openTabManagement = useCallback(() => {
+    adapter.openTabManagement?.()
+  }, [adapter])
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tab Actions
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -269,6 +281,10 @@ export function PlatformProvider<T extends CommonSettings>({
     syncStatus,
     isSyncing,
     sync,
+
+    // Window Actions
+    openSettings,
+    openTabManagement,
 
     // Tab Actions
     activateTab,

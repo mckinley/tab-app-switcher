@@ -13,10 +13,7 @@ import {
   type SettingsTabConfig
 } from '@tas/components/settings'
 import { Info, Palette, Keyboard, SlidersHorizontal, Plug2, ArrowUpDown } from 'lucide-react'
-import {
-  DEFAULT_KEYBOARD_SETTINGS,
-  KeyboardSettings as KeyboardSettingsType
-} from '@tas/types/tabs'
+import type { KeyboardSettings as KeyboardSettingsType } from '@tas/types/tabs'
 import {
   NativePlatformProvider,
   useSettings,
@@ -80,7 +77,6 @@ function SortingTabContent(): JSX.Element {
 
 function SettingsContent(): JSX.Element {
   const { settings, updateSetting, isLoading, version } = useSettings<NativeSettingsType>()
-  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(DEFAULT_KEYBOARD_SETTINGS)
   const [activeTab, setActiveTab] = useState<SettingsTab>(getInitialTab)
 
   // Listen for tab switch messages from main process
@@ -93,9 +89,7 @@ function SettingsContent(): JSX.Element {
   }, [])
 
   const handleKeyboardChange = (newKeyboard: KeyboardSettingsType): void => {
-    setKeyboard(newKeyboard)
-    // TODO: Save to electron store and update global shortcuts
-    console.log('Keyboard settings changed:', newKeyboard)
+    updateSetting('keyboard', newKeyboard)
   }
 
   if (isLoading || !settings) {
@@ -133,7 +127,9 @@ function SettingsContent(): JSX.Element {
       id: 'keys',
       label: 'Keys',
       icon: Keyboard,
-      content: <KeyboardSettings keyboard={keyboard} onKeyboardChange={handleKeyboardChange} />
+      content: (
+        <KeyboardSettings keyboard={settings.keyboard} onKeyboardChange={handleKeyboardChange} />
+      )
     },
     {
       id: 'connection',

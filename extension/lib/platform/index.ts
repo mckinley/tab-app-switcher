@@ -20,4 +20,5 @@ export {
   useBrowser,
   useSyncStatus,
   useTabActions,
+  useWindowActions,
 } from "@tas/lib/platform"

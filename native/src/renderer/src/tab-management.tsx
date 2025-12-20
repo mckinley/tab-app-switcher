@@ -28,16 +28,6 @@ function TabManagementContent(): JSX.Element {
     })
   }, [])
 
-  // Apply system theme on mount
-  useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (prefersDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [])
-
   const handleSelectTab = (tabId: string): void => {
     activateTab(tabId)
   }
