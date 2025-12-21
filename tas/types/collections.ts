@@ -12,6 +12,8 @@ export interface CollectionTab {
   url: string
   title: string
   favicon: string
+  createdAt: number // Unix timestamp when added to collection
+  updatedAt: number // Unix timestamp when last modified
 }
 
 /**
@@ -22,6 +24,7 @@ export interface Collection {
   id: string
   name: string
   tabs: CollectionTab[]
+  createdAt: number // Unix timestamp when collection was created
   updatedAt: number // Unix timestamp for last-write-wins sync
 }
 

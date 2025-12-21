@@ -25,7 +25,7 @@ function TabManagementContent() {
   }
 
   return (
-    <SwitcherContainer variant="screen" onClose={() => window.close()}>
+    <SwitcherContainer variant="screen">
       <TabManagement
         tabs={tabs}
         onClose={() => window.close()}

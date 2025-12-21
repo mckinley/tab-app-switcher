@@ -36,13 +36,14 @@ export function loadCollections(currentTabs: Tab[]): Collection[] {
       return migrated
     }
 
-    // Migrate tabs without IDs (for sortable DnD support)
+    // Migrate tabs without IDs or timestamps
     const collections = parsed as Collection[]
-    const { collections: migratedWithIds, needsSave } = ensureTabIds(collections)
+    const { collections: migratedWithIds, needsSave } = ensureTabIdsAndTimestamps(collections)
     if (needsSave) {
       saveCollections(migratedWithIds)
     }
-    return migratedWithIds
+    // Sort by updatedAt descending (most recently updated first)
+    return migratedWithIds.sort((a, b) => b.updatedAt - a.updatedAt)
   } catch {
     console.error("Failed to parse collections from localStorage")
     return []
@@ -61,15 +62,19 @@ export function saveCollections(collections: Collection[]): void {
  */
 function migrateCollections(collections: (Collection | LegacyCollection)[], currentTabs: Tab[]): Collection[] {
   const tabsById = new Map(currentTabs.map((tab) => [tab.id, tab]))
+  const now = Date.now()
 
   return collections.map((collection): Collection => {
     if (!isLegacyCollection(collection)) {
-      // Ensure existing tabs have IDs
+      // Ensure existing tabs have IDs and timestamps
       return {
         ...collection,
+        createdAt: collection.createdAt || collection.updatedAt || now,
         tabs: collection.tabs.map((tab) => ({
           ...tab,
           id: tab.id || generateCollectionTabId(),
+          createdAt: tab.createdAt || now,
+          updatedAt: tab.updatedAt || now,
         })),
       }
     }
@@ -84,6 +89,8 @@ function migrateCollections(collections: (Collection | LegacyCollection)[], curr
           url: tab.url,
           title: tab.title,
           favicon: tab.favicon,
+          createdAt: now,
+          updatedAt: now,
         }
       })
       .filter((tab): tab is CollectionTab => tab !== null)
@@ -92,27 +99,34 @@ function migrateCollections(collections: (Collection | LegacyCollection)[], curr
       id: collection.id,
       name: collection.name,
       tabs,
-      updatedAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     }
   })
 }
 
 /**
- * Ensure all collection tabs have IDs
+ * Ensure all collection tabs have IDs and timestamps
  */
-function ensureTabIds(collections: Collection[]): { collections: Collection[]; needsSave: boolean } {
+function ensureTabIdsAndTimestamps(collections: Collection[]): { collections: Collection[]; needsSave: boolean } {
   let needsSave = false
+  const now = Date.now()
 
   const migrated = collections.map((collection) => {
-    const tabsNeedIds = collection.tabs.some((tab) => !tab.id)
-    if (!tabsNeedIds) return collection
+    const collectionNeedsUpdate = !collection.createdAt
+    const tabsNeedUpdate = collection.tabs.some((tab) => !tab.id || !tab.createdAt || !tab.updatedAt)
+
+    if (!collectionNeedsUpdate && !tabsNeedUpdate) return collection
 
     needsSave = true
     return {
       ...collection,
+      createdAt: collection.createdAt || collection.updatedAt || now,
       tabs: collection.tabs.map((tab) => ({
         ...tab,
         id: tab.id || generateCollectionTabId(),
+        createdAt: tab.createdAt || now,
+        updatedAt: tab.updatedAt || now,
       })),
     }
   })
@@ -124,11 +138,13 @@ function ensureTabIds(collections: Collection[]): { collections: Collection[]; n
  * Create a new collection
  */
 export function createCollection(name: string): Collection {
+  const now = Date.now()
   return {
     id: crypto.randomUUID(),
     name,
     tabs: [],
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
   }
 }
 
@@ -140,6 +156,7 @@ export function addTabToCollection(collection: Collection, tab: Tab): Collection
   const exists = collection.tabs.some((t) => t.url === tab.url)
   if (exists) return collection
 
+  const now = Date.now()
   return {
     ...collection,
     tabs: [
@@ -149,9 +166,11 @@ export function addTabToCollection(collection: Collection, tab: Tab): Collection
         url: tab.url,
         title: tab.title,
         favicon: tab.favicon,
+        createdAt: now,
+        updatedAt: now,
       },
     ],
-    updatedAt: Date.now(),
+    updatedAt: now,
   }
 }
 
@@ -220,6 +239,7 @@ export async function addUrlToCollection(collection: Collection, url: string, ti
 
   const favicon = await fetchFaviconAsDataUrl(normalizedUrl)
   const finalTitle = title?.trim() || generateTitleFromUrl(normalizedUrl)
+  const now = Date.now()
 
   return {
     ...collection,
@@ -230,9 +250,11 @@ export async function addUrlToCollection(collection: Collection, url: string, ti
         url: normalizedUrl,
         title: finalTitle,
         favicon,
+        createdAt: now,
+        updatedAt: now,
       },
     ],
-    updatedAt: Date.now(),
+    updatedAt: now,
   }
 }
 
@@ -265,18 +287,20 @@ export async function updateTabInCollection(
     newTitle = updates.title.trim() || generateTitleFromUrl(newUrl)
   }
 
+  const now = Date.now()
   const tabs = [...collection.tabs]
   tabs[tabIndex] = {
     ...existingTab,
     url: newUrl,
     title: newTitle,
     favicon: newFavicon,
+    updatedAt: now,
   }
 
   return {
     ...collection,
     tabs,
-    updatedAt: Date.now(),
+    updatedAt: now,
   }
 }
 

@@ -37,6 +37,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { ScrollArea } from "@tab-app-switcher/ui/components/scroll-area"
 import { TabFavicon } from "./TabFavicon"
 import { CollectionsPanel } from "./CollectionsPanel"
+import { DraggableWindowHeader } from "./DraggableWindowHeader"
 
 interface TabManagementProps {
   tabs: Tab[]
@@ -150,6 +151,7 @@ export const TabManagement = ({
   const [showMobileTabsPanel, setShowMobileTabsPanel] = useState(false)
   const [addingUrlCollections, setAddingUrlCollections] = useState<Set<string>>(new Set())
   const [editingTabCollections, setEditingTabCollections] = useState<Set<string>>(new Set())
+  const [draggingWindowId, setDraggingWindowId] = useState<number | null>(null)
 
   // Use controlled collections if provided, otherwise use internal state
   const collections = isControlled ? controlledCollections : internalCollections
@@ -318,7 +320,18 @@ export const TabManagement = ({
   }, [tabs, searchQuery, sortBy, reverseSort])
 
   const handleDragStart = (event: DragStartEvent) => {
-    const tab = currentTabs.find((t) => t.id === event.active.id)
+    const activeId = event.active.id as string
+
+    // Check if dragging a window
+    if (activeId.startsWith("window:")) {
+      const windowId = parseInt(activeId.replace("window:", ""), 10)
+      setDraggingWindowId(windowId)
+      setIsDroppedOnCollection(false)
+      return
+    }
+
+    // Otherwise, it's a tab
+    const tab = currentTabs.find((t) => t.id === activeId)
     if (tab) {
       setActiveTab(tab)
       setIsDroppedOnCollection(false)
@@ -330,11 +343,43 @@ export const TabManagement = ({
 
     if (!over) {
       setActiveTab(null)
+      setDraggingWindowId(null)
       return
     }
 
     const activeId = active.id as string
     const overId = over.id as string
+
+    // Handle window drop to create a new collection
+    if (activeId.startsWith("window:")) {
+      const windowId = parseInt(activeId.replace("window:", ""), 10)
+      const windowTabs = tabsByWindowId.get(windowId) || []
+
+      if (overId === "new-collection" && windowTabs.length > 0) {
+        // Get window name from the first tab or generate one
+        const windowName = windowIdToName.get(windowId) || "Window"
+        const newCollection = createCollection(windowName)
+
+        // Add all tabs from the window to the collection
+        const now = Date.now()
+        const collectionWithTabs: Collection = {
+          ...newCollection,
+          tabs: windowTabs.map((tab) => ({
+            id: crypto.randomUUID(),
+            url: tab.url,
+            title: tab.title,
+            favicon: tab.favicon,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        }
+
+        updateCollections([...collections, collectionWithTabs])
+      }
+
+      setDraggingWindowId(null)
+      return
+    }
 
     // Check if this is a collection tab being reordered (not a browser tab)
     // Collection tabs have UUIDs that don't match browser tab IDs
@@ -474,6 +519,7 @@ export const TabManagement = ({
     setTabsByWindowId(grouped)
     setActiveTab(null)
     setIsDroppedOnCollection(false)
+    setDraggingWindowId(null)
   }
 
   const handleDeleteCollection = (collectionId: string) => {
@@ -805,27 +851,48 @@ export const TabManagement = ({
               )}
 
               {viewMode === "collections" && (
-                <CollectionsPanel
-                  collections={collections}
-                  onCreateCollection={(name) => {
-                    const newCollection = createCollection(name)
-                    updateCollections([...collections, newCollection])
-                  }}
-                  onDeleteCollection={handleDeleteCollection}
-                  onRenameCollection={handleRenameCollection}
-                  onSendToWindow={handleSendCollectionToWindow}
-                  onAddUrl={handleAddUrlToCollection}
-                  onEditTab={handleEditTabInCollection}
-                  onDeleteTab={handleDeleteTabFromCollection}
-                  addingUrlStates={addingUrlCollections}
-                  editingTabStates={editingTabCollections}
-                  disableSorting={isMobile}
-                  renderCollectionWrapper={(collectionId, children, _isOver) => (
-                    <DroppableWrapper id={collectionId}>
-                      {(isOver) => <div className={cn(isOver && "ring-2 ring-primary/20 rounded-lg")}>{children}</div>}
+                <>
+                  {/* Drop zone for creating new collection from window */}
+                  {draggingWindowId !== null && (
+                    <DroppableWrapper id="new-collection">
+                      {(isOver) => (
+                        <div
+                          className={cn(
+                            "mb-4 p-4 border-2 border-dashed rounded-lg text-center text-sm text-muted-foreground transition-colors",
+                            isOver ? "border-primary bg-primary/10 text-primary" : "border-muted-foreground/30",
+                          )}
+                        >
+                          <Layers className="w-6 h-6 mx-auto mb-2" />
+                          Drop to create new collection
+                        </div>
+                      )}
                     </DroppableWrapper>
                   )}
-                />
+
+                  <CollectionsPanel
+                    collections={collections}
+                    onCreateCollection={(name) => {
+                      const newCollection = createCollection(name)
+                      updateCollections([...collections, newCollection])
+                    }}
+                    onDeleteCollection={handleDeleteCollection}
+                    onRenameCollection={handleRenameCollection}
+                    onSendToWindow={handleSendCollectionToWindow}
+                    onAddUrl={handleAddUrlToCollection}
+                    onEditTab={handleEditTabInCollection}
+                    onDeleteTab={handleDeleteTabFromCollection}
+                    addingUrlStates={addingUrlCollections}
+                    editingTabStates={editingTabCollections}
+                    disableSorting={isMobile}
+                    renderCollectionWrapper={(collectionId, children, _isOver) => (
+                      <DroppableWrapper id={collectionId}>
+                        {(isOver) => (
+                          <div className={cn(isOver && "ring-2 ring-primary/20 rounded-lg")}>{children}</div>
+                        )}
+                      </DroppableWrapper>
+                    )}
+                  />
+                </>
               )}
 
               {viewMode === "account" && (
@@ -891,32 +958,37 @@ export const TabManagement = ({
 
             <ScrollArea className="flex-1">
               <div className="p-2">
-                {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => (
-                  <div key={windowName} className="mb-4">
-                    {/* Only show window name if there are multiple windows */}
-                    {Object.keys(tabsByWindow).length > 1 && (
-                      <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                        {windowName} ({windowTabs.length})
-                      </div>
-                    )}
-                    <SortableContext items={windowTabs.map((t) => t.id)}>
-                      <div className="space-y-1">
-                        {windowTabs.map((tab) => (
-                          <SortableTab
-                            key={tab.id}
-                            tab={tab}
-                            onSelect={() => {
-                              onSelectTab(tab.id)
-                              onClose()
-                            }}
-                            onClose={onCloseTab ? () => handleCloseTab(tab.id) : undefined}
-                            showClose={!!onCloseTab}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </div>
-                ))}
+                {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => {
+                  const windowId = windowTabs[0]?.windowId ?? 0
+                  return (
+                    <div key={windowName} className="mb-4">
+                      {/* Only show window name if there are multiple windows */}
+                      {Object.keys(tabsByWindow).length > 1 && (
+                        <DraggableWindowHeader
+                          windowId={windowId}
+                          windowName={windowName}
+                          tabCount={windowTabs.length}
+                        />
+                      )}
+                      <SortableContext items={windowTabs.map((t) => t.id)}>
+                        <div className="space-y-1">
+                          {windowTabs.map((tab) => (
+                            <SortableTab
+                              key={tab.id}
+                              tab={tab}
+                              onSelect={() => {
+                                onSelectTab(tab.id)
+                                onClose()
+                              }}
+                              onClose={onCloseTab ? () => handleCloseTab(tab.id) : undefined}
+                              showClose={!!onCloseTab}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </div>
+                  )
+                })}
               </div>
             </ScrollArea>
           </div>
@@ -1002,6 +1074,17 @@ export const TabManagement = ({
             <div className="p-2 rounded-md bg-background border shadow-lg flex items-center gap-2 max-w-64">
               <TabFavicon src={activeTab.favicon} className="w-4 h-4 flex-shrink-0" />
               <span className="text-xs truncate">{activeTab.title}</span>
+            </div>
+          )}
+          {draggingWindowId !== null && (
+            <div className="p-3 rounded-md bg-background border shadow-lg">
+              <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                <Layers className="w-4 h-4" />
+                <span>{windowIdToName.get(draggingWindowId) || "Window"}</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {(tabsByWindowId.get(draggingWindowId) || []).length} tabs
+              </div>
             </div>
           )}
         </DragOverlay>

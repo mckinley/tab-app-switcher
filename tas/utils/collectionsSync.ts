@@ -15,11 +15,22 @@ interface CloudCollection {
 }
 
 function cloudToLocal(cloud: CloudCollection): Collection {
+  const createdAt = new Date(cloud.created_at).getTime()
+  const updatedAt = new Date(cloud.updated_at).getTime()
+
+  // Ensure tabs have timestamps (for migration from older cloud data)
+  const tabs = cloud.tabs.map((tab) => ({
+    ...tab,
+    createdAt: tab.createdAt || createdAt,
+    updatedAt: tab.updatedAt || updatedAt,
+  }))
+
   return {
     id: cloud.id,
     name: cloud.name,
-    tabs: cloud.tabs,
-    updatedAt: new Date(cloud.updated_at).getTime(),
+    tabs,
+    createdAt,
+    updatedAt,
   }
 }
 
@@ -81,7 +92,8 @@ export function mergeCollections(local: Collection[], cloud: Collection[], delet
     }
   }
 
-  return Array.from(merged.values())
+  // Sort by updatedAt descending (most recently updated first)
+  return Array.from(merged.values()).sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
 /**
