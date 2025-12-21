@@ -8,6 +8,10 @@ import {
   createCollection,
   addTabToCollection,
   renameCollection,
+  removeTabById,
+  reorderTabsInCollection,
+  addUrlToCollection,
+  updateTabInCollection,
 } from "../utils/collectionsStorage"
 import { useAuth } from "../hooks/useAuth"
 import { useCollectionsSync } from "../hooks/useCollectionsSync"
@@ -139,12 +143,13 @@ export const TabManagement = ({
   const [viewMode, setViewMode] = useState<ViewMode>("search")
   const [internalCollections, setInternalCollections] = useState<Collection[]>([])
   const [collectionsLoaded, setCollectionsLoaded] = useState(false)
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab | null>(null)
   const [tabsByWindowId, setTabsByWindowId] = useState<Map<number, Tab[]>>(new Map())
   const [isDroppedOnCollection, setIsDroppedOnCollection] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [showMobileTabsPanel, setShowMobileTabsPanel] = useState(false)
+  const [addingUrlCollections, setAddingUrlCollections] = useState<Set<string>>(new Set())
+  const [editingTabCollections, setEditingTabCollections] = useState<Set<string>>(new Set())
 
   // Use controlled collections if provided, otherwise use internal state
   const collections = isControlled ? controlledCollections : internalCollections
@@ -328,11 +333,36 @@ export const TabManagement = ({
       return
     }
 
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Check if this is a collection tab being reordered (not a browser tab)
+    // Collection tabs have UUIDs that don't match browser tab IDs
+    const isBrowserTab = currentTabs.some((t) => t.id === activeId)
+
+    if (!isBrowserTab) {
+      // This is a collection tab being reordered
+      // Find which collection contains this tab
+      for (const collection of collections) {
+        const fromIndex = collection.tabs.findIndex((t) => t.id === activeId)
+        if (fromIndex >= 0) {
+          const toIndex = collection.tabs.findIndex((t) => t.id === overId)
+          if (toIndex >= 0 && fromIndex !== toIndex) {
+            const updated = reorderTabsInCollection(collection, fromIndex, toIndex)
+            updateCollections(collections.map((c) => (c.id === collection.id ? updated : c)))
+          }
+          break
+        }
+      }
+      setActiveTab(null)
+      return
+    }
+
     // Check if dropping into a collection
-    const collection = collections.find((c) => c.id === over.id)
+    const collection = collections.find((c) => c.id === overId)
     if (collection) {
       // Find the tab being dragged
-      const draggedTab = currentTabs.find((t) => t.id === active.id)
+      const draggedTab = currentTabs.find((t) => t.id === activeId)
       if (draggedTab) {
         // Add tab to collection if not already there (by URL)
         const alreadyInCollection = collection.tabs.some((t) => t.url === draggedTab.url)
@@ -348,13 +378,13 @@ export const TabManagement = ({
 
     // Handle reordering - the visual state is already correct from handleDragOver
     // Now we just need to call the browser API with the active tab's new position
-    const activeTabData = currentTabs.find((t) => t.id === active.id)
+    const activeTabData = currentTabs.find((t) => t.id === activeId)
     if (activeTabData && activeTabData.windowId !== undefined) {
       const targetWindowId = activeTabData.windowId
       const targetWindowTabs = tabsByWindowId.get(targetWindowId) || []
-      const activeIndex = targetWindowTabs.findIndex((t) => t.id === active.id)
+      const activeIndex = targetWindowTabs.findIndex((t) => t.id === activeId)
       if (activeIndex >= 0) {
-        onReorderTabs?.(active.id as string, activeIndex, targetWindowId)
+        onReorderTabs?.(activeId, activeIndex, targetWindowId)
       }
     }
 
@@ -448,13 +478,59 @@ export const TabManagement = ({
 
   const handleDeleteCollection = (collectionId: string) => {
     updateCollections(collections.filter((c) => c.id !== collectionId))
-    if (selectedCollection === collectionId) {
-      setSelectedCollection(null)
-    }
   }
 
   const handleRenameCollection = (id: string, newName: string) => {
     updateCollections(collections.map((c) => (c.id === id ? renameCollection(c, newName) : c)))
+  }
+
+  // Handler: Add URL to collection (async - fetches favicon)
+  const handleAddUrlToCollection = async (collectionId: string, url: string, title?: string) => {
+    const collection = collections.find((c) => c.id === collectionId)
+    if (!collection) return
+
+    setAddingUrlCollections((prev) => new Set(prev).add(collectionId))
+    try {
+      const updated = await addUrlToCollection(collection, url, title)
+      updateCollections(collections.map((c) => (c.id === collectionId ? updated : c)))
+    } finally {
+      setAddingUrlCollections((prev) => {
+        const next = new Set(prev)
+        next.delete(collectionId)
+        return next
+      })
+    }
+  }
+
+  // Handler: Edit tab in collection (async - may re-fetch favicon)
+  const handleEditTabInCollection = async (
+    collectionId: string,
+    tabId: string,
+    updates: { url?: string; title?: string },
+  ) => {
+    const collection = collections.find((c) => c.id === collectionId)
+    if (!collection) return
+
+    setEditingTabCollections((prev) => new Set(prev).add(collectionId))
+    try {
+      const updated = await updateTabInCollection(collection, tabId, updates)
+      updateCollections(collections.map((c) => (c.id === collectionId ? updated : c)))
+    } finally {
+      setEditingTabCollections((prev) => {
+        const next = new Set(prev)
+        next.delete(collectionId)
+        return next
+      })
+    }
+  }
+
+  // Handler: Delete tab from collection by ID
+  const handleDeleteTabFromCollection = (collectionId: string, tabId: string) => {
+    const collection = collections.find((c) => c.id === collectionId)
+    if (!collection) return
+
+    const updated = removeTabById(collection, tabId)
+    updateCollections(collections.map((c) => (c.id === collectionId ? updated : c)))
   }
 
   const handleSendCollectionToWindow = (collectionId: string) => {
@@ -731,8 +807,6 @@ export const TabManagement = ({
               {viewMode === "collections" && (
                 <CollectionsPanel
                   collections={collections}
-                  selectedCollection={selectedCollection}
-                  onSelectCollection={setSelectedCollection}
                   onCreateCollection={(name) => {
                     const newCollection = createCollection(name)
                     updateCollections([...collections, newCollection])
@@ -740,7 +814,12 @@ export const TabManagement = ({
                   onDeleteCollection={handleDeleteCollection}
                   onRenameCollection={handleRenameCollection}
                   onSendToWindow={handleSendCollectionToWindow}
-                  alwaysShowTabs
+                  onAddUrl={handleAddUrlToCollection}
+                  onEditTab={handleEditTabInCollection}
+                  onDeleteTab={handleDeleteTabFromCollection}
+                  addingUrlStates={addingUrlCollections}
+                  editingTabStates={editingTabCollections}
+                  disableSorting={isMobile}
                   renderCollectionWrapper={(collectionId, children, _isOver) => (
                     <DroppableWrapper id={collectionId}>
                       {(isOver) => <div className={cn(isOver && "ring-2 ring-primary/20 rounded-lg")}>{children}</div>}

@@ -7,7 +7,13 @@ import {
   deleteCloudCollection,
   fetchCloudCollections,
 } from "../utils/collectionsSync"
-import { saveCollections as saveToLocalStorage } from "../utils/collectionsStorage"
+import {
+  saveCollections as saveToLocalStorage,
+  trackDeletedCollection,
+  getDeletedCollectionIds,
+  clearDeletedCollectionId,
+  clearAllDeletedCollectionIds,
+} from "../utils/collectionsStorage"
 
 interface UseCollectionsSyncProps {
   user: User | null
@@ -28,16 +34,38 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
       isSyncingRef.current = true
 
       try {
-        const { merged, needsPush } = await syncCollections(collections)
+        // Get locally tracked deleted collection IDs
+        const deletedIds = getDeletedCollectionIds()
+
+        const { merged, needsPush, needsCloudDelete } = await syncCollections(collections, deletedIds)
 
         // Update local state with merged collections
         setCollections(merged)
         saveToLocalStorage(merged)
 
+        // IMPORTANT: Update previousCollectionsRef so future deletions are detected correctly
+        // Without this, collections added from cloud during merge won't be tracked
+        // when the user deletes them later
+        previousCollectionsRef.current = merged
+
         // Push any local-only or newer collections to cloud
         if (needsPush.length > 0) {
           await pushCollectionsToCloud(needsPush)
         }
+
+        // Delete any collections from cloud that were deleted locally
+        if (needsCloudDelete.length > 0) {
+          await Promise.all(
+            needsCloudDelete.map(async (id) => {
+              await deleteCloudCollection(id)
+              clearDeletedCollectionId(id)
+            }),
+          )
+        }
+
+        // Clear any remaining deleted IDs that weren't in cloud
+        // (they were already deleted or never synced)
+        clearAllDeletedCollectionIds()
       } catch (error) {
         console.error("Failed to sync collections:", error)
       } finally {
@@ -59,6 +87,10 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
       // Find deleted collections
       const deletedIds = previous.filter((p) => !newCollections.find((n) => n.id === p.id)).map((c) => c.id)
 
+      // Track deleted collections locally BEFORE attempting cloud deletion
+      // This ensures they don't come back on refresh even if cloud delete fails
+      deletedIds.forEach(trackDeletedCollection)
+
       // Find new or updated collections
       const changedCollections = newCollections.filter((n) => {
         const prev = previous.find((p) => p.id === n.id)
@@ -67,7 +99,13 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
 
       try {
         // Delete removed collections from cloud
-        await Promise.all(deletedIds.map(deleteCloudCollection))
+        await Promise.all(
+          deletedIds.map(async (id) => {
+            await deleteCloudCollection(id)
+            // Clear from tracked list after successful cloud deletion
+            clearDeletedCollectionId(id)
+          }),
+        )
 
         // Push changed collections to cloud
         if (changedCollections.length > 0) {
@@ -75,6 +113,7 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
         }
       } catch (error) {
         console.error("Failed to sync changes to cloud:", error)
+        // Note: deleted IDs remain tracked, will be cleaned up on next initial sync
       }
     },
     [user],
@@ -86,8 +125,11 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
 
     try {
       const cloudCollections = await fetchCloudCollections()
-      setCollections(cloudCollections)
-      saveToLocalStorage(cloudCollections)
+      // Filter out any collections that are marked as deleted locally
+      const deletedIds = new Set(getDeletedCollectionIds())
+      const filteredCollections = cloudCollections.filter((c) => !deletedIds.has(c.id))
+      setCollections(filteredCollections)
+      saveToLocalStorage(filteredCollections)
     } catch (error) {
       console.error("Failed to refresh from cloud:", error)
     }

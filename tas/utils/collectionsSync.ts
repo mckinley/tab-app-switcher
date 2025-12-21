@@ -60,13 +60,17 @@ export async function deleteCloudCollection(collectionId: string): Promise<void>
 /**
  * Merge local and cloud collections using last-write-wins strategy
  * Returns the merged list of collections
+ * @param deletedIds - IDs of collections that have been deleted locally (should be excluded from merge)
  */
-export function mergeCollections(local: Collection[], cloud: Collection[]): Collection[] {
+export function mergeCollections(local: Collection[], cloud: Collection[], deletedIds: string[] = []): Collection[] {
   const merged = new Map<string, Collection>()
+  const deletedSet = new Set(deletedIds)
 
-  // Add all cloud collections
+  // Add all cloud collections (except deleted ones)
   for (const c of cloud) {
-    merged.set(c.id, c)
+    if (!deletedSet.has(c.id)) {
+      merged.set(c.id, c)
+    }
   }
 
   // Merge local collections - local wins if newer
@@ -82,13 +86,15 @@ export function mergeCollections(local: Collection[], cloud: Collection[]): Coll
 
 /**
  * Sync local collections with cloud
- * Returns the merged collections and a list of collections that need to be pushed to cloud
+ * Returns the merged collections, collections that need to be pushed, and IDs that need deletion from cloud
+ * @param deletedIds - IDs of collections that have been deleted locally
  */
 export async function syncCollections(
   localCollections: Collection[],
-): Promise<{ merged: Collection[]; needsPush: Collection[] }> {
+  deletedIds: string[] = [],
+): Promise<{ merged: Collection[]; needsPush: Collection[]; needsCloudDelete: string[] }> {
   const cloudCollections = await fetchCloudCollections()
-  const merged = mergeCollections(localCollections, cloudCollections)
+  const merged = mergeCollections(localCollections, cloudCollections, deletedIds)
 
   // Find collections that need to be pushed (local is newer or doesn't exist in cloud)
   const cloudMap = new Map(cloudCollections.map((c) => [c.id, c]))
@@ -97,7 +103,10 @@ export async function syncCollections(
     return !cloud || c.updatedAt > new Date(cloud.updatedAt).getTime()
   })
 
-  return { merged, needsPush }
+  // Find deleted IDs that still exist in cloud and need to be deleted
+  const needsCloudDelete = deletedIds.filter((id) => cloudMap.has(id))
+
+  return { merged, needsPush, needsCloudDelete }
 }
 
 /**

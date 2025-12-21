@@ -8,6 +8,7 @@
  * This is independent of the browser's current tab state
  */
 export interface CollectionTab {
+  id: string
   url: string
   title: string
   favicon: string

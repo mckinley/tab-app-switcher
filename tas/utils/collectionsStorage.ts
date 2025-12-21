@@ -6,8 +6,14 @@
 import type { Collection, LegacyCollection, CollectionTab } from "../types/collections"
 import { isLegacyCollection } from "../types/collections"
 import type { Tab } from "../types/tabs"
+import { fetchFaviconAsDataUrl, generateTitleFromUrl, normalizeUrl } from "./faviconFetcher"
 
 const STORAGE_KEY = "tab-collections"
+const DELETED_IDS_KEY = "tab-collections-deleted"
+
+export function generateCollectionTabId(): string {
+  return crypto.randomUUID()
+}
 
 /**
  * Load collections from localStorage
@@ -30,7 +36,13 @@ export function loadCollections(currentTabs: Tab[]): Collection[] {
       return migrated
     }
 
-    return parsed as Collection[]
+    // Migrate tabs without IDs (for sortable DnD support)
+    const collections = parsed as Collection[]
+    const { collections: migratedWithIds, needsSave } = ensureTabIds(collections)
+    if (needsSave) {
+      saveCollections(migratedWithIds)
+    }
+    return migratedWithIds
   } catch {
     console.error("Failed to parse collections from localStorage")
     return []
@@ -52,7 +64,14 @@ function migrateCollections(collections: (Collection | LegacyCollection)[], curr
 
   return collections.map((collection): Collection => {
     if (!isLegacyCollection(collection)) {
-      return collection
+      // Ensure existing tabs have IDs
+      return {
+        ...collection,
+        tabs: collection.tabs.map((tab) => ({
+          ...tab,
+          id: tab.id || generateCollectionTabId(),
+        })),
+      }
     }
 
     // Convert tabIds to full tab data
@@ -61,6 +80,7 @@ function migrateCollections(collections: (Collection | LegacyCollection)[], curr
         const tab = tabsById.get(tabId)
         if (!tab) return null
         return {
+          id: generateCollectionTabId(),
           url: tab.url,
           title: tab.title,
           favicon: tab.favicon,
@@ -75,6 +95,29 @@ function migrateCollections(collections: (Collection | LegacyCollection)[], curr
       updatedAt: Date.now(),
     }
   })
+}
+
+/**
+ * Ensure all collection tabs have IDs
+ */
+function ensureTabIds(collections: Collection[]): { collections: Collection[]; needsSave: boolean } {
+  let needsSave = false
+
+  const migrated = collections.map((collection) => {
+    const tabsNeedIds = collection.tabs.some((tab) => !tab.id)
+    if (!tabsNeedIds) return collection
+
+    needsSave = true
+    return {
+      ...collection,
+      tabs: collection.tabs.map((tab) => ({
+        ...tab,
+        id: tab.id || generateCollectionTabId(),
+      })),
+    }
+  })
+
+  return { collections: migrated, needsSave }
 }
 
 /**
@@ -102,6 +145,7 @@ export function addTabToCollection(collection: Collection, tab: Tab): Collection
     tabs: [
       ...collection.tabs,
       {
+        id: generateCollectionTabId(),
         url: tab.url,
         title: tab.title,
         favicon: tab.favicon,
@@ -131,4 +175,150 @@ export function renameCollection(collection: Collection, newName: string): Colle
     name: newName,
     updatedAt: Date.now(),
   }
+}
+
+/**
+ * Remove a tab from a collection by its ID
+ */
+export function removeTabById(collection: Collection, tabId: string): Collection {
+  return {
+    ...collection,
+    tabs: collection.tabs.filter((t) => t.id !== tabId),
+    updatedAt: Date.now(),
+  }
+}
+
+/**
+ * Reorder tabs within a collection using dnd-kit's arrayMove for consistency
+ */
+export function reorderTabsInCollection(collection: Collection, fromIndex: number, toIndex: number): Collection {
+  if (fromIndex === toIndex) return collection
+  if (fromIndex < 0 || fromIndex >= collection.tabs.length) return collection
+  if (toIndex < 0 || toIndex >= collection.tabs.length) return collection
+
+  // Use same algorithm as dnd-kit's arrayMove
+  const tabs = [...collection.tabs]
+  const [item] = tabs.splice(fromIndex, 1)
+  tabs.splice(toIndex, 0, item)
+
+  return {
+    ...collection,
+    tabs,
+    updatedAt: Date.now(),
+  }
+}
+
+/**
+ * Add a URL to a collection (fetches favicon automatically)
+ */
+export async function addUrlToCollection(collection: Collection, url: string, title?: string): Promise<Collection> {
+  const normalizedUrl = normalizeUrl(url)
+
+  // Check if URL already exists
+  const exists = collection.tabs.some((t) => t.url === normalizedUrl)
+  if (exists) return collection
+
+  const favicon = await fetchFaviconAsDataUrl(normalizedUrl)
+  const finalTitle = title?.trim() || generateTitleFromUrl(normalizedUrl)
+
+  return {
+    ...collection,
+    tabs: [
+      ...collection.tabs,
+      {
+        id: generateCollectionTabId(),
+        url: normalizedUrl,
+        title: finalTitle,
+        favicon,
+      },
+    ],
+    updatedAt: Date.now(),
+  }
+}
+
+/**
+ * Update a tab in a collection (re-fetches favicon if URL changes)
+ */
+export async function updateTabInCollection(
+  collection: Collection,
+  tabId: string,
+  updates: { url?: string; title?: string },
+): Promise<Collection> {
+  const tabIndex = collection.tabs.findIndex((t) => t.id === tabId)
+  if (tabIndex === -1) return collection
+
+  const existingTab = collection.tabs[tabIndex]
+  let newUrl = existingTab.url
+  let newFavicon = existingTab.favicon
+  let newTitle = existingTab.title
+
+  if (updates.url && updates.url !== existingTab.url) {
+    newUrl = normalizeUrl(updates.url)
+    newFavicon = await fetchFaviconAsDataUrl(newUrl)
+    // If no title update provided and URL changed, regenerate title
+    if (!updates.title) {
+      newTitle = generateTitleFromUrl(newUrl)
+    }
+  }
+
+  if (updates.title !== undefined) {
+    newTitle = updates.title.trim() || generateTitleFromUrl(newUrl)
+  }
+
+  const tabs = [...collection.tabs]
+  tabs[tabIndex] = {
+    ...existingTab,
+    url: newUrl,
+    title: newTitle,
+    favicon: newFavicon,
+  }
+
+  return {
+    ...collection,
+    tabs,
+    updatedAt: Date.now(),
+  }
+}
+
+/**
+ * Track a collection as deleted (for sync purposes)
+ * This ensures deleted collections don't return during merge
+ */
+export function trackDeletedCollection(collectionId: string): void {
+  const deleted = getDeletedCollectionIds()
+  if (!deleted.includes(collectionId)) {
+    deleted.push(collectionId)
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(deleted))
+  }
+}
+
+/**
+ * Get list of deleted collection IDs
+ */
+export function getDeletedCollectionIds(): string[] {
+  const saved = localStorage.getItem(DELETED_IDS_KEY)
+  if (!saved) return []
+  try {
+    return JSON.parse(saved) as string[]
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Remove a collection ID from the deleted list
+ * (used when cloud deletion is confirmed)
+ */
+export function clearDeletedCollectionId(collectionId: string): void {
+  const deleted = getDeletedCollectionIds()
+  const filtered = deleted.filter((id) => id !== collectionId)
+  localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(filtered))
+}
+
+/**
+ * Clear all deleted collection IDs
+ * (used after successful full sync)
+ */
+export function clearAllDeletedCollectionIds(): void {
+  localStorage.removeItem(DELETED_IDS_KEY)
 }
