@@ -60,8 +60,14 @@ function bumpVersion(current, type) {
 function updateJsonVersion(filePath, version) {
   const data = readJson(filePath)
   data.version = version
+  // Always increment build number for extension (required for Safari App Store)
+  if (filePath === "extension/package.json" && typeof data.build === "number") {
+    data.build = data.build + 1
+    console.log(`  ✓ ${filePath} (build ${data.build})`)
+  } else {
+    console.log(`  ✓ ${filePath}`)
+  }
   writeJson(filePath, data)
-  console.log(`  ✓ ${filePath}`)
 }
 
 function updateWxtConfig(filePath, version) {
