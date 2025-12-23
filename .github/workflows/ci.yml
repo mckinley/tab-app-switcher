@@ -57,6 +57,9 @@ jobs:
       - name: Build site
         run: npm run build:site
 
+      - name: Copy Vercel config to dist
+        run: cp site/vercel.json site/dist/
+
       - name: Deploy to Vercel
         run: npx vercel deploy ./site/dist --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
         env:
