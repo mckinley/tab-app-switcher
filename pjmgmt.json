@@ -1,0 +1,30 @@
+{
+  "name": "tab-app-switcher",
+  "status": "active",
+  "monorepo": true,
+  "projects": [
+    {
+      "name": "ui",
+      "path": "packages/ui",
+      "uiLibrary": "shadcn"
+    },
+    {
+      "name": "site",
+      "path": "site",
+      "deployTarget": "vercel"
+    },
+    {
+      "name": "extension",
+      "path": "extension"
+    },
+    {
+      "name": "tas",
+      "path": "tas"
+    },
+    {
+      "name": "native",
+      "path": "native",
+      "framework": "vite"
+    }
+  ]
+}
