@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react"
-import type { User } from "@supabase/supabase-js"
+import type { AuthUser } from "./useAuth"
 import type { Collection } from "../types/collections"
 import {
   syncCollections,
@@ -16,7 +16,7 @@ import {
 } from "../utils/collectionsStorage"
 
 interface UseCollectionsSyncProps {
-  user: User | null
+  user: AuthUser | null
   collections: Collection[]
   setCollections: (collections: Collection[]) => void
 }

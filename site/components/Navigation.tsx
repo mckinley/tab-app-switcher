@@ -1,5 +1,4 @@
 import { ReactNode } from "react"
-import { Link } from "react-router-dom"
 import { Menu, User, LogOut, FolderOpen, Settings, Home } from "lucide-react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import {
@@ -17,12 +16,12 @@ import logo from "@/assets/logo.jpg"
 
 // Main nav items (right to left in the UI: User, Theme, Downloads, About, Home)
 const mainNavItems = [
-  { to: "/about", label: "About" },
-  { to: "/downloads", label: "Downloads" },
+  { href: "/about", label: "About" },
+  { href: "/downloads", label: "Downloads" },
 ]
 
 export interface SubnavItem {
-  to: string
+  href: string
   label: string
 }
 
@@ -38,18 +37,18 @@ interface NavigationProps {
 export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) {
   const { user, isLoading, signIn, signOut } = useAuth()
 
-  const avatarUrl = user?.user_metadata?.avatar_url
-  const userName = user?.user_metadata?.full_name || user?.email
+  const avatarUrl = user?.image
+  const userName = user?.name || user?.email
 
   const navLinkClass = "px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
   const activeNavLinkClass = "text-foreground"
 
   // Default left content: logo and title
   const defaultLeftContent = (
-    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-      <img src={logo} alt="TAS" className="w-8 h-8 rounded-lg" />
+    <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <img src={typeof logo === 'string' ? logo : logo.src} alt="TAS" className="w-8 h-8 rounded-lg" />
       <span className="text-sm font-medium text-foreground hidden sm:inline">Tab Application Switcher</span>
-    </Link>
+    </a>
   )
 
   return (
@@ -66,11 +65,11 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
           <div className="flex items-center gap-1">
             {/* Desktop Nav - right aligned: Home icon, About, Downloads, Theme, User */}
             <nav className="hidden md:flex items-center gap-1">
-              <NavLink to="/" className={navLinkClass} activeClassName={activeNavLinkClass} end>
+              <NavLink href="/" className={navLinkClass} activeClassName={activeNavLinkClass} end>
                 <Home className="w-4 h-4" />
               </NavLink>
               {mainNavItems.map((item) => (
-                <NavLink key={item.to} to={item.to} className={navLinkClass} activeClassName={activeNavLinkClass}>
+                <NavLink key={item.href} href={item.href} className={navLinkClass} activeClassName={activeNavLinkClass}>
                   {item.label}
                 </NavLink>
               ))}
@@ -100,16 +99,16 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/collections">
+                      <a href="/collections">
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Collections
-                      </Link>
+                      </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/account">
+                      <a href="/account">
                         <Settings className="mr-2 h-4 w-4" />
                         Account
-                      </Link>
+                      </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut}>
@@ -136,11 +135,11 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Site navigation links</SheetDescription>
                 <nav className="flex flex-col gap-2 mt-8">
-                  <NavLink to="/" className={navLinkClass} activeClassName={activeNavLinkClass} end>
+                  <NavLink href="/" className={navLinkClass} activeClassName={activeNavLinkClass} end>
                     Home
                   </NavLink>
                   {mainNavItems.map((item) => (
-                    <NavLink key={item.to} to={item.to} className={navLinkClass} activeClassName={activeNavLinkClass}>
+                    <NavLink key={item.href} href={item.href} className={navLinkClass} activeClassName={activeNavLinkClass}>
                       {item.label}
                     </NavLink>
                   ))}
@@ -149,8 +148,8 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                       <div className="h-px bg-border my-2" />
                       {subnavItems.map((item) => (
                         <NavLink
-                          key={item.to}
-                          to={item.to}
+                          key={item.href}
+                          href={item.href}
                           className={navLinkClass}
                           activeClassName={activeNavLinkClass}
                         >
@@ -162,10 +161,10 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                   {user && (
                     <>
                       <div className="h-px bg-border my-2" />
-                      <NavLink to="/collections" className={navLinkClass} activeClassName={activeNavLinkClass}>
+                      <NavLink href="/collections" className={navLinkClass} activeClassName={activeNavLinkClass}>
                         Collections
                       </NavLink>
-                      <NavLink to="/account" className={navLinkClass} activeClassName={activeNavLinkClass}>
+                      <NavLink href="/account" className={navLinkClass} activeClassName={activeNavLinkClass}>
                         Account
                       </NavLink>
                     </>
@@ -195,8 +194,8 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
             <nav className="flex items-center gap-1 py-2">
               {subnavItems.map((item) => (
                 <NavLink
-                  key={item.to}
-                  to={item.to}
+                  key={item.href}
+                  href={item.href}
                   className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   activeClassName="text-foreground"
                 >

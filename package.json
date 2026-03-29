@@ -55,7 +55,7 @@
     "publish:native:win": "npm run publish:win --workspace=native",
     "publish:native:linux": "npm run publish:linux --workspace=native",
     "generate:icons": "node scripts/generate-icons.mjs",
-    "depcheck": "depcheck site --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,@vitejs/*' && depcheck extension --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,wxt' && depcheck tas --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,tailwindcss-animate' && depcheck packages/ui --ignores='postcss,tailwindcss,autoprefixer' && depcheck native --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,electron,electron-builder'"
+    "depcheck": "depcheck site --ignores='@tab-app-switcher/*,astro,@astrojs/*,@tailwindcss/*' && depcheck extension --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,wxt' && depcheck tas --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,tailwindcss-animate' && depcheck packages/ui --ignores='postcss,tailwindcss,autoprefixer' && depcheck native --ignores='@tab-app-switcher/*,postcss,tailwindcss,autoprefixer,electron,electron-builder'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -89,10 +89,11 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@supabase/supabase-js": "^2.86.2",
+    "better-auth": "^1.5.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.555.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -118,9 +119,9 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "lovable-tagger": "^1.1.11",
-    "prettier": "^3.4.2",
     "png2icons": "^2.0.1",
     "postcss": "^8.5.6",
+    "prettier": "^3.4.2",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.18",
     "typescript": "^5.9.2",

@@ -163,7 +163,7 @@ export const TabManagement = ({
     signIn: defaultSignIn,
     signOut: defaultSignOut,
   } = useAuth({
-    redirectUrl: authRedirectUrl,
+    callbackURL: authRedirectUrl,
   })
   const signIn = onSignIn ?? defaultSignIn
   const signOut = onSignOut ?? defaultSignOut

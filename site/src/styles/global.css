@@ -1,0 +1,174 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../../../tas/styles/tokens.css";
+
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Scan shared monorepo packages for Tailwind classes */
+@source "../../../packages/ui/src";
+@source "../../../tas";
+@source "../../views";
+@source "../../components";
+@source "../../islands";
+@source "../pages";
+@source "../layouts";
+
+/*
+ * Bridge layer: tokens.css provides raw HSL channels (e.g. "220 15% 88%")
+ * for Tailwind v3 compat. Here we wrap them in hsl() so Tailwind v4's
+ * @theme inline + opacity modifiers (border-border/10, bg-primary/90) work.
+ */
+@layer base {
+  :root, .dark {
+    --tw-background: hsl(var(--background));
+    --tw-foreground: hsl(var(--foreground));
+    --tw-card: hsl(var(--card));
+    --tw-card-foreground: hsl(var(--card-foreground));
+    --tw-popover: hsl(var(--popover));
+    --tw-popover-foreground: hsl(var(--popover-foreground));
+    --tw-primary: hsl(var(--primary));
+    --tw-primary-foreground: hsl(var(--primary-foreground));
+    --tw-secondary: hsl(var(--secondary));
+    --tw-secondary-foreground: hsl(var(--secondary-foreground));
+    --tw-muted: hsl(var(--muted));
+    --tw-muted-foreground: hsl(var(--muted-foreground));
+    --tw-accent: hsl(var(--accent));
+    --tw-accent-foreground: hsl(var(--accent-foreground));
+    --tw-destructive: hsl(var(--destructive));
+    --tw-destructive-foreground: hsl(var(--destructive-foreground));
+    --tw-border: hsl(var(--border));
+    --tw-input: hsl(var(--input));
+    --tw-ring: hsl(var(--ring));
+    --tw-switcher-bg: hsl(var(--switcher-bg));
+    --tw-switcher-item: hsl(var(--switcher-item));
+    --tw-switcher-item-hover: hsl(var(--switcher-item-hover));
+    --tw-switcher-item-selected: hsl(var(--switcher-item-selected));
+    --tw-switcher-shadow: hsl(var(--switcher-shadow));
+  }
+}
+
+@theme inline {
+  --color-border: var(--tw-border);
+  --color-input: var(--tw-input);
+  --color-ring: var(--tw-ring);
+  --color-background: var(--tw-background);
+  --color-foreground: var(--tw-foreground);
+
+  --color-primary: var(--tw-primary);
+  --color-primary-foreground: var(--tw-primary-foreground);
+
+  --color-secondary: var(--tw-secondary);
+  --color-secondary-foreground: var(--tw-secondary-foreground);
+
+  --color-destructive: var(--tw-destructive);
+  --color-destructive-foreground: var(--tw-destructive-foreground);
+
+  --color-muted: var(--tw-muted);
+  --color-muted-foreground: var(--tw-muted-foreground);
+
+  --color-accent: var(--tw-accent);
+  --color-accent-foreground: var(--tw-accent-foreground);
+
+  --color-popover: var(--tw-popover);
+  --color-popover-foreground: var(--tw-popover-foreground);
+
+  --color-card: var(--tw-card);
+  --color-card-foreground: var(--tw-card-foreground);
+
+  --color-switcher-bg: var(--tw-switcher-bg);
+  --color-switcher-item: var(--tw-switcher-item);
+  --color-switcher-item-hover: var(--tw-switcher-item-hover);
+  --color-switcher-item-selected: var(--tw-switcher-item-selected);
+  --color-switcher-shadow: var(--tw-switcher-shadow);
+}
+
+@theme {
+  --z-index-portal: 100;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --transition-duration-fast: var(--transition-fast);
+  --transition-duration-smooth: var(--transition-smooth);
+
+  --animate-fade-in: fade-in 0.8s ease-out forwards;
+  --animate-fade-out: fade-out 0.3s ease-out forwards;
+  --animate-bounce-gentle: bounce-gentle 3s ease-in-out infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+      filter: blur(0px);
+    }
+    100% {
+      opacity: 0;
+      filter: blur(4px);
+    }
+  }
+
+  @keyframes bounce-gentle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1400px;
+  }
+}

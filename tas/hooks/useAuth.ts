@@ -1,70 +1,52 @@
 import { useEffect, useState, useCallback } from "react"
-import type { User } from "@supabase/supabase-js"
-import { supabase } from "../utils/supabase"
-import { signInWithGoogle, signOut as authSignOut } from "../utils/collectionsSync"
+import { createAuthClient } from "better-auth/client"
+
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  image?: string | null
+}
 
 interface UseAuthOptions {
-  /** URL to redirect to after OAuth (defaults to window.location.origin) */
-  redirectUrl?: string
+  /** URL to redirect to after OAuth callback */
+  callbackURL?: string
 }
 
 interface UseAuthReturn {
-  user: User | null
+  user: AuthUser | null
   isLoading: boolean
   signIn: () => Promise<void>
   signOut: () => Promise<void>
 }
 
+const authClient = createAuthClient({
+  baseURL: typeof window !== "undefined" ? window.location.origin : "https://tabappswitcher.com",
+})
+
 export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
-  const { redirectUrl } = options
-  const [user, setUser] = useState<User | null>(null)
+  const { callbackURL = "/account" } = options
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Handle OAuth callback - check for tokens in URL hash
-    const handleOAuthCallback = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      const accessToken = hashParams.get("access_token")
-      const refreshToken = hashParams.get("refresh_token")
-
-      if (accessToken && refreshToken) {
-        // Set the session from URL tokens
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        })
-
-        if (!error) {
-          // Clean up URL by removing hash
-          window.history.replaceState(null, "", window.location.pathname)
-        }
-      }
-    }
-
-    // First handle any OAuth callback, then get session
-    handleOAuthCallback().then(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null)
-        setIsLoading(false)
-      })
+    // Check current session
+    authClient.getSession().then(({ data }) => {
+      setUser(data?.user ?? null)
+      setIsLoading(false)
     })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
   }, [])
 
   const signIn = useCallback(async () => {
-    await signInWithGoogle(redirectUrl)
-  }, [redirectUrl])
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL,
+    })
+  }, [callbackURL])
 
   const signOut = useCallback(async () => {
-    await authSignOut()
+    await authClient.signOut()
+    setUser(null)
   }, [])
 
   return { user, isLoading, signIn, signOut }

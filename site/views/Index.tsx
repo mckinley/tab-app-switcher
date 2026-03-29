@@ -1,0 +1,570 @@
+import { useState, useEffect, useCallback } from "react"
+import { TabSwitcher } from "@tas/components/TabSwitcher"
+import { KeyboardSettings, ThemeSettings } from "@tas/components/settings"
+import { TabManagement } from "@tas/components/TabManagement"
+import { type Tab, type KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
+import type { Collection } from "@tas/types/collections"
+import { DEMO_TAB_POOL } from "@tas/utils/demoTabs"
+import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
+import { TabsTooltip } from "@/components/TabsTooltip"
+import { useTheme } from "next-themes"
+import { Navigation } from "@/components/Navigation"
+import { Footer } from "@/components/Footer"
+import { Button } from "@tab-app-switcher/ui/components/button"
+import { Container } from "@/components/Container"
+
+import { Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"
+import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import logo from "@/assets/logo.jpg"
+import nativePackage from "../../native/package.json"
+
+// GitHub release URL - direct download of the latest macOS zip
+const GITHUB_REPO = "mckinley/tab-app-switcher"
+const NATIVE_VERSION = nativePackage.version
+const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/Tab-Application-Switcher-${NATIVE_VERSION}-arm64-mac.zip`
+
+// Extension Store URLs
+const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
+const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTENSION_ID}`
+const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
+const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
+const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
+const SAFARI_STORE_URL = "https://apps.apple.com/app/tab-application-switcher/id6756280616"
+
+/**
+ * Custom hook to manage demo tabs with browser-like MRU behavior
+ * This simulates the extension's tab management API for the demo site
+ */
+const useDemoTabs = () => {
+  // Initialize with a random subset of tabs
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const shuffled = [...DEMO_TAB_POOL]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+  })
+
+  // Track the active tab (simulates browser's active tab)
+  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "")
+
+  // MRU order - tracks tab IDs in most-recently-used order
+  const [mruOrder, setMruOrder] = useState<string[]>(tabs.map((t) => t.id))
+
+  // Get tabs in MRU order (similar to GET_TABS message in extension)
+  const getTabsInMruOrder = (): Tab[] => {
+    return mruOrder.map((id) => tabs.find((t) => t.id === id)).filter((tab): tab is Tab => tab !== undefined)
+  }
+
+  // Activate a tab (similar to ACTIVATE_TAB message in extension)
+  const activateTab = (tabId: string) => {
+    setActiveTabId(tabId)
+    // Move to front of MRU order
+    setMruOrder((prev) => [tabId, ...prev.filter((id) => id !== tabId)])
+  }
+
+  // Close a tab (similar to CLOSE_TAB message in extension)
+  const closeTab = (tabId: string) => {
+    // Calculate what the new active tab should be if we're closing the active one
+    if (activeTabId === tabId) {
+      const remainingInMru = mruOrder.filter((id) => id !== tabId)
+      if (remainingInMru.length > 0) {
+        setActiveTabId(remainingInMru[0])
+      } else {
+        setActiveTabId("") // No tabs left
+      }
+    }
+
+    // Remove tab from tabs array
+    setTabs((prev) => prev.filter((t) => t.id !== tabId))
+    // Remove from MRU order
+    setMruOrder((prev) => prev.filter((id) => id !== tabId))
+  }
+
+  // Add a new tab (simulates opening a new tab)
+  const addTab = () => {
+    if (tabs.length >= 8) return
+
+    // Pick a random tab from DEMO_TAB_POOL that's not currently in tabs
+    const availableTabs = DEMO_TAB_POOL.filter((t) => !tabs.find((tab) => tab.id === t.id))
+    if (availableTabs.length === 0) {
+      // If all tabs are used, pick any random tab and give it a new ID
+      const randomTab = DEMO_TAB_POOL[Math.floor(Math.random() * DEMO_TAB_POOL.length)]
+      const newTab = {
+        ...randomTab,
+        id: `${randomTab.id}-${Date.now()}`,
+      }
+      setTabs((prev) => [...prev, newTab])
+      setMruOrder((prev) => [...prev, newTab.id])
+    } else {
+      const randomTab = availableTabs[Math.floor(Math.random() * availableTabs.length)]
+      setTabs((prev) => [...prev, randomTab])
+      setMruOrder((prev) => [...prev, randomTab.id])
+    }
+  }
+
+  return {
+    tabs,
+    activeTabId,
+    mruOrder,
+    getTabsInMruOrder,
+    activateTab,
+    closeTab,
+    addTab,
+  }
+}
+
+const Index = () => {
+  const [platform] = useState(() => detectPlatform())
+  const { theme, setTheme } = useTheme()
+
+  // Use the demo tab management hook
+  const { tabs, activeTabId, getTabsInMruOrder, activateTab, closeTab, addTab } = useDemoTabs()
+
+  // Load keyboard settings from localStorage or use defaults
+  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(() => {
+    const saved = localStorage.getItem("tas-keyboard")
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error("Failed to parse keyboard settings from localStorage", e)
+      }
+    }
+    return DEFAULT_KEYBOARD_SETTINGS
+  })
+
+  // Save keyboard settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem("tas-keyboard", JSON.stringify(keyboard))
+  }, [keyboard])
+
+  const [isSwitcherActive, setIsSwitcherActive] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(1)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isTabManagementOpen, setIsTabManagementOpen] = useState(false)
+  const [demoCollections, setDemoCollections] = useState<Collection[]>([])
+
+  // Track if any panel is open for keyboard event blocking
+  const isPanelOpen = isSettingsOpen || isTabManagementOpen
+
+  // Get tabs in MRU order for the switcher
+  const mruTabs = getTabsInMruOrder()
+
+  const handleSelectTab = (tabId: string) => {
+    console.log("Selected tab:", tabId)
+    activateTab(tabId)
+    setIsSwitcherActive(false)
+  }
+
+  const handleTabClick = (tabId: string) => {
+    activateTab(tabId)
+  }
+
+  const handleCloseTab = (tabId: string) => {
+    closeTab(tabId)
+  }
+
+  const handleAddTab = () => {
+    addTab()
+  }
+
+  const handleNavigate = useCallback(
+    (direction: "next" | "prev") => {
+      setSelectedIndex((prev) => {
+        if (direction === "next") {
+          return (prev + 1) % mruTabs.length
+        } else {
+          return prev === 0 ? mruTabs.length - 1 : prev - 1
+        }
+      })
+    },
+    [mruTabs.length],
+  )
+
+  // Mac-like Application Switcher behavior with configurable modifier key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle keyboard events when a panel is open
+      if (isPanelOpen) return
+
+      // Check if modifier key is pressed
+      const isModifierPressed =
+        (keyboard.modifier === "Alt" && e.altKey) ||
+        (keyboard.modifier === "Cmd" && e.metaKey) ||
+        (keyboard.modifier === "Ctrl" && e.ctrlKey) ||
+        (keyboard.modifier === "Shift" && e.shiftKey)
+
+      // Modifier+ActivateForward to open switcher or cycle forward
+      if (isModifierPressed && e.key === keyboard.activateForward) {
+        e.preventDefault()
+        if (!isSwitcherActive) {
+          setIsSwitcherActive(true)
+          setSelectedIndex(1) // Start with second tab selected
+        } else {
+          handleNavigate("next")
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isSwitcherActive, selectedIndex, isPanelOpen, keyboard, handleNavigate])
+
+  const demoTabsSlot = (
+    <ChromeTabsPreview
+      tabs={tabs}
+      activeTabId={activeTabId}
+      onTabClick={handleTabClick}
+      onCloseTab={handleCloseTab}
+      onAddTab={handleAddTab}
+      canAddTab={tabs.length < 8}
+    />
+  )
+
+  const helpButtonSlot = <TabsTooltip hideTooltip={isSwitcherActive} />
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navigation topSlot={demoTabsSlot} leftSlot={helpButtonSlot} />
+
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 sm:p-8 text-center">
+        <div className="max-w-4xl space-y-6 sm:space-y-8">
+          <div className="space-y-4">
+            <img
+              src={typeof logo === 'string' ? logo : logo.src}
+              alt="Tab Application Switcher Logo"
+              className="h-16 sm:h-20 w-auto mx-auto rounded-lg mb-8 sm:mb-12 animate-fade-in"
+              style={{ animationDuration: "800ms" }}
+            />
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">Tab Application Switcher</h1>
+            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
+              Like your system's Application Switcher, but for your browser tabs
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {(() => {
+              const storeUrl =
+                platform.browser === "chrome"
+                  ? CHROME_STORE_URL
+                  : platform.browser === "firefox"
+                    ? FIREFOX_STORE_URL
+                    : platform.browser === "edge"
+                      ? EDGE_STORE_URL
+                      : platform.browser === "safari"
+                        ? SAFARI_STORE_URL
+                        : null
+              const isAvailable = storeUrl !== null
+
+              return (
+                <Button
+                  size="lg"
+                  className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+                  asChild={isAvailable}
+                  disabled={!isAvailable}
+                >
+                  {isAvailable ? (
+                    <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </a>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </>
+                  )}
+                </Button>
+              )
+            })()}
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+              asChild={platform.os === "mac"}
+              disabled={platform.os !== "mac"}
+            >
+              {platform.os === "mac" ? (
+                <a href={MACOS_DOWNLOAD_URL}>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="pt-8">
+            <Button onClick={() => setIsSwitcherActive(true)} variant="secondary" size="lg" className="gap-2">
+              <Zap className="w-4 h-4" />
+              Try it live →
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{keyboard.modifier}</kbd> +{" "}
+              <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">{keyboard.activateForward}</kbd> to activate
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+        <h2 className="text-3xl font-bold text-center mb-12 text-foreground">Features</h2>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Keyboard className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Keyboard Shortcuts</h3>
+            <p className="text-muted-foreground">
+              Intelligent and configurable keyboard shortcuts, very similar to your operating system's application
+              switcher.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">MRU Ordering</h3>
+            <p className="text-muted-foreground">
+              Tabs are ordered by their last use. The last tab you used is always the first tab to select.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Search className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Quick Search</h3>
+            <p className="text-muted-foreground">
+              Search tabs by URL and page title for instant access to any open tab.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Lightning Fast</h3>
+            <p className="text-muted-foreground">
+              Instant response with smooth, native-feeling animations. No lag, no delays.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ArrowUpDown className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Arrow Navigation</h3>
+            <p className="text-muted-foreground">
+              Use arrow keys to move through tabs. Press Enter to select, Esc to close.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <X className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Close Tabs Fast</h3>
+            <p className="text-muted-foreground">
+              Quickly close tabs with Alt+W while in the switcher, or click the X button on any tab.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* How to Use Section */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+        <div className="bg-card border border-border rounded-xl p-8 space-y-6">
+          <h2 className="text-3xl font-bold text-foreground">Default Keyboard Shortcuts</h2>
+
+          <div className="space-y-4 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
+                {keyboard.modifier} + {keyboard.activateForward}
+              </kbd>
+              <span className="text-muted-foreground">Activate TAS and move forward through tabs</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
+                {keyboard.modifier} + {keyboard.activateBackward}
+              </kbd>
+              <span className="text-muted-foreground">Move backward through the list of tabs</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">↑ ↓</kbd>
+              <span className="text-muted-foreground">Navigate through the list of tabs</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Enter</kbd>
+              <span className="text-muted-foreground">Select the highlighted tab</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">Esc</kbd>
+              <span className="text-muted-foreground">Close TAS without making a selection</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
+                Release {keyboard.modifier}
+              </kbd>
+              <span className="text-muted-foreground">Select the highlighted tab</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <kbd className="px-3 py-2 bg-muted rounded font-mono text-sm shrink-0 w-fit">
+                {keyboard.modifier} + {keyboard.closeTab}
+              </kbd>
+              <span className="text-muted-foreground">Close the highlighted tab</span>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground pt-4 border-t border-border">
+            Shortcuts are configurable through the Options panel.
+          </p>
+        </div>
+      </div>
+
+      {/* Footer CTA */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-16 text-center">
+        <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-border rounded-xl p-6 sm:p-12 space-y-4 sm:space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Ready to switch tabs like a pro?</h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+            Install the browser extension and native UI to get started
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {(() => {
+              const storeUrl =
+                platform.browser === "chrome"
+                  ? CHROME_STORE_URL
+                  : platform.browser === "firefox"
+                    ? FIREFOX_STORE_URL
+                    : platform.browser === "edge"
+                      ? EDGE_STORE_URL
+                      : platform.browser === "safari"
+                        ? SAFARI_STORE_URL
+                        : null
+              const isAvailable = storeUrl !== null
+
+              return (
+                <Button
+                  size="lg"
+                  className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+                  asChild={isAvailable}
+                  disabled={!isAvailable}
+                >
+                  {isAvailable ? (
+                    <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </a>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Install {getBrowserDisplayName(platform.browser)} Extension
+                    </>
+                  )}
+                </Button>
+              )
+            })()}
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 text-base sm:text-lg px-4 sm:px-8 py-4 sm:py-6"
+              asChild={platform.os === "mac"}
+              disabled={platform.os !== "mac"}
+            >
+              {platform.os === "mac" ? (
+                <a href={MACOS_DOWNLOAD_URL}>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </a>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Download for {getOSDisplayName(platform.os)}
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a
+              href="/getting-started"
+              className="text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              Getting Started Guide
+            </a>
+            <span className="hidden sm:inline text-muted-foreground">•</span>
+            <a href="/downloads" className="text-muted-foreground hover:text-foreground transition-colors underline">
+              View all download options
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+
+      {/* TabSwitcher in panel-right container */}
+      <Container
+        variant="panel-right"
+        isVisible={isSwitcherActive}
+        onClose={() => setIsSwitcherActive(false)}
+        enabled={!isPanelOpen}
+      >
+        <TabSwitcher
+          tabs={mruTabs}
+          selectedIndex={selectedIndex}
+          onSelectTab={handleSelectTab}
+          onClose={() => setIsSwitcherActive(false)}
+          onNavigate={handleNavigate}
+          onCloseTab={handleCloseTab}
+          keyboard={keyboard}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenTabManagement={() => setIsTabManagementOpen(true)}
+          isEnabled={!isPanelOpen}
+        />
+      </Container>
+
+      {/* Settings in modal container */}
+      <Container variant="modal" isVisible={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}>
+        <div className="p-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold">TAS Settings</h2>
+            <p className="text-sm text-muted-foreground">Customize keyboard shortcuts and appearance</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-3">Theme</h3>
+            <ThemeSettings value={(theme as "light" | "dark" | "system") ?? "system"} onChange={setTheme} />
+          </div>
+          <KeyboardSettings keyboard={keyboard} onKeyboardChange={setKeyboard} />
+        </div>
+      </Container>
+
+      {/* TabManagement in full-screen container */}
+      <Container variant="full-screen" isVisible={isTabManagementOpen} onClose={() => setIsTabManagementOpen(false)}>
+        <TabManagement
+          tabs={mruTabs}
+          onClose={() => setIsTabManagementOpen(false)}
+          onSelectTab={handleSelectTab}
+          collections={demoCollections}
+          onCollectionsChange={setDemoCollections}
+          onSignIn={async () => {
+            window.open("/login?returnTo=/collections", "_blank")
+          }}
+        />
+      </Container>
+    </div>
+  )
+}
+
+export default Index

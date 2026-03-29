@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabManagement } from '@tas/components/TabManagement'
-import { supabase } from '@tas/utils/supabase'
+import { setAuthHeaderProvider } from '@tas/utils/collectionsSync'
 import {
   NativePlatformProvider,
   useTabs,
@@ -10,21 +10,26 @@ import {
 } from './lib/platform'
 import './assets/globals.css'
 
+// Store bearer token in memory (received from main process via IPC)
+let bearerToken: string | null = null
+
+// Initialize auth header provider for collections sync
+setAuthHeaderProvider(async (): Promise<Record<string, string>> => {
+  return bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}
+})
+
 function TabManagementContent(): JSX.Element {
   const { tabs } = useTabs()
   const { activateTab, closeTab, reorderTabs, createWindowWithTabs } = useTabActions()
 
-  // Listen for auth tokens from main process
+  // Listen for auth token from main process
   useEffect(() => {
-    window.api.auth.onTokens(async (tokens) => {
-      await supabase.auth.setSession({
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken
-      })
+    window.api.auth.onToken((token: string) => {
+      bearerToken = token
     })
 
-    window.api.auth.onSignedOut(async () => {
-      await supabase.auth.signOut()
+    window.api.auth.onSignedOut(() => {
+      bearerToken = null
     })
   }, [])
 
@@ -59,7 +64,7 @@ function TabManagementContent(): JSX.Element {
 
   const handleSignOut = async (): Promise<void> => {
     window.api.auth.signOut()
-    await supabase.auth.signOut()
+    bearerToken = null
   }
 
   return (

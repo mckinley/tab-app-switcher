@@ -1,13 +1,15 @@
 {
-  "extends": "../tsconfig.base.json",
-  "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "baseUrl": ".",
+    "types": ["@cloudflare/workers-types"],
     "paths": {
       "@/*": ["./*"],
       "@tas/*": ["../tas/*"]
     },
-    "allowJs": true
-  }
+    "allowJs": true,
+    "jsx": "react-jsx"
+  },
+  "include": [".", "src/**/*.astro"],
+  "exclude": ["dist", "node_modules"]
 }

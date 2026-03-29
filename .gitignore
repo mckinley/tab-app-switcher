@@ -37,3 +37,10 @@ safari-extension/
 .env
 .env.local
 .env.*.local
+.dev.vars
+
+# Astro generated files
+.astro/
+
+# Cloudflare
+.wrangler/

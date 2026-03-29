@@ -53,8 +53,8 @@ const api = {
   auth: {
     signIn: (): void => ipcRenderer.send('auth-sign-in'),
     signOut: (): void => ipcRenderer.send('auth-sign-out'),
-    onTokens: (callback: (tokens: { accessToken: string; refreshToken: string }) => void): void => {
-      ipcRenderer.on('auth-tokens', (_event, tokens) => callback(tokens))
+    onToken: (callback: (token: string) => void): void => {
+      ipcRenderer.on('auth-token', (_event, token) => callback(token))
     },
     onSignedOut: (callback: () => void): void => {
       ipcRenderer.on('auth-signed-out', () => callback())

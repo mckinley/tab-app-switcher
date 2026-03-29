@@ -1,0 +1,106 @@
+import { useState, useEffect } from "react"
+import { useAuth } from "@tas/hooks/useAuth"
+import { useCollectionsSync } from "@tas/hooks/useCollectionsSync"
+import { loadCollections, saveCollections, createCollection, renameCollection } from "@tas/utils/collectionsStorage"
+import type { Collection } from "@tas/types/collections"
+import { CollectionsPanel } from "@tas/components/CollectionsPanel"
+import { Navigation, type SubnavItem } from "@/components/Navigation"
+import { Footer } from "@/components/Footer"
+
+const subnavItems: SubnavItem[] = [
+  { href: "/account", label: "Account" },
+  { href: "/collections", label: "Collections" },
+]
+
+const Collections = () => {
+  const { user, isLoading } = useAuth()
+  const [collections, setCollections] = useState<Collection[]>(() => loadCollections([]))
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
+
+  const { syncToCloud } = useCollectionsSync({
+    user,
+    collections,
+    setCollections,
+  })
+
+  // Redirect to login if not signed in
+  useEffect(() => {
+    if (!isLoading && !user) {
+      window.location.href = "/login?returnTo=/collections"
+    }
+  }, [isLoading, user])
+
+  const updateCollections = (newCollections: Collection[]) => {
+    setCollections(newCollections)
+    saveCollections(newCollections)
+    syncToCloud(newCollections)
+  }
+
+  const handleCreateCollection = (name: string) => {
+    const newCollection = createCollection(name)
+    updateCollections([...collections, newCollection])
+  }
+
+  const handleDeleteCollection = (id: string) => {
+    const newCollections = collections.filter((c) => c.id !== id)
+    updateCollections(newCollections)
+    if (selectedCollection === id) {
+      setSelectedCollection(null)
+    }
+  }
+
+  const handleRenameCollection = (id: string, newName: string) => {
+    const newCollections = collections.map((c) => (c.id === id ? renameCollection(c, newName) : c))
+    updateCollections(newCollections)
+  }
+
+  const handleRemoveTab = (collectionId: string, tabIndex: number) => {
+    const newCollections = collections.map((c) => {
+      if (c.id === collectionId) {
+        return { ...c, tabs: c.tabs.filter((_, index) => index !== tabIndex), updatedAt: Date.now() }
+      }
+      return c
+    })
+    updateCollections(newCollections)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navigation subnavItems={subnavItems} />
+        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-16">
+          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null // Will redirect
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navigation subnavItems={subnavItems} />
+
+      <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-8 py-12 w-full">
+        <h1 className="text-3xl font-bold text-foreground mb-8">Collections</h1>
+
+        <CollectionsPanel
+          collections={collections}
+          selectedCollection={selectedCollection}
+          onSelectCollection={setSelectedCollection}
+          onCreateCollection={handleCreateCollection}
+          onDeleteCollection={handleDeleteCollection}
+          onRenameCollection={handleRenameCollection}
+          onRemoveTab={handleRemoveTab}
+        />
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+export default Collections

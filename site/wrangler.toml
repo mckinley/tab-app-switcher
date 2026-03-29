@@ -1,0 +1,23 @@
+name = "tab-app-switcher"
+main = "./dist/_worker.js/index.js"
+compatibility_date = "2025-03-28"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+binding = "ASSETS"
+directory = "./dist"
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tab-app-switcher-db"
+database_id = "15477cf1-a7d8-4262-9269-abb8937e02ab"
+
+[vars]
+BETTER_AUTH_URL = "https://tabappswitcher.com"
+
+[[routes]]
+pattern = "tabappswitcher.com"
+custom_domain = true
