@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { Search, LayoutGrid, Settings as SettingsIcon, RefreshCw } from "lucide-react"
 import { TabItem } from "./TabItem"
-import { Tab, KeyboardSettings, TabSection } from "../types/tabs"
+import type { Tab, KeyboardSettings, TabSection } from "../types/tabs"
 import { useKeyboard } from "../hooks/useKeyboard"
 
 const SECTION_LABELS: Record<TabSection, string> = {

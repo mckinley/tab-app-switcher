@@ -29,8 +29,8 @@ function openAuthWindow(parentWindow: BrowserWindow | null): void {
     show: true,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true,
-    },
+      contextIsolation: true
+    }
   })
 
   // Better Auth social sign-in URL

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react"
 import { Search, X, Clock, Link as LinkIcon, Type, User, ArrowUpDown, RefreshCw, Plus, Layers } from "lucide-react"
-import { Tab } from "../types/tabs"
+import type { Tab } from "../types/tabs"
 import type { Collection } from "../types/collections"
 import {
   loadCollections,
@@ -23,10 +23,10 @@ import { Button } from "@tab-app-switcher/ui/components/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@tab-app-switcher/ui/components/select"
 import {
   DndContext,
-  DragEndEvent,
+  type DragEndEvent,
   DragOverlay,
-  DragStartEvent,
-  DragOverEvent,
+  type DragStartEvent,
+  type DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors,

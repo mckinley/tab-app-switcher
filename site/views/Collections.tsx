@@ -15,7 +15,6 @@ const subnavItems: SubnavItem[] = [
 const Collections = () => {
   const { user, isLoading } = useAuth()
   const [collections, setCollections] = useState<Collection[]>(() => loadCollections([]))
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null)
 
   const { syncToCloud } = useCollectionsSync({
     user,
@@ -44,23 +43,10 @@ const Collections = () => {
   const handleDeleteCollection = (id: string) => {
     const newCollections = collections.filter((c) => c.id !== id)
     updateCollections(newCollections)
-    if (selectedCollection === id) {
-      setSelectedCollection(null)
-    }
   }
 
   const handleRenameCollection = (id: string, newName: string) => {
     const newCollections = collections.map((c) => (c.id === id ? renameCollection(c, newName) : c))
-    updateCollections(newCollections)
-  }
-
-  const handleRemoveTab = (collectionId: string, tabIndex: number) => {
-    const newCollections = collections.map((c) => {
-      if (c.id === collectionId) {
-        return { ...c, tabs: c.tabs.filter((_, index) => index !== tabIndex), updatedAt: Date.now() }
-      }
-      return c
-    })
     updateCollections(newCollections)
   }
 
@@ -89,12 +75,9 @@ const Collections = () => {
 
         <CollectionsPanel
           collections={collections}
-          selectedCollection={selectedCollection}
-          onSelectCollection={setSelectedCollection}
           onCreateCollection={handleCreateCollection}
           onDeleteCollection={handleDeleteCollection}
           onRenameCollection={handleRenameCollection}
-          onRemoveTab={handleRemoveTab}
         />
       </main>
 

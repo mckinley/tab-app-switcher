@@ -236,7 +236,7 @@ const Index = () => {
         <div className="max-w-4xl space-y-6 sm:space-y-8">
           <div className="space-y-4">
             <img
-              src={typeof logo === 'string' ? logo : logo.src}
+              src={typeof logo === "string" ? logo : logo.src}
               alt="Tab Application Switcher Logo"
               className="h-16 sm:h-20 w-auto mx-auto rounded-lg mb-8 sm:mb-12 animate-fade-in"
               style={{ animationDuration: "800ms" }}

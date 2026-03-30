@@ -37,7 +37,11 @@ export default function Login() {
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center space-y-4">
             <a href="/" className="inline-block">
-              <img src={typeof logo === 'string' ? logo : logo.src} alt="Tab Application Switcher" className="w-16 h-16 rounded-xl mx-auto" />
+              <img
+                src={typeof logo === "string" ? logo : logo.src}
+                alt="Tab Application Switcher"
+                className="w-16 h-16 rounded-xl mx-auto"
+              />
             </a>
             <h1 className="text-2xl font-bold">Sign in</h1>
             <p className="text-muted-foreground">Sign in to sync your tab collections across devices</p>

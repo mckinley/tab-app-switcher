@@ -73,9 +73,9 @@ export class ExtensionPlatformAdapter extends BasePlatformAdapter<ExtensionSetti
     const result = await browser.storage.local.get([STORAGE_KEYS.theme, STORAGE_KEYS.keyboard, STORAGE_KEYS.sortOrder])
 
     return {
-      theme: result[STORAGE_KEYS.theme] ?? "system",
-      keyboard: result[STORAGE_KEYS.keyboard] ?? DEFAULT_KEYBOARD_SETTINGS,
-      sortOrder: result[STORAGE_KEYS.sortOrder] ?? "activated",
+      theme: (result[STORAGE_KEYS.theme] as ExtensionSettings["theme"]) ?? "system",
+      keyboard: (result[STORAGE_KEYS.keyboard] as ExtensionSettings["keyboard"]) ?? DEFAULT_KEYBOARD_SETTINGS,
+      sortOrder: (result[STORAGE_KEYS.sortOrder] as ExtensionSettings["sortOrder"]) ?? "activated",
     }
   }
 

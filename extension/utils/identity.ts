@@ -18,7 +18,7 @@ const RUNTIME_SESSION_ID_KEY = "tas_runtimeSessionId"
 export async function getInstanceId(): Promise<string> {
   const result = await browser.storage.local.get(INSTANCE_ID_KEY)
   if (result[INSTANCE_ID_KEY]) {
-    return result[INSTANCE_ID_KEY]
+    return result[INSTANCE_ID_KEY] as string
   }
 
   const newId = crypto.randomUUID()
@@ -41,7 +41,7 @@ export async function getRuntimeSessionId(): Promise<string> {
   // but clears when browser closes
   const result = await browser.storage.session.get(RUNTIME_SESSION_ID_KEY)
   if (result[RUNTIME_SESSION_ID_KEY]) {
-    return result[RUNTIME_SESSION_ID_KEY]
+    return result[RUNTIME_SESSION_ID_KEY] as string
   }
 
   const newId = crypto.randomUUID()

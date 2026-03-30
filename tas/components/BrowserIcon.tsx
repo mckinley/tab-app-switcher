@@ -1,6 +1,6 @@
 import { SiGooglechrome, SiFirefox, SiSafari } from "@icons-pack/react-simple-icons"
 import { Globe } from "lucide-react"
-import { BrowserType } from "../types/tabs"
+import type { BrowserType } from "../types/tabs"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
 
 interface BrowserIconProps {

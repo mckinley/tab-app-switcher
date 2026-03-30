@@ -22,9 +22,9 @@ function getIdentityAPI() {
 async function getStoredToken(): Promise<string | null> {
   return new Promise((resolve) => {
     if (typeof chrome !== "undefined" && chrome.storage?.local) {
-      chrome.storage.local.get(TOKEN_KEY, (result) => resolve(result[TOKEN_KEY] || null))
+      chrome.storage.local.get(TOKEN_KEY, (result) => resolve((result[TOKEN_KEY] as string) || null))
     } else if (typeof browser !== "undefined" && browser.storage?.local) {
-      browser.storage.local.get(TOKEN_KEY).then((result) => resolve(result[TOKEN_KEY] || null))
+      browser.storage.local.get(TOKEN_KEY).then((result) => resolve((result[TOKEN_KEY] as string) || null))
     } else {
       resolve(localStorage.getItem(TOKEN_KEY))
     }
@@ -57,7 +57,7 @@ async function clearToken(): Promise<void> {
 export function initExtensionAuth() {
   setAuthHeaderProvider(async () => {
     const token = await getStoredToken()
-    return token ? { Authorization: `Bearer ${token}` } : {}
+    return token ? { Authorization: `Bearer ${token}` } : ({} as Record<string, string>)
   })
 }
 

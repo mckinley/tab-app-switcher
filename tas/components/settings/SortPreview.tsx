@@ -3,7 +3,7 @@
  *
  * Displays a numbered list of tabs with favicons to preview how they will be sorted.
  */
-import { Tab } from "../../types/tabs"
+import type { Tab } from "../../types/tabs"
 import { TabFavicon } from "../TabFavicon"
 
 export interface SortPreviewProps {

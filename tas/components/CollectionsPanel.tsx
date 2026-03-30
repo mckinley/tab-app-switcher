@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { Plus, Trash2, ExternalLink, FolderOpen } from "lucide-react"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Button } from "@tab-app-switcher/ui/components/button"

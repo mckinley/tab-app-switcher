@@ -3,7 +3,7 @@ import { Label } from "@tab-app-switcher/ui/components/label"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Separator } from "@tab-app-switcher/ui/components/separator"
 import { KeyButton } from "../KeyButton"
-import { KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "../../types/tabs"
+import { type KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "../../types/tabs"
 
 interface KeyboardSettingsProps {
   keyboard: KeyboardSettingsType

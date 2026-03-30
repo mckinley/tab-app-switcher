@@ -6,7 +6,7 @@
  * the browser extension and native app implementations.
  */
 
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from "../types/tabs"
+import { type KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from "../types/tabs"
 
 /**
  * All possible keyboard-triggered actions in TAS

@@ -70,6 +70,14 @@ export class DemoPlatformAdapter implements PlatformAdapter<DemoSettings> {
     hasNativeConnection: false,
     hasBrowserInfo: false,
     hasSync: false,
+    hasWindowActions: false,
+    actions: {
+      canActivateTab: false,
+      canCloseTab: false,
+      canRefreshTabs: false,
+      canReorderTabs: false,
+      canCreateWindow: false,
+    },
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import type { ReactNode } from "react"
 import { Menu, User, LogOut, FolderOpen, Settings, Home } from "lucide-react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import {
@@ -46,7 +46,7 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
   // Default left content: logo and title
   const defaultLeftContent = (
     <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-      <img src={typeof logo === 'string' ? logo : logo.src} alt="TAS" className="w-8 h-8 rounded-lg" />
+      <img src={typeof logo === "string" ? logo : logo.src} alt="TAS" className="w-8 h-8 rounded-lg" />
       <span className="text-sm font-medium text-foreground hidden sm:inline">Tab Application Switcher</span>
     </a>
   )
@@ -139,7 +139,12 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                     Home
                   </NavLink>
                   {mainNavItems.map((item) => (
-                    <NavLink key={item.href} href={item.href} className={navLinkClass} activeClassName={activeNavLinkClass}>
+                    <NavLink
+                      key={item.href}
+                      href={item.href}
+                      className={navLinkClass}
+                      activeClassName={activeNavLinkClass}
+                    >
                       {item.label}
                     </NavLink>
                   ))}

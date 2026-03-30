@@ -305,10 +305,10 @@ export default function About() {
               in, and then have the actual tab in front of me with the release of a key.
             </p>
             <p>
-              TAS started many years ago. It was before Chrome had Search Tabs... (&#8984;+Shift+A / Ctrl+Shift+A). Search
-              Tabs ended up doing a lot of what TAS was doing, and for a while I thought it might be the end of the line
-              for TAS. But at the end of the day it just didn't give me that Application Switcher feeling. So I built a
-              brand new iteration of TAS. I hope you like it.
+              TAS started many years ago. It was before Chrome had Search Tabs... (&#8984;+Shift+A / Ctrl+Shift+A).
+              Search Tabs ended up doing a lot of what TAS was doing, and for a while I thought it might be the end of
+              the line for TAS. But at the end of the day it just didn't give me that Application Switcher feeling. So I
+              built a brand new iteration of TAS. I hope you like it.
             </p>
             <p>
               You can still use TAS like the old days for the most part. If you just want a browser extension to switch
@@ -327,8 +327,8 @@ export default function About() {
           <div className="space-y-4">
             <h3 className="text-xl font-semibold">Tab Switcher vs Chrome's Tab Search</h3>
             <p className="text-muted-foreground text-sm">
-              Chrome's built-in tab search (&#8984;+Shift+A / Ctrl+Shift+A) lets you search and click to switch tabs. TAS
-              provides the familiar Alt+Tab experience: hold the modifier, tap to cycle, release to confirm.
+              Chrome's built-in tab search (&#8984;+Shift+A / Ctrl+Shift+A) lets you search and click to switch tabs.
+              TAS provides the familiar Alt+Tab experience: hold the modifier, tap to cycle, release to confirm.
             </p>
             <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[480px]">

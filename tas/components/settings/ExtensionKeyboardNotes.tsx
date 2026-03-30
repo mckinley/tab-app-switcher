@@ -7,7 +7,7 @@
 import { ExternalLink } from "lucide-react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { BrowserIcon } from "../BrowserIcon"
-import { BrowserType } from "../../types/tabs"
+import type { BrowserType } from "../../types/tabs"
 
 export interface ExtensionKeyboardNotesProps {
   /** The detected browser type */

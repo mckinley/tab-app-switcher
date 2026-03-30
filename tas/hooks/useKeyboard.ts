@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { KeyboardSettings } from "../types/tabs"
+import type { KeyboardSettings } from "../types/tabs"
 import { getKeyCode } from "../utils/keyCodeMapping"
 import { createLogger } from "../utils/logger"
 import { isModifierPressed, isModifierRelease, getKeyBindings, type TasAction } from "../keyboard"

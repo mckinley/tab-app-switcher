@@ -21,7 +21,8 @@
  * @theme inline + opacity modifiers (border-border/10, bg-primary/90) work.
  */
 @layer base {
-  :root, .dark {
+  :root,
+  .dark {
     --tw-background: hsl(var(--background));
     --tw-foreground: hsl(var(--foreground));
     --tw-card: hsl(var(--card));
@@ -123,7 +124,8 @@
   }
 
   @keyframes bounce-gentle {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
     }
     50% {
