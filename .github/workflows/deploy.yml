@@ -26,6 +26,9 @@ jobs:
       - name: Build site
         run: npm run build --workspace=site
 
+      - name: Exclude worker from static assets
+        run: echo "_worker.js" > site/dist/.assetsignore
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
