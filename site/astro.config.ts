@@ -13,6 +13,7 @@ export default defineConfig({
   }),
   integrations: [react()],
   vite: {
+    // @ts-expect-error - tailwind v4 vite plugin type incompatibility with astro's bundled vite
     plugins: [tailwindcss()],
     resolve: {
       alias: {

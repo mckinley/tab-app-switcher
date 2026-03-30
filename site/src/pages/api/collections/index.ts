@@ -11,7 +11,7 @@ const corsHeaders = {
 
 // GET /api/collections — list user's collections
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env
+  const env = locals.runtime.env
   const session = await getSession(request, env.DB, env)
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders })
@@ -23,7 +23,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
     .bind(session.user.id)
     .all()
 
-  const collections = results.results.map((row: any) => ({
+  type CollectionRow = { id: string; userId: string; name: string; tabs: string; updatedAt: string; createdAt: string }
+  const collections = (results.results as CollectionRow[]).map((row) => ({
     id: row.id,
     user_id: row.userId,
     name: row.name,
@@ -39,13 +40,19 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
 // POST /api/collections — create collection
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env
+  const env = locals.runtime.env
   const session = await getSession(request, env.DB, env)
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders })
   }
 
-  const body = await request.json()
+  const body = (await request.json()) as {
+    id: string
+    name: string
+    tabs: unknown[]
+    updated_at: string
+    created_at: string
+  }
   const { id, name, tabs, updated_at, created_at } = body
 
   const db = env.DB as D1Database

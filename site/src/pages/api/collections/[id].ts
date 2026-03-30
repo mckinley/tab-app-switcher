@@ -11,13 +11,13 @@ const corsHeaders = {
 
 // PUT /api/collections/:id — upsert collection
 export const PUT: APIRoute = async ({ params, request, locals }) => {
-  const env = (locals as any).runtime.env
+  const env = locals.runtime.env
   const session = await getSession(request, env.DB, env)
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders })
   }
 
-  const body = await request.json()
+  const body = (await request.json()) as { name: string; tabs: unknown[]; updated_at: string; created_at: string }
   const { name, tabs, updated_at, created_at } = body
   const id = params.id!
 
@@ -36,7 +36,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
 // DELETE /api/collections/:id — delete collection
 export const DELETE: APIRoute = async ({ params, request, locals }) => {
-  const env = (locals as any).runtime.env
+  const env = locals.runtime.env
   const session = await getSession(request, env.DB, env)
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders })
