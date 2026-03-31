@@ -2,8 +2,8 @@
   "name": "tab-application-switcher",
   "description": "Switch between browser tabs like you switch between applications",
   "private": true,
-  "version": "1.2.0",
-  "build": 5,
+  "version": "1.2.1",
+  "build": 6,
   "type": "module",
   "scripts": {
     "dev": "wxt",
