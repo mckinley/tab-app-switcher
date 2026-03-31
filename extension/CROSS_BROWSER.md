@@ -220,6 +220,7 @@ npm run publish:safari
 This will build, convert, archive, and upload to App Store Connect automatically.
 
 After uploading, one manual step remains (~2 min):
+
 1. Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com/)
 2. Select "Tab Application Switcher" → "+ Version"
 3. Select the uploaded build, fill in "What's New", and submit for review
