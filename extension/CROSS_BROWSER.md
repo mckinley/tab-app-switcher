@@ -215,6 +215,8 @@ Publishing is fully automated via the command line — no Xcode UI required:
 npm run publish:safari
 ```
 
+> **Troubleshooting:** If the command crashes with a segfault and "A required plugin failed to load", run `xcodebuild -runFirstLaunch` and retry. This can happen after a major Xcode update.
+
 This will build, convert, archive, and upload to App Store Connect automatically.
 
 After uploading, one manual step remains (~2 min):
