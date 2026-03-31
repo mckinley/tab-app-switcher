@@ -21,7 +21,7 @@ interface UseAuthReturn {
 }
 
 const authClient = createAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "https://tabappswitcher.com",
+  baseURL: "https://tabappswitcher.com",
 })
 
 export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
