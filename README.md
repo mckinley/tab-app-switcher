@@ -59,7 +59,7 @@ This will:
 
 The site auto-deploys via Vercel on push to `main`.
 
-Safari requires manual publishing via Xcode (see extension/CROSS_BROWSER.md).
+Safari can be published separately with `npm run publish:safari` from the `extension/` directory. One manual step remains: submitting the uploaded build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).
 
 **Prerequisites:** Set up credentials in `extension/.env` and `native/.env` (see each project's README).
 

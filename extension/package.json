@@ -23,6 +23,7 @@
     "publish": "npm run build && npm run zip && wxt submit --chrome-zip \".output/tab-application-switcher-$(node -p \"require('./package.json').version\")-chrome.zip\"",
     "publish:firefox": "./scripts/publish-firefox.sh",
     "publish:edge": "./scripts/publish-edge.sh",
+    "publish:safari": "npm run build:safari && npm run convert:safari && ./scripts/publish-safari.sh",
     "publish:all": "./scripts/publish-all.sh",
     "compile": "tsc --noEmit",
     "tc": "tsc --noEmit",

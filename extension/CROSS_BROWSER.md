@@ -39,7 +39,7 @@ npm run convert:safari   # Convert build to Xcode project
 You can publish to all stores with a single command:
 
 ```bash
-npm run publish:all    # Publish to Chrome, Firefox, and Edge
+npm run publish:all    # Publish to Chrome, Firefox, Edge, and Safari
 ```
 
 Or publish to individual stores:
@@ -48,6 +48,7 @@ Or publish to individual stores:
 npm run publish          # Chrome only
 npm run publish:firefox  # Firefox only
 npm run publish:edge     # Edge only
+npm run publish:safari   # Safari only (build + convert + upload)
 ```
 
 ### Setup
@@ -198,43 +199,32 @@ Safari extensions are distributed as macOS apps through the Mac App Store, requi
 #### Setup
 
 1. Enroll in [Apple Developer Program](https://developer.apple.com/programs/)
-2. Sign in to Xcode with your Apple ID (Xcode → Settings → Accounts)
-3. Create an App ID and App Store Connect record for your app
+2. Add Apple credentials to `native/.env`:
+   ```
+   APPLE_ID=you@example.com
+   APPLE_APP_SPECIFIC_PASSWORD=xxxx-xxxx-xxxx-xxxx
+   APPLE_TEAM_ID=XXXXXXXXXX
+   ```
+   Generate an app-specific password at [appleid.apple.com](https://appleid.apple.com/) → App-Specific Passwords.
 
 #### Publishing
 
-1. Build the extension and convert to Xcode:
+Publishing is fully automated via the command line — no Xcode UI required:
 
-   ```bash
-   npm run build:safari
-   npm run convert:safari
-   ```
+```bash
+npm run publish:safari
+```
 
-2. Open the Xcode project and configure:
-   - Set your Team in Signing & Capabilities
-   - Update Version and Build numbers in the project settings
+This will build, convert, archive, and upload to App Store Connect automatically.
 
-3. Archive and upload:
-   - Product → Archive
-   - In the Organizer, click "Distribute App"
-   - Choose "App Store Connect" → Upload
-
-4. Submit in App Store Connect:
-   - Go to https://appstoreconnect.apple.com/
-   - Select your app and create a new version
-   - Add the uploaded build
-   - Fill in listing details and submit for review
+After uploading, one manual step remains (~2 min):
+1. Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com/)
+2. Select "Tab Application Switcher" → "+ Version"
+3. Select the uploaded build, fill in "What's New", and submit for review
 
 #### Updating the Extension
 
-When you make changes to the extension:
-
-1. Rebuild: `npm run build:safari`
-2. Either:
-   - Re-run `npm run convert:safari` to regenerate the Xcode project, OR
-   - Manually copy updated files from `.output/safari-mv2` to the Xcode project's Resources folder
-3. Increment the build number in Xcode
-4. Archive and upload
+Just run `npm run release patch` (or minor/major) then `npm run publish:safari`. The release script handles version and build number bumping automatically.
 
 ---
 
