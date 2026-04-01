@@ -13,17 +13,24 @@ export function setupAutoUpdater(): void {
     return
   }
 
+  let updateDownloaded = false
+
+  const checkForUpdates = (): void => {
+    if (updateDownloaded) return
+    autoUpdater.checkForUpdatesAndNotify()
+  }
+
   // Check for updates on startup (after 10 seconds)
   setTimeout(() => {
     console.log('Checking for updates...')
-    autoUpdater.checkForUpdatesAndNotify()
+    checkForUpdates()
   }, 10000)
 
   // Check for updates every hour
   setInterval(
     () => {
       console.log('Checking for updates (periodic check)...')
-      autoUpdater.checkForUpdatesAndNotify()
+      checkForUpdates()
     },
     60 * 60 * 1000
   )
@@ -48,6 +55,7 @@ export function setupAutoUpdater(): void {
 
   autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded - will install on quit:', info)
+    updateDownloaded = true
   })
 
   autoUpdater.on('error', (error) => {
