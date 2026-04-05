@@ -13,7 +13,7 @@ export default defineConfig({
     name: "__MSG_extName__",
     description: "__MSG_extDescription__",
     default_locale: "en",
-    version: "1.2.3",
+    version: "1.2.4",
     homepage_url: "https://tabappswitcher.com",
     author: "Tab Application Switcher",
     permissions: ["tabs", "storage", "identity", "sessions"],
