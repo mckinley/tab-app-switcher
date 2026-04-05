@@ -3,7 +3,17 @@ import { app } from 'electron'
 
 const { autoUpdater } = pkg
 
-export function setupAutoUpdater(): void {
+let updateDownloaded = false
+
+export function isUpdateReady(): boolean {
+  return updateDownloaded
+}
+
+export function installUpdate(): void {
+  autoUpdater.quitAndInstall()
+}
+
+export function setupAutoUpdater(callbacks: { onUpdateReady: () => void }): void {
   // Configure logging
   autoUpdater.logger = console
 
@@ -12,8 +22,6 @@ export function setupAutoUpdater(): void {
     console.log('Auto-updater disabled in development mode')
     return
   }
-
-  let updateDownloaded = false
 
   const checkForUpdates = (): void => {
     if (updateDownloaded) return
@@ -56,6 +64,7 @@ export function setupAutoUpdater(): void {
   autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded - will install on quit:', info)
     updateDownloaded = true
+    callbacks.onUpdateReady()
   })
 
   autoUpdater.on('error', (error) => {

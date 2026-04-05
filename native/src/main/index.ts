@@ -426,7 +426,7 @@ app.whenReady().then(() => {
   }
 
   // Setup auto-updater
-  setupAutoUpdater()
+  setupAutoUpdater({ onUpdateReady: updateTrayMenu })
 
   // Setup auth handlers
   setupAuthHandlers()

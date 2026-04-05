@@ -13,6 +13,7 @@ import {
   createTabManagementWindow,
   createAboutWindow
 } from './windows'
+import { isUpdateReady, installUpdate } from './autoUpdater'
 
 let tray: Tray | null = null
 
@@ -88,12 +89,23 @@ export function updateTrayMenu(): void {
     }
   }
 
+  const updateReady = isUpdateReady()
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: statusLabel,
       enabled: false
     },
     { type: 'separator' },
+    ...(updateReady
+      ? [
+          {
+            label: 'Restart to Install Update',
+            click: () => installUpdate()
+          },
+          { type: 'separator' as const }
+        ]
+      : []),
     {
       label: 'Tab Switcher',
       click: () => createTasOverlay(),
