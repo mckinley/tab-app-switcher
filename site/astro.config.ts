@@ -8,6 +8,7 @@ import { fileURLToPath } from "url"
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  server: { port: parseInt(process.env.PORT ?? '', 10) || undefined },
   adapter: cloudflare({
     platformProxy: { enabled: true },
   }),
