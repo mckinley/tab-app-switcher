@@ -6,14 +6,11 @@ import path from "path"
 import { fileURLToPath } from "url"
 
 // pjmgmt: dev-port — load PORT from .env.development before Astro's own env loader runs
-import { readFileSync as __readDevEnv } from 'node:fs'
+import { loadEnv as __loadDevEnv } from 'vite'
 const __devPort = (() => {
-  try {
-    const m = __readDevEnv('.env.development', 'utf8').match(/^PORT=(\d+)/m)
-    return m ? Number(m[1]) : undefined
-  } catch {
-    return undefined
-  }
+  const env = __loadDevEnv('development', '.', '')
+  const n = Number(env.PORT)
+  return Number.isFinite(n) ? n : undefined
 })()
 
 
