@@ -25,7 +25,6 @@
     "./types/collections": "./types/collections.ts",
     "./utils/collectionsStorage": "./utils/collectionsStorage.ts",
     "./utils/collectionsSync": "./utils/collectionsSync.ts",
-    "./utils/supabase": "./utils/supabase.ts",
     "./hooks/*": "./hooks/*",
     "./tailwind.preset": "./tailwind.preset.ts"
   },
