@@ -84,12 +84,13 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   shipped clients, including old versions still installed.
 - If you change the WebSocket protocol in `tas/types/protocol.ts`, keep the extension and
   native app compatible across versions; users update them separately.
-- There are no migrations in the repo for the site's D1 database (`tab-app-switcher-db`).
-  The last schema file, `site/schema.sql` (Better Auth tables plus `collection`, with
-  quoted camelCase columns and text timestamps), was deleted in `bc8dd2b`. Recover it
-  from `e15767a`. Schema changes are applied by hand with `wrangler d1 execute`.
-- `site/src/lib/auth.server.ts` trusts `http://localhost:4321`, but the site dev server
-  now runs on 4409. Add that origin if local sign-in gets rejected.
+- The site's D1 database (`tab-app-switcher-db`) has no migrations. Its schema lives in
+  `site/schema.sql` (Better Auth tables plus `collection`, with quoted camelCase columns
+  and text timestamps), which matches production. Schema changes are applied by hand
+  with `wrangler d1 execute`; update `site/schema.sql` in the same change.
+- Better Auth's `trustedOrigins` in `site/src/lib/auth.server.ts` lists the local dev
+  origin (`http://localhost:4409`, from `site/.env.development`). If the dev port changes,
+  update it there too.
 - The site and API are public; don't commit credentials. The `.env` files are gitignored,
   and only the `.env.example` / `.env.development` files are committed.
 
