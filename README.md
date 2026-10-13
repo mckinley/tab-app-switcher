@@ -7,7 +7,7 @@ Like your system's Application Switcher, but for your browser tabs.
 ```
 ├── packages/ui/   Shared shadcn/ui components
 ├── tas/           Shared app components and styles
-├── site/          Website (Vite + React)
+├── site/          Website (Astro on Cloudflare Workers)
 ├── extension/     Browser extension (WXT)
 ├── native/        macOS menu bar app (Electron)
 ├── resources/     Store listing descriptions and screenshots
@@ -57,7 +57,7 @@ This will:
 5. **Publish native app to GitHub Releases**
 6. **Publish extension to Chrome, Firefox, and Edge stores**
 
-The site auto-deploys via Vercel on push to `main`.
+The site auto-deploys to Cloudflare Workers on push to `main` (`.github/workflows/deploy.yml`).
 
 Safari can be published separately with `npm run publish:safari` from the `extension/` directory. One manual step remains: submitting the uploaded build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).
 
@@ -73,6 +73,7 @@ Safari can be published separately with `npm run publish:safari` from the `exten
 ## Technologies
 
 - **Build:** Vite, TypeScript
+- **Site:** Astro on Cloudflare Workers, D1, Better Auth
 - **UI:** React, Tailwind CSS, shadcn/ui
 - **Extension:** WXT framework
 - **Native:** Electron

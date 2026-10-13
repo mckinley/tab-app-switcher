@@ -22,11 +22,8 @@ export function createAuth(
       expiresIn: 60 * 60 * 24 * 30, // 30 days
       updateAge: 60 * 60 * 24, // refresh when < 1 day remaining
     },
-    trustedOrigins: [
-      "http://localhost:4321",
-      "https://tabappswitcher.com",
-      "https://tab-app-switcher.mckinley-digital-account.workers.dev",
-    ],
+    // Local dev server port comes from site/.env.development (PORT=4409).
+    trustedOrigins: ["http://localhost:4409", "https://tabappswitcher.com"],
   })
 }
 
