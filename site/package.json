@@ -21,6 +21,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.13",
     "@astrojs/react": "^4.2.1",
+    "@astrojs/sitemap": "^3.7.4",
     "@tab-app-switcher/tas": "*",
     "@tab-app-switcher/ui": "*",
     "@tailwindcss/vite": "^4.1.4",

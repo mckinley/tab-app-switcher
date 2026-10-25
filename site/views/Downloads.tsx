@@ -289,7 +289,7 @@ const Downloads = () => {
               You can use the browser extension alone, or combine it with the Native UI for the best experience.
             </p>
             <div className="pt-4 border-t border-border">
-              <a href="/getting-started" className="text-primary hover:underline font-medium">
+              <a href="/about#getting-started" className="text-primary hover:underline font-medium">
                 View Getting Started Guide →
               </a>
             </div>

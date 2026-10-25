@@ -1,0 +1,17 @@
+# Old pages that became sections of /about
+/getting-started /about#getting-started 301
+/getting-started/ /about#getting-started 301
+/compare /about#compare 301
+/compare/ /about#compare 301
+/history /about#history 301
+/history/ /about#history 301
+/pricing /about#pricing 301
+/pricing/ /about#pricing 301
+/support /about#support 301
+/support/ /about#support 301
+/terms /about#terms 301
+/terms/ /about#terms 301
+
+# No trailing slash anywhere (pjmgmt's url-format standard): the slash form of any path goes to
+# the bare one with a 301 and its query string. Last, so the rules above win.
+/*/ /:splat 301

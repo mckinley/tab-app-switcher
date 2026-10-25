@@ -25,7 +25,7 @@ export const AboutSettings = ({ version }: AboutSettingsProps) => {
         </a>
 
         <a
-          href="https://tabappswitcher.com/getting-started"
+          href="https://tabappswitcher.com/about#getting-started"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground"

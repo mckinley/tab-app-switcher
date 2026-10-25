@@ -91,6 +91,13 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - Better Auth's `trustedOrigins` in `site/src/lib/auth.server.ts` lists the local dev
   origin (`http://localhost:4409`, from `site/.env.development`). If the dev port changes,
   update it there too.
+- Site URLs have no trailing slash (pjmgmt's url-format and canonical-urls standards):
+  `build.format: "file"` makes `/about` the file `about.html`, the last rule in
+  `site/public/_redirects` sends `/about/` there with a 301, and `Layout.astro` writes the
+  canonical tag (pass `noindex` for signed-in pages, which `@astrojs/sitemap` also leaves out
+  in `astro.config.ts`). The old pages `/getting-started`, `/compare`, `/history`, `/pricing`,
+  `/support` and `/terms` are 301s to their `/about#…` sections in the same file; the shipped
+  apps still link to `/getting-started`, so keep those rules.
 - The site and API are public; don't commit credentials. The `.env` files are gitignored,
   and only the `.env.example` / `.env.development` files are committed.
 

@@ -499,7 +499,7 @@ const Index = () => {
 
           <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a
-              href="/getting-started"
+              href="/about#getting-started"
               className="text-muted-foreground hover:text-foreground transition-colors underline"
             >
               Getting Started Guide
