@@ -1,4 +1,5 @@
 name = "tab-app-switcher"
+account_id = "7c0ef4ee4d820ffe791557c534882957"
 main = "./dist/_worker.js/index.js"
 compatibility_date = "2025-03-28"
 compatibility_flags = ["nodejs_compat"]

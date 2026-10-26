@@ -14,11 +14,6 @@ stats-*.json
 .wxt
 web-ext.config.ts
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-
 # Safari extension config (contains personal team ID)
 .safari-config
 

@@ -1,0 +1,10 @@
+# Local secrets for the site's dev server (Astro's Cloudflare adapter loads .dev.vars).
+# Copy to .dev.vars (gitignored) and fill in; the values are in 1Password.
+# Production values are Worker secrets: `wrangler secret put NAME` from site/.
+
+# Better Auth: a local signing secret (openssl rand -base64 32) and the dev server's URL
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:4409
+# Google OAuth client for sign-in (Google Cloud console → APIs & Services → Credentials)
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=

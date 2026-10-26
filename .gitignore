@@ -33,11 +33,14 @@ storybook-static
 # Generated Safari Xcode project
 safari-extension/
 
-# Environment files (keep .env.example)
+# Secrets: never commit. Dev defaults and blank examples are committed (pjmgmt env-vars standard).
 .env
-.env.local
-.env.*.local
+.env.*
 .dev.vars
+.dev.vars.*
+!.env.development
+!.env.example
+!.dev.vars.example
 
 # Astro generated files
 .astro/

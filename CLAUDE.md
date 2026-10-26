@@ -60,9 +60,9 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 
 - **Site:** pushing to `main` runs `.github/workflows/deploy.yml`. It builds the site and
   runs `wrangler deploy` from `site/` to the `tab-app-switcher` Worker (custom domain
-  `tabappswitcher.com`). The account comes from the `CLOUDFLARE_ACCOUNT_ID` repo secret,
-  because `site/wrangler.toml` has no `account_id`. Worker secrets: `BETTER_AUTH_SECRET`,
-  `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. For local dev, put them in `site/.dev.vars`
+  `tabappswitcher.com`). `site/wrangler.toml` pins `account_id`, so the only repo secret is
+  `CLOUDFLARE_API_TOKEN`. Worker secrets: `BETTER_AUTH_SECRET`, `AUTH_GOOGLE_ID`,
+  `AUTH_GOOGLE_SECRET`. For local dev, copy `site/.dev.vars.example` to `site/.dev.vars`
   (gitignored).
 - **CI:** `.github/workflows/ci.yml` runs `lint:all` and `test:all` on pushes and PRs to
   `main`, with Node from `.tool-versions`.

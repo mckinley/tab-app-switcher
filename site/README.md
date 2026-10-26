@@ -10,7 +10,7 @@ npm run build   # Build for production
 npm run preview # Preview production build
 ```
 
-Local secrets (`BETTER_AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) go in `.dev.vars`, which is gitignored.
+Local secrets (`BETTER_AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) go in `.dev.vars`, which is gitignored: copy `.dev.vars.example`.
 
 ## Deployment
 
