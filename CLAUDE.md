@@ -71,25 +71,31 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 
 ## Deploy and release
 
-- **Site:** pushing to `main` runs `.github/workflows/deploy.yml`. It builds the site and
-  runs `wrangler deploy` from `site/` to the `tab-app-switcher` Worker (custom domain
-  `tabappswitcher.com`). `site/wrangler.toml` pins `account_id`, so the only repo secret is
-  `CLOUDFLARE_API_TOKEN`. Worker secrets: `BETTER_AUTH_SECRET`, `AUTH_GOOGLE_ID`,
-  `AUTH_GOOGLE_SECRET`. For local dev, copy `site/.dev.vars.example` to `site/.dev.vars`
-  (gitignored).
+- **Site:** pushing to `main` runs `.github/workflows/ci.yml`, whose `deploy-site` job (after
+  lint, typechecks and unit tests pass) calls `deploy.yml`: it builds the site and runs
+  `wrangler deploy` from `site/` to the `tab-app-switcher` Worker (custom domain
+  `tabappswitcher.com`). The Mac download link uses the latest published GitHub release
+  (`PUBLIC_MAC_APP_VERSION`, `site/lib/downloads.ts`). `site/wrangler.toml` pins `account_id`,
+  so the deploy's only secret is `CLOUDFLARE_API_TOKEN`. Worker secrets: `BETTER_AUTH_SECRET`,
+  `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. For local dev, copy `site/.dev.vars.example` to
+  `site/.dev.vars` (gitignored).
 - **CI:** `.github/workflows/ci.yml` runs `lint:all` and `test:all`, and the e2e suite in a
   second job, on pushes and PRs to `main`, with Node from `.tool-versions`.
-- **Extension and native:** `npm run release patch|minor|major` (`scripts/release.mjs`)
-  bumps the version in every project, runs `prep`, commits with `git add -A`, tags, pushes
-  `main`, publishes the macOS app to GitHub Releases and submits the extension to the
-  Chrome, Firefox and Edge stores. Safari is separate (`npm run publish:safari` in
-  `extension/`). Store and signing credentials live in `extension/.env` and `native/.env`
-  (see the `.env.example` files).
+- **Extension and native:** `npm run release patch|minor|major` (`scripts/release.mjs`) checks
+  that `main` is clean and current, runs `check` and `test:all`, bumps the version in every
+  project, commits, tags `vX.Y.Z` and pushes both. The tag runs `.github/workflows/release.yml`:
+  CI, then the Mac app built, signed and notarized on macOS into a draft GitHub release, and
+  Chrome, Firefox and Edge store submissions in parallel; then it publishes the release and
+  redeploys the site. Run that workflow by hand for a dry run that publishes nothing. Its
+  secrets are listed in README.md → Releasing. `npm run release -- patch --local` publishes from
+  a Mac with `extension/.env` and `native/.env` instead. Safari is separate
+  (`npm run publish:safari` in `extension/`).
 
 ## Rules and gotchas
 
-- Never run `npm run release` or any `publish*` script unless asked. They push to `main`
-  and submit to public stores.
+- Never run `npm run release`, any `publish*` script, or push a `v*` tag unless asked. They push
+  to `main`, publish the Mac app and submit to public stores. Running the Release workflow by
+  hand (`workflow_dispatch`) is a dry run and publishes nothing.
 - Extension and native versions are kept in sync by the release script. Don't bump them
   by hand.
 - The extension and native app call the production API at `https://tabappswitcher.com` (the

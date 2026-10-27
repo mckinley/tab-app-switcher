@@ -1,5 +1,10 @@
 /// <reference types="astro/client" />
 
+interface ImportMetaEnv {
+  /** The latest published Mac app version, set by .github/workflows/deploy.yml */
+  readonly PUBLIC_MAC_APP_VERSION?: string;
+}
+
 declare module "*.jpg" {
   const src: string;
   export default src;

@@ -8,7 +8,7 @@ import { CheckCircle2, AlertCircle, Download, ExternalLink } from "lucide-react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 
 // Default download URL
-const DEFAULT_DOWNLOAD_URL = "https://github.com/anthropics/tab-app-switcher/releases/latest"
+const DEFAULT_DOWNLOAD_URL = "https://tabappswitcher.com/downloads"
 
 export interface ExtensionConnectionStatusProps {
   /** Whether the native app is connected */

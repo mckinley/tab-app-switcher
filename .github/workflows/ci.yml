@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - main
+  # Release (release.yml) runs these checks before publishing
+  workflow_call:
 
 jobs:
   lint-and-test:
@@ -83,3 +85,11 @@ jobs:
             e2e/playwright-report
             e2e/test-results
           retention-days: 7
+
+  # Pushes to main deploy the site once lint, typechecks and unit tests pass
+  deploy-site:
+    name: Deploy
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

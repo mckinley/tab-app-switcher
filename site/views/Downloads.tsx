@@ -5,22 +5,16 @@ import { SiApple } from "@icons-pack/react-simple-icons"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { type BrowserType } from "@tas/types/tabs"
 import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import {
+  CHROME_STORE_URL,
+  EDGE_STORE_URL,
+  FIREFOX_STORE_URL,
+  MACOS_DOWNLOAD_URL,
+  NATIVE_VERSION,
+  SAFARI_STORE_URL,
+} from "@/lib/downloads"
 import { Navigation } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
-import nativePackage from "../../native/package.json"
-
-// GitHub release URL - direct download of the latest macOS zip
-const GITHUB_REPO = "mckinley/tab-app-switcher"
-const NATIVE_VERSION = nativePackage.version
-const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/Tab-Application-Switcher-${NATIVE_VERSION}-arm64-mac.zip`
-
-// Extension Store URLs
-const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
-const CHROME_STORE_URL = `https://chromewebstore.google.com/detail/${CHROME_EXTENSION_ID}`
-const FIREFOX_STORE_URL = "https://addons.mozilla.org/firefox/addon/tab-application-switcher/"
-const EDGE_EXTENSION_ID = "epfinbjjhhlpbfcdmdhnddbjebmbkjck"
-const EDGE_STORE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_EXTENSION_ID}`
-const SAFARI_STORE_URL = "https://apps.apple.com/app/tab-application-switcher/id6756280616"
 
 const Downloads = () => {
   const [platform, setPlatform] = useState(() => detectPlatform())

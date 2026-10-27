@@ -46,15 +46,11 @@ cd .output/firefox-mv2
 zip -r "../tab-application-switcher-${VERSION}-firefox.zip" . -x "*.DS_Store"
 cd "$EXTENSION_DIR"
 
-# Create sources zip (required by Firefox for review)
+# Create sources zip (required by Firefox for review). The extension builds from the repo's
+# workspaces (tas/ and packages/ui/ too) with the root lockfile, so reviewers get the whole
+# repository at this commit; the root README says how to build.
 echo "Creating sources zip..."
-zip -r "$SOURCES_ZIP" . \
-  -x "*.git*" \
-  -x "node_modules/*" \
-  -x ".output/*" \
-  -x "*.env" \
-  -x ".wxt/*" \
-  -x "*.DS_Store"
+git -C "$EXTENSION_DIR" archive --format=zip -o "$EXTENSION_DIR/$SOURCES_ZIP" HEAD
 
 # Create AMO metadata file
 # Categories: https://addons.mozilla.org/api/v5/addons/categories/

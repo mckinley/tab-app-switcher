@@ -34,13 +34,13 @@ npm run dev:native      # Run the native app
 | `npm run dev:extension`     | Start the browser extension                     |
 | `npm run dev:native`        | Start the native Electron app                   |
 | `npm run build:all`         | Build all projects                              |
-| `npm run prep`              | Format, lint, and test (run before committing)  |
+| `npm run prep`              | Format and fix lint (run before committing)     |
 | `npm run depcheck`          | Check for unused dependencies in all workspaces |
 | `npm run release <version>` | Release new version (see below)                 |
 
 ## Releasing
 
-Versions are kept in sync across extension and native app. To release:
+Versions are kept in sync across extension and native app. To release, from an up-to-date `main`:
 
 ```bash
 npm run release patch   # 1.0.0 → 1.0.1
@@ -48,20 +48,46 @@ npm run release minor   # 1.0.0 → 1.1.0
 npm run release major   # 1.0.0 → 2.0.0
 ```
 
-This will:
+This runs the checks CI runs (format, lint, typechecks, unit tests), bumps the version in every
+project, commits, tags `vX.Y.Z` and pushes. The tag starts the
+[Release workflow](.github/workflows/release.yml), which takes about 15 minutes:
 
-1. Bump versions in all projects
-2. Run `npm run prep` (format, lint, test)
-3. Commit and tag
-4. Push to GitHub
-5. **Publish native app to GitHub Releases**
-6. **Publish extension to Chrome, Firefox, and Edge stores**
+1. Runs CI, including the end-to-end tests
+2. Builds, signs and notarizes the Mac app into a draft GitHub release, and in parallel submits the
+   extension to the Chrome, Firefox and Edge stores
+3. Publishes the GitHub release (installed Mac apps update from it) and redeploys the site, so its
+   download link points at the new version
 
-The site auto-deploys to Cloudflare Workers on push to `main` (`.github/workflows/deploy.yml`).
+Safari is still published by hand: `npm run publish:safari` in `extension/` on a Mac, then submit
+the build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).
 
-Safari can be published separately with `npm run publish:safari` from the `extension/` directory. One manual step remains: submitting the uploaded build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).
+To try the pipeline without publishing anything, run the Release workflow by hand from the Actions
+tab: it builds everything unsigned and attaches the packages to the run.
 
-**Prerequisites:** Set up credentials in `extension/.env` and `native/.env` (see each project's README).
+`npm run release -- patch --local` publishes from your Mac instead, with the credentials in
+`extension/.env` and `native/.env`, as before.
+
+### One-time setup: repository secrets
+
+The workflow reads the same credentials as the `.env` files, as
+[repository secrets](https://github.com/mckinley/tab-app-switcher/settings/secrets/actions). With
+the [GitHub CLI](https://cli.github.com):
+
+```bash
+gh secret set -f extension/.env   # Chrome, Firefox and Edge store credentials
+gh secret set -f native/.env      # APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
+
+# The Developer ID Application certificate: in Keychain Access, export it with its private key as
+# a .p12 with a password, then
+base64 -i DeveloperID.p12 | gh secret set CSC_LINK
+gh secret set CSC_KEY_PASSWORD    # the .p12's password
+```
+
+The Mac app isn't published without the signing and notarization secrets. A store whose secrets
+are missing is skipped with a warning, and the others still go out.
+
+The site deploys to Cloudflare Workers from `main` once lint, typechecks and unit tests pass
+(`.github/workflows/ci.yml` → `deploy.yml`).
 
 ## Other Platforms
 

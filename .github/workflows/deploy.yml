@@ -1,14 +1,19 @@
-name: Deploy Site to Cloudflare Workers
+name: Deploy Site
 
+# Called by CI once it passes on main (ci.yml), and by Release once a new Mac app version is
+# published (release.yml), so the download link moves to it. Can also be run by hand.
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   deploy-site:
     name: Deploy Site
     runs-on: ubuntu-latest
+    # One deploy at a time, in order
+    concurrency:
+      group: deploy-site
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
@@ -22,6 +27,16 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
+
+      # native/package.json is ahead of the published app while a release is building, so the
+      # download link uses the latest published GitHub release instead
+      - name: Find the latest Mac app release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName | ltrimstr("v")' || true)
+          echo "Mac app download: ${version:-the version in native/package.json}"
+          echo "PUBLIC_MAC_APP_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Build site
         run: npm run build --workspace=site

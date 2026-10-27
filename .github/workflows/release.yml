@@ -1,0 +1,245 @@
+name: Release
+
+# `npm run release` (scripts/release.mjs) bumps the version and pushes a vX.Y.Z tag, which
+# starts this. It runs CI, then in parallel builds, signs and notarizes the Mac app into a draft
+# GitHub release and submits the extension to the Chrome, Firefox and Edge stores. Once the Mac
+# app is uploaded the release is published (which is when installed apps update) and the site
+# redeploys so its download link points at it. Safari is still published by hand
+# (`npm run publish:safari` in extension/, on a Mac).
+#
+# Run it by hand (Actions → Release → Run workflow) for a dry run: everything is built, nothing
+# is signed or published, and the packages are attached to the run.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Check the version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read the version
+        id: version
+        run: |
+          version=$(node -p "require('./native/package.json').version")
+          extension=$(node -p "require('./extension/package.json').version")
+          manifest=$(sed -nE 's/^ *version: "([0-9.]+)".*/\1/p' extension/wxt.config.ts)
+          if [ "$extension" != "$version" ] || [ "$manifest" != "$version" ]; then
+            echo "::error::Versions differ: native $version, extension $extension, wxt.config.ts $manifest. Release with npm run release."
+            exit 1
+          fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME doesn't match the version in the code ($version)"
+              exit 1
+            fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Dry run of v$version: building everything, publishing nothing"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  mac:
+    name: Mac app
+    needs: [version, checks]
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      PUBLISH: ${{ needs.version.outputs.publish }}
+      TAG: v${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      # An unsigned app can't be opened or auto-updated, so never publish one
+      - name: Check signing and notarization secrets
+        if: env.PUBLISH == 'true'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=""
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Add these repository secrets to sign and notarize the Mac app:$missing (see README.md → Releasing)"
+            exit 1
+          fi
+
+      # Native modules come prebuilt (npmRebuild is off), and electron-builder fetches Electron itself
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build --workspace=tas && npm run build --workspace=native
+
+      - name: Draft the GitHub release
+        if: env.PUBLISH == 'true'
+        run: |
+          gh release view "$TAG" > /dev/null 2>&1 ||
+            gh release create "$TAG" --draft --verify-tag --generate-notes --title "$TAG"
+
+      - name: Package, sign, notarize and upload to the draft release
+        if: env.PUBLISH == 'true'
+        working-directory: native
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Upload to the draft; the publish job releases it once everything is there
+          EP_DRAFT: "true"
+        run: npx electron-builder --mac --publish always
+
+      - name: Package without signing (dry run)
+        if: env.PUBLISH != 'true'
+        working-directory: native
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --mac --publish never
+
+      - name: Attach the packages to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-app
+          path: |
+            native/dist/*.dmg
+            native/dist/*.zip
+            native/dist/latest-mac.yml
+          retention-days: 14
+
+  extension:
+    name: ${{ matrix.store }} extension
+    needs: [version, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - store: Chrome
+            browser: chrome
+            submit: npm run publish
+            required: CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN
+          - store: Firefox
+            browser: firefox
+            submit: ./scripts/publish-firefox.sh
+            required: FIREFOX_API_KEY FIREFOX_API_SECRET
+          - store: Edge
+            browser: edge
+            submit: ./scripts/publish-edge.sh
+            required: EDGE_CLIENT_ID EDGE_API_KEY EDGE_PRODUCT_ID
+    env:
+      PUBLISH: ${{ needs.version.outputs.publish }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prepare WXT types for extension
+        run: npm run postinstall --workspace=extension
+
+      # A store without its secrets is skipped with a warning, so the others still go out
+      - name: Submit to the store
+        if: env.PUBLISH == 'true'
+        working-directory: extension
+        env:
+          CHROME_EXTENSION_ID: mfcjanplaceclfoipcengelejgfngcan
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
+          FIREFOX_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+        run: |
+          missing=""
+          for name in ${{ matrix.required }}; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::warning::Not submitted to the ${{ matrix.store }} store. Add these repository secrets:$missing"
+            exit 0
+          fi
+          ${{ matrix.submit }}
+
+      - name: Package (dry run)
+        if: env.PUBLISH != 'true'
+        working-directory: extension
+        run: npx wxt zip -b ${{ matrix.browser }}
+
+      - name: Attach the package to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.browser }}-extension
+          path: extension/.output/*.zip
+          retention-days: 14
+
+  publish:
+    name: Publish the release
+    needs: [version, mac]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.version.outputs.version }}
+        run: |
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          {
+            echo "### Released $TAG"
+            echo ""
+            echo "- Mac app: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG (installed apps update from here)"
+            echo "- Chrome, Firefox and Edge: see each extension job above; store review takes a day or two"
+            echo "- Safari: run \`npm run publish:safari\` in extension/ on a Mac, then submit the build in App Store Connect"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  site:
+    name: Site
+    needs: publish
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
