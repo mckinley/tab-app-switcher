@@ -1,4 +1,4 @@
-# Old pages that became sections of /about
+# Old pages that became sections of /about, and /privacy, the privacy policy's address for the stores
 /getting-started /about#getting-started 301
 /getting-started/ /about#getting-started 301
 /compare /about#compare 301
@@ -11,6 +11,8 @@
 /support/ /about#support 301
 /terms /about#terms 301
 /terms/ /about#terms 301
+/privacy /about#privacy 301
+/privacy/ /about#privacy 301
 
 # No trailing slash anywhere (pjmgmt's url-format standard): the slash form of any path goes to
 # the bare one with a 301 and its query string. Last, so the rules above win.

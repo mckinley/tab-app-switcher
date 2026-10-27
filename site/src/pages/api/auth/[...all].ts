@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { createAuth } from "../../../lib/auth.server"
+import { appleClientSecret, createAuth } from "../../../lib/auth.server"
 import { appCorsPreflight, withAppCors } from "../../../lib/appAuth.server"
 
 export const prerender = false
@@ -7,7 +7,7 @@ export const prerender = false
 const handleAuth: APIRoute = async ({ request, locals }) => {
   const runtime = locals.runtime
   const env = runtime.env
-  const auth = createAuth(env.DB, env)
+  const auth = createAuth(env.DB, env, { appleClientSecret: await appleClientSecret(env) })
   // The extension and the Mac app check and end their sessions from other origins
   return withAppCors(request, await auth.handler(request))
 }

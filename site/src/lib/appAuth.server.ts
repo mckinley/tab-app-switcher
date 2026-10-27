@@ -5,9 +5,11 @@
  * plugin) through a one-time code, the way native apps do OAuth (RFC 8252 with PKCE):
  *
  * 1. The app opens /api/app-auth/start?redirect=<its redirect URL>&challenge=<SHA-256 of a
- *    random verifier> in a browser window, which starts Google sign-in.
- * 2. Google returns to Better Auth's callback, which sets the site's session cookie and sends
- *    the browser on to /api/app-auth/finish. That redirects to <redirect>?code=<one-time code>.
+ *    random verifier> in a browser window, which starts Google sign-in. When Sign in with Apple
+ *    is set up too, it first shows a page to choose between them, whose links add &provider=.
+ * 2. The provider returns to Better Auth's callback, which sets the site's session cookie and
+ *    sends the browser on to /api/app-auth/finish. That redirects to <redirect>?code=<one-time
+ *    code>.
  * 3. The app posts the code and its verifier to /api/app-auth/token and gets the token of a
  *    new session of its own, so signing out of the app doesn't sign the site out.
  *
@@ -15,7 +17,7 @@
  * the app that asked for it, so a code that lands anywhere else can't be redeemed.
  */
 import { NATIVE_SIGN_IN_REDIRECT } from "@tas/utils/appAuth"
-import type { createAuth } from "./auth.server"
+import type { createAuth, SignInProvider } from "./auth.server"
 
 type Auth = ReturnType<typeof createAuth>
 
@@ -54,6 +56,8 @@ export interface AppAuthOptions {
   siteOrigin: string
   /** More Chromium extension ids to allow, such as an unpacked development build's */
   extraExtensionIds?: string[]
+  /** The sign-in providers to offer (signInProviders()); Google when not given */
+  providers?: SignInProvider[]
 }
 
 /** Whether `redirect` is one of our apps' sign-in redirect URLs */
@@ -105,14 +109,21 @@ function readFlow(request: Request, options: AppAuthOptions): { redirect: string
   return { redirect, challenge }
 }
 
-/** GET /api/app-auth/start: begin Google sign-in, coming back to finish */
+/** GET /api/app-auth/start: begin sign-in, coming back to finish */
 export async function startAppSignIn(request: Request, auth: Auth, options: AppAuthOptions): Promise<Response> {
   const flow = readFlow(request, options)
   if (flow instanceof Response) return flow
 
+  const providers = options.providers ?? ["google"]
+  const asked = new URL(request.url).searchParams.get("provider")
+  // Apps released before Sign in with Apple don't say which, so ask when there's a choice
+  if (!asked && providers.length > 1) return chooseProviderPage(flow, providers)
+  const provider = (asked ?? providers[0]) as SignInProvider
+  if (!providers.includes(provider)) return badRequest("Unknown provider")
+
   const finish = `/api/app-auth/finish?${new URLSearchParams(flow)}`
   const response = await auth.api.signInSocial({
-    body: { provider: "google", callbackURL: finish, errorCallbackURL: finish },
+    body: { provider, callbackURL: finish, errorCallbackURL: finish },
     headers: request.headers,
     asResponse: true,
   })
@@ -176,16 +187,43 @@ export async function redeemAppCode(request: Request, auth: Auth): Promise<Respo
   return json({ token: session.token, expiresAt: new Date(session.expiresAt).toISOString() })
 }
 
+const PAGE_STYLE =
+  "body{font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box;background:#fafafa;color:#18181b}@media (prefers-color-scheme:dark){body{background:#18181b;color:#fafafa}}"
+
+/** A small page of our own, outside the site's layout */
+function htmlPage(body: string, style = ""): Response {
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Tab Application Switcher</title><style>${PAGE_STYLE}${style}</style></head><body>${body}</body></html>`
+  return new Response(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
+  })
+}
+
+const PROVIDER_BUTTONS: Record<SignInProvider, string> = {
+  google: "Continue with Google",
+  apple: "Continue with Apple",
+}
+
+/** The start page when there's more than one way to sign in */
+function chooseProviderPage(flow: { redirect: string; challenge: string }, providers: SignInProvider[]): Response {
+  const links = providers
+    .map((provider) => {
+      const href = `/api/app-auth/start?${new URLSearchParams({ ...flow, provider })}`.replace(/&/g, "&amp;")
+      return `<a class="${provider}" href="${href}">${PROVIDER_BUTTONS[provider]}</a>`
+    })
+    .join("")
+  return htmlPage(
+    `<main><h1>Sign in to Tab Application Switcher</h1>${links}</main>`,
+    "main{width:100%;max-width:320px;display:grid;gap:12px;text-align:center}h1{font-size:20px;margin:0 0 8px}a{display:block;padding:12px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #d4d4d8;color:inherit}a.apple{background:#000;color:#fff;border-color:#000}@media (prefers-color-scheme:dark){a{border-color:#3f3f46}a.apple{background:#fff;color:#000;border-color:#fff}}",
+  )
+}
+
 /** GET /api/app-auth/done: where Safari's sign-in tab lands; the extension's content script takes it from here */
 export function appSignInDonePage(request: Request): Response {
   const failed = new URL(request.url).searchParams.has("error")
   const message = failed
     ? "Sign-in didn't finish. Close this tab and try again from Tab Application Switcher."
     : "You're signed in to Tab Application Switcher. You can close this tab."
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Tab Application Switcher</title><style>body{font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box;background:#fafafa;color:#18181b}@media (prefers-color-scheme:dark){body{background:#18181b;color:#fafafa}}</style></head><body><p>${message}</p></body></html>`
-  return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
-  })
+  return htmlPage(`<p>${message}</p>`)
 }
 
 /** Let the apps call the bearer endpoints of /api/auth from other origins */

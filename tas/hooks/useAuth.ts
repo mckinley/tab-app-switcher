@@ -15,11 +15,22 @@ interface UseAuthOptions {
   callbackURL?: string
 }
 
+/** How the site signs in; the apps choose on the site's own page */
+export type SignInProvider = "google" | "apple"
+
+/** What deleteAccount() did */
+export type DeleteAccountResult = "deleted" | "sign-in-again"
+
 interface UseAuthReturn {
   user: AuthUser | null
   isLoading: boolean
-  signIn: () => Promise<void>
+  signIn: (provider?: SignInProvider) => Promise<void>
   signOut: () => Promise<void>
+  /**
+   * Delete the account and everything stored with it, on the site. "sign-in-again" when the
+   * session is too old to delete without signing in again first.
+   */
+  deleteAccount: () => Promise<DeleteAccountResult>
 }
 
 // The site's client, which uses the session cookie. Created on first use, against the page's own origin.
@@ -77,15 +88,18 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     return getAuthPlatform()?.subscribe?.(refresh)
   }, [refresh])
 
-  const signIn = useCallback(async () => {
-    const platform = getAuthPlatform()
-    if (!platform) {
-      await getSiteAuthClient().signIn.social({ provider: "google", callbackURL })
-      return
-    }
-    await platform.signIn()
-    await refresh()
-  }, [callbackURL, refresh])
+  const signIn = useCallback(
+    async (provider: SignInProvider = "google") => {
+      const platform = getAuthPlatform()
+      if (!platform) {
+        await getSiteAuthClient().signIn.social({ provider, callbackURL })
+        return
+      }
+      await platform.signIn()
+      await refresh()
+    },
+    [callbackURL, refresh],
+  )
 
   const signOut = useCallback(async () => {
     const platform = getAuthPlatform()
@@ -110,5 +124,16 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     }
   }, [])
 
-  return { user, isLoading, signIn, signOut }
+  const deleteAccount = useCallback(async (): Promise<DeleteAccountResult> => {
+    if (getAuthPlatform()) throw new Error("Accounts are deleted on the site's Account page")
+    const { error } = await getSiteAuthClient().deleteUser()
+    // Better Auth wants a recent sign-in (within a day) before it deletes an account
+    if (error?.code === "SESSION_EXPIRED") return "sign-in-again"
+    if (error) throw new Error(error.message || "Couldn't delete the account")
+    clearLocalCollections()
+    setUser(null)
+    return "deleted"
+  }, [])
+
+  return { user, isLoading, signIn, signOut, deleteAccount }
 }

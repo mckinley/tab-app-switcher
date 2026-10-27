@@ -35,7 +35,12 @@ interface NavigationProps {
 }
 
 export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) {
-  const { user, isLoading, signIn, signOut } = useAuth()
+  const { user, isLoading, signOut } = useAuth()
+
+  // The sign-in page offers each way to sign in, then comes back here
+  const signIn = () => {
+    window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`
+  }
 
   const avatarUrl = user?.image
   const userName = user?.name || user?.email
@@ -118,7 +123,7 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button variant="ghost" size="icon" onClick={signIn}>
+                <Button variant="ghost" size="icon" onClick={signIn} aria-label="Sign in">
                   <User className="w-5 h-5" />
                 </Button>
               )}
@@ -182,7 +187,7 @@ export function Navigation({ topSlot, leftSlot, subnavItems }: NavigationProps) 
                     </Button>
                   ) : (
                     <Button variant="ghost" className="justify-start" onClick={signIn}>
-                      Sign in with Google
+                      Sign in
                     </Button>
                   )}
                 </nav>

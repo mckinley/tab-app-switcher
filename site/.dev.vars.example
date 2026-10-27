@@ -8,3 +8,10 @@ BETTER_AUTH_URL=http://localhost:4409
 # Google OAuth client for sign-in (Google Cloud console → APIs & Services → Credentials)
 AUTH_GOOGLE_ID=
 AUTH_GOOGLE_SECRET=
+# Optional: Sign in with Apple (Certificates, Identifiers & Profiles: a Services ID, and a key with
+# Sign in with Apple; scripts/apple-sign-in-secrets.sh sets them in production). Leave blank to
+# offer Google only.
+AUTH_APPLE_ID=
+AUTH_APPLE_TEAM_ID=
+AUTH_APPLE_KEY_ID=
+AUTH_APPLE_PRIVATE_KEY=

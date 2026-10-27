@@ -12,6 +12,7 @@ const subnavItems: SubnavItem[] = [
   { href: "/about#history", label: "History" },
   { href: "/about#compare", label: "Compare" },
   { href: "/about#terms", label: "Terms of Service" },
+  { href: "/about#privacy", label: "Privacy" },
   { href: "/about#support", label: "Support" },
 ]
 
@@ -566,8 +567,60 @@ export default function About() {
               agree to use it at your own risk.
             </p>
             <p>
-              We do not collect personal data. If you sign in to sync collections, your data is stored securely and used
-              only for the sync functionality.
+              Signing in is optional. What happens to your data when you do is in the{" "}
+              <a href="#privacy" className="text-foreground underline hover:no-underline">
+                privacy policy
+              </a>{" "}
+              below.
+            </p>
+          </div>
+        </section>
+        {/* Privacy */}
+        <section id="privacy" className="scroll-mt-32">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Privacy Policy</h2>
+          <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground">
+            <p>
+              <strong className="text-foreground">Without an account,</strong> nothing leaves your computer. The
+              extension and the Mac app keep your tabs, their order, your settings and your collections on your device,
+              and the extension talks to the Mac app only on your computer.
+            </p>
+            <p>
+              <strong className="text-foreground">If you sign in</strong> (optional, with Google or Apple), we keep your
+              name, email address and profile picture from that account, and the collections you save: their names and
+              the titles, addresses and icons of their tabs. That's what lets your collections sync between your
+              browsers and the Mac app. Each signed-in session also records the IP address and browser it came from, to
+              keep your account secure. With Sign in with Apple you can choose to share a private relay address instead
+              of your email.
+            </p>
+            <p>
+              We use this only to sign you in and sync your collections. There are no ads, no analytics and no tracking,
+              and we don't sell or share your data.
+            </p>
+            <p>
+              <strong className="text-foreground">Other services:</strong> the site and account data are hosted on
+              Cloudflare, and sign-in goes through Google or Apple. When you add a link to a collection by hand, its
+              icon comes from Google's favicon service, which sees the link's domain. The Mac app checks GitHub for
+              updates.
+            </p>
+            <p>
+              <strong className="text-foreground">Deleting your data:</strong> Delete Account on the{" "}
+              <a href="/account" className="text-foreground underline hover:no-underline">
+                Account page
+              </a>{" "}
+              deletes your account, its synced collections and every session right away. Collections kept in the
+              extension or the Mac app stay on that device until you remove them there.
+            </p>
+            <p>
+              Questions about your data:{" "}
+              <a
+                href="https://github.com/mckinley/tab-app-switcher/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline hover:no-underline"
+              >
+                open an issue
+              </a>
+              . Last updated October 27, 2026.
             </p>
           </div>
         </section>

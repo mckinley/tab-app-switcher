@@ -1,9 +1,9 @@
-import { useEffect } from "react"
-import { useAuth } from "@tas/hooks/useAuth"
+import { useEffect, useState } from "react"
+import { useAuth, type SignInProvider } from "@tas/hooks/useAuth"
 import { Navigation } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
 import { Button } from "@tab-app-switcher/ui/components/button"
-import { SiGoogle } from "@icons-pack/react-simple-icons"
+import { SiApple, SiGoogle } from "@icons-pack/react-simple-icons"
 import logo from "@/assets/logo.jpg"
 import { safeReturnTo } from "@/lib/safeReturnTo"
 
@@ -14,6 +14,17 @@ export default function Login() {
   const { user, isLoading, signIn } = useAuth({
     callbackURL: returnTo,
   })
+
+  // Sign in with Apple is offered only once it's set up on the server
+  const [providers, setProviders] = useState<SignInProvider[]>(["google"])
+  useEffect(() => {
+    fetch("/api/sign-in-providers")
+      .then((response) => (response.ok ? (response.json() as Promise<{ providers?: SignInProvider[] }>) : null))
+      .then((data) => {
+        if (data?.providers) setProviders(data.providers)
+      })
+      .catch(() => {})
+  }, [])
 
   // Redirect to returnTo if already signed in
   useEffect(() => {
@@ -48,12 +59,34 @@ export default function Login() {
             <p className="text-muted-foreground">Sign in to sync your tab collections across devices</p>
           </div>
 
-          <Button onClick={signIn} size="lg" className="w-full gap-2">
-            <SiGoogle size={18} />
-            Continue with Google
-          </Button>
+          <div className="space-y-3">
+            <Button onClick={() => signIn("google")} size="lg" className="w-full gap-2">
+              <SiGoogle size={18} />
+              Continue with Google
+            </Button>
+            {providers.includes("apple") && (
+              <Button
+                onClick={() => signIn("apple")}
+                size="lg"
+                className="w-full gap-2 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85"
+              >
+                <SiApple size={18} />
+                Continue with Apple
+              </Button>
+            )}
+          </div>
 
-          <p className="text-center text-sm text-muted-foreground">By signing in, you agree to our terms of service.</p>
+          <p className="text-center text-sm text-muted-foreground">
+            By signing in, you agree to our{" "}
+            <a href="/about#terms" className="underline hover:no-underline">
+              terms
+            </a>{" "}
+            and{" "}
+            <a href="/about#privacy" className="underline hover:no-underline">
+              privacy policy
+            </a>
+            .
+          </p>
         </div>
       </div>
 

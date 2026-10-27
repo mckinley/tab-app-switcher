@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { createAuth } from "../../../lib/auth.server"
+import { appleClientSecret, createAuth, signInProviders } from "../../../lib/auth.server"
 import {
   APP_CORS_HEADERS,
   appSignInDonePage,
@@ -20,12 +20,16 @@ function appAuthOptions(env: App.Locals["runtime"]["env"]): AppAuthOptions {
       .split(",")
       .map((id) => id.trim())
       .filter(Boolean),
+    providers: signInProviders(env),
   }
 }
 
 export const GET: APIRoute = async ({ params, request, locals }) => {
   const env = locals.runtime.env
-  if (params.action === "start") return startAppSignIn(request, createAuth(env.DB, env), appAuthOptions(env))
+  if (params.action === "start") {
+    const auth = createAuth(env.DB, env, { appleClientSecret: await appleClientSecret(env) })
+    return startAppSignIn(request, auth, appAuthOptions(env))
+  }
   if (params.action === "finish") return finishAppSignIn(request, createAuth(env.DB, env), appAuthOptions(env))
   if (params.action === "done") return appSignInDonePage(request)
   return new Response("Not found", { status: 404 })
