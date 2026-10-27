@@ -22,6 +22,7 @@ import type {
   EventPayload,
   SessionTab,
   DeviceSession,
+  TabPosition,
 } from "@tas/types/protocol"
 import { getFaviconDataUrl } from "./faviconCache"
 
@@ -50,6 +51,13 @@ export interface TabTracker {
   handleWindowFocused(windowId: number): EventPayload | null
   handleWindowCreated(window: Browser.windows.Window): EventPayload
   handleWindowRemoved(windowId: number): EventPayload
+  /** A tab was swapped for another (prerendering): it keeps its place in the order */
+  handleTabReplaced(addedTab: Browser.tabs.Tab, removedTabId: number): void
+  /**
+   * Re-read the window and position of every tab in these windows, after tabs moved, opened or
+   * closed. Returns whether any tab moved.
+   */
+  syncTabPositions(windowIds: number[]): Promise<boolean>
 
   // Lifecycle
   initialize(): Promise<SnapshotPayload>
@@ -234,9 +242,7 @@ export function createTabTracker(): TabTracker {
     browser.storage?.session?.set({ [ACTIVITY_KEY]: activity })?.catch(() => {})
   }
 
-  function updateAugmentationOnActivate(tabId: number): void {
-    const now = Date.now()
-
+  function updateAugmentationOnActivate(tabId: number, now = Date.now()): void {
     // Mark previous tab as deactivated
     if (state.currentlyActiveTabId !== null && state.currentlyActiveTabId !== tabId) {
       const prevAug = state.augmentation.get(state.currentlyActiveTabId)
@@ -282,13 +288,17 @@ export function createTabTracker(): TabTracker {
     },
 
     handleTabActivated(tabId, windowId) {
-      updateAugmentationOnActivate(tabId)
+      const now = Date.now()
+      updateAugmentationOnActivate(tabId, now)
+      // The browser's own lastAccessed moves too, which the "Last accessed" order uses
+      const tab = state.sessionTabs.get(tabId)
+      if (tab) tab.lastAccessed = now
 
       const event: EventPayload = {
         event: "tab.activated",
         tabId,
         windowId,
-        timestamp: Date.now(),
+        timestamp: now,
       }
       emit(event)
       return event
@@ -444,6 +454,36 @@ export function createTabTracker(): TabTracker {
       }
       emit(event)
       return event
+    },
+
+    handleTabReplaced(addedTab, removedTabId) {
+      const removed = state.sessionTabs.get(removedTabId)
+      const { lastActivated, lastDeactivated } = state.augmentation.get(removedTabId) ?? {}
+      if (removed) this.handleTabRemoved(removedTabId, removed.windowId)
+      if (addedTab.id === undefined) return
+      this.handleTabCreated(addedTab)
+      const aug = state.augmentation.get(addedTab.id)
+      if (!aug || addedTab.active) return
+      aug.lastActivated = lastActivated ?? aug.lastActivated
+      aug.lastDeactivated = lastDeactivated
+      emit({ event: "augmentation.updated", tabId: addedTab.id, augmentation: { lastActivated, lastDeactivated } })
+    },
+
+    async syncTabPositions(windowIds) {
+      const ids = [...new Set(windowIds)].filter((id) => id !== browser.windows.WINDOW_ID_NONE)
+      const windows = await Promise.all(ids.map((windowId) => browser.tabs.query({ windowId }).catch(() => [])))
+
+      const moved: TabPosition[] = []
+      windows.flat().forEach((tab) => {
+        const stored = tab.id === undefined ? undefined : state.sessionTabs.get(tab.id)
+        if (!stored || (stored.index === tab.index && stored.windowId === tab.windowId)) return
+        stored.index = tab.index
+        stored.windowId = tab.windowId
+        moved.push({ tabId: tab.id!, windowId: tab.windowId, index: tab.index })
+      })
+      if (moved.length === 0) return false
+      emit({ event: "tabs.moved", tabs: moved })
+      return true
     },
 
     async initialize() {

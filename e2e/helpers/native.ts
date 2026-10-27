@@ -8,6 +8,8 @@ export interface NativeTab {
   title: string
   section?: string
   browser?: string
+  windowId?: number
+  index?: number
 }
 
 export interface NativeApp {

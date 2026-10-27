@@ -294,6 +294,7 @@ function handleEvent(_sessionKey: SessionKey, _session: Session, event: EventPay
     event.event === 'tab.created' ||
     event.event === 'tab.removed' ||
     event.event === 'tab.updated' ||
+    event.event === 'tabs.moved' ||
     event.event === 'augmentation.updated'
   ) {
     // For tab and augmentation changes (including favicon updates), update display

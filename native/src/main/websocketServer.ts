@@ -390,6 +390,18 @@ function handleEvent(sessionKey: SessionKey, session: Session, envelope: Protoco
       const aug = session.augmentation.get(String(event.tabId)) || {}
       aug.lastActivated = event.timestamp
       session.augmentation.set(String(event.tabId), aug)
+      // The browser's own lastAccessed moves too, which the "Last accessed" order uses
+      const tab = session.sessionTabs.find((t) => t.id === event.tabId)
+      if (tab) tab.lastAccessed = event.timestamp
+      break
+    }
+
+    case 'tabs.moved': {
+      const byId = new Map(session.sessionTabs.map((t) => [t.id, t]))
+      event.tabs.forEach(({ tabId, windowId, index }) => {
+        const tab = byId.get(tabId)
+        if (tab) Object.assign(tab, { windowId, index })
+      })
       break
     }
 

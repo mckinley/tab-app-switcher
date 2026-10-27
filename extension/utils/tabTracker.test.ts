@@ -109,6 +109,51 @@ describe("TabTracker", () => {
     })
   })
 
+  describe("handleTabActivated and lastAccessed", () => {
+    it("moves the tab's lastAccessed, which the Last accessed order sorts by", () => {
+      const state = tracker.getState()
+      state.sessionTabs.set(1, { id: 1, windowId: 1, index: 0, lastAccessed: 5 } as any)
+
+      tracker.handleTabActivated(1, 1)
+
+      expect(state.sessionTabs.get(1)?.lastAccessed).toBe(1000000)
+    })
+  })
+
+  describe("syncTabPositions", () => {
+    it("records tabs that moved and reports only those", async () => {
+      const state = tracker.getState()
+      state.sessionTabs.set(1, { id: 1, windowId: 1, index: 0 } as any)
+      state.sessionTabs.set(2, { id: 2, windowId: 1, index: 1 } as any)
+      state.sessionTabs.set(3, { id: 3, windowId: 1, index: 2 } as any)
+      // Tab 3 was dragged to the front, and tab 2 into window 2
+      vi.mocked(browser.tabs.query).mockImplementation((async ({ windowId }: { windowId: number }) =>
+        windowId === 1
+          ? [createMockTab(3, { index: 0 }), createMockTab(1, { index: 1 })]
+          : [createMockTab(2, { windowId: 2, index: 0 })]) as any)
+      const handler = vi.fn()
+      tracker.onEvent(handler)
+
+      expect(await tracker.syncTabPositions([1, 2])).toBe(true)
+
+      expect(state.sessionTabs.get(3)).toMatchObject({ windowId: 1, index: 0 })
+      expect(state.sessionTabs.get(1)).toMatchObject({ windowId: 1, index: 1 })
+      expect(state.sessionTabs.get(2)).toMatchObject({ windowId: 2, index: 0 })
+      expect(handler).toHaveBeenCalledWith({
+        event: "tabs.moved",
+        tabs: [
+          { tabId: 3, windowId: 1, index: 0 },
+          { tabId: 1, windowId: 1, index: 1 },
+          { tabId: 2, windowId: 2, index: 0 },
+        ],
+      })
+
+      handler.mockClear()
+      expect(await tracker.syncTabPositions([1, 2])).toBe(false)
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
   describe("handleTabCreated", () => {
     it("adds tab to state", () => {
       const tab = createMockTab(1, { title: "New Tab", url: "https://example.com" })

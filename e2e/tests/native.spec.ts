@@ -205,3 +205,39 @@ test("uses the modifier key from settings", async () => {
 
   await expect.poll(() => profile.activeTitle()).toBe("Inbox")
 })
+
+test("keeps each tab's window and position as tabs move, for Tab Management", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Calendar", "Docs"])
+  const stripOrder = async () =>
+    (await native!.displayTabs())
+      .filter((t) => ["P1-home", "Inbox", "Calendar", "Docs"].includes(t.title))
+      .sort((a, b) => a.index! - b.index!)
+      .map((t) => t.title)
+  await expect.poll(stripOrder).toEqual(["P1-home", "Inbox", "Calendar", "Docs"])
+
+  await profile.worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ title: "Docs" })
+    await chrome.tabs.move(tab.id!, { index: 0 })
+  })
+
+  await expect.poll(stripOrder).toEqual(["Docs", "P1-home", "Inbox", "Calendar"])
+})
+
+test('the "Last accessed" order follows tab switches', async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Calendar", "Docs"])
+  await native.setAppOption("sortStrategy", "lastAccessed")
+
+  await profile.activate("Inbox")
+
+  await expect
+    .poll(async () => (await native!.displayTabs()).slice(0, 3).map((t) => t.title))
+    .toEqual(["Inbox", "Docs", "Calendar"])
+})

@@ -67,6 +67,17 @@ test("the popup suggests pinning the extension until it's pinned", async () => {
   await expect(popup.getByText("Pin this extension")).toHaveCount(0)
 })
 
+test('the "Last accessed" order follows tab switches', async () => {
+  const [profile] = browser.profiles
+  await profile.openTabs(["Inbox", "Calendar", "Docs"])
+  await profile.worker.evaluate(() => chrome.storage.local.set({ sortOrder: "accessed" }))
+
+  await profile.activate("Inbox")
+  await expect.poll(async () => (await profile.switcherTitles()).slice(0, 3)).toEqual(["Inbox", "Docs", "Calendar"])
+  await profile.activate("Calendar")
+  await expect.poll(async () => (await profile.switcherTitles()).slice(0, 3)).toEqual(["Calendar", "Inbox", "Docs"])
+})
+
 test.describe("real key presses", () => {
   test.skip(!hasXdotool(), "needs an X display and xdotool (run with e2e/run.sh)")
 

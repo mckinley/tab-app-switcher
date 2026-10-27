@@ -81,6 +81,7 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
     <div
       ref={setNodeRef}
       style={style}
+      data-tab-id={tab.id}
       className={cn(
         "group flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors cursor-grab active:cursor-grabbing",
         isDragging && "z-50",
@@ -111,6 +112,26 @@ const SortableTab = ({ tab, onSelect, onClose, showClose = false }: SortableTabP
       )}
     </div>
   )
+}
+
+/**
+ * Open tabs grouped by window, each window's tabs in tab-strip order. Recently Closed and Other
+ * Devices rows aren't open tabs, so they're left out.
+ */
+function groupByWindow(tabs: Tab[]): Map<number, Tab[]> {
+  const grouped = new Map<number, Tab[]>()
+  tabs.forEach((tab) => {
+    if (tab.sessionId) return
+    const windowId = tab.windowId ?? 0
+    if (!grouped.has(windowId)) {
+      grouped.set(windowId, [])
+    }
+    grouped.get(windowId)!.push(tab)
+  })
+  grouped.forEach((windowTabs) => {
+    windowTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+  })
+  return grouped
 }
 
 /** Wrapper component that makes content droppable */
@@ -240,6 +261,7 @@ export const TabManagement = ({
     const seen = new Set<number>()
     const ordered: number[] = []
     tabs.forEach((tab) => {
+      if (tab.sessionId) return
       const windowId = tab.windowId ?? 0
       if (!seen.has(windowId)) {
         seen.add(windowId)
@@ -263,19 +285,7 @@ export const TabManagement = ({
   // Sync tabsByWindowId with tabs prop - this is the source of truth for DND
   // Each window has its own array of tabs, sorted by index
   useEffect(() => {
-    const grouped = new Map<number, Tab[]>()
-    tabs.forEach((tab) => {
-      const windowId = tab.windowId ?? 0
-      if (!grouped.has(windowId)) {
-        grouped.set(windowId, [])
-      }
-      grouped.get(windowId)!.push(tab)
-    })
-    // Sort each window's tabs by index
-    grouped.forEach((windowTabs) => {
-      windowTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-    })
-    setTabsByWindowId(grouped)
+    setTabsByWindowId(groupByWindow(tabs))
   }, [tabs])
 
   // Derive currentTabs from tabsByWindowId for compatibility with existing code
@@ -519,18 +529,7 @@ export const TabManagement = ({
 
   const handleDragCancel = () => {
     // Reset to original state from props
-    const grouped = new Map<number, Tab[]>()
-    tabs.forEach((tab) => {
-      const windowId = tab.windowId ?? 0
-      if (!grouped.has(windowId)) {
-        grouped.set(windowId, [])
-      }
-      grouped.get(windowId)!.push(tab)
-    })
-    grouped.forEach((windowTabs) => {
-      windowTabs.sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-    })
-    setTabsByWindowId(grouped)
+    setTabsByWindowId(groupByWindow(tabs))
     setActiveTab(null)
     setIsDroppedOnCollection(false)
     setDraggingWindowId(null)
@@ -966,7 +965,7 @@ export const TabManagement = ({
 
         {/* Right Sidebar - Current Tabs (Desktop only) */}
         {!isMobile && (
-          <div className="w-80 border-l bg-muted/30 flex flex-col overflow-hidden">
+          <aside aria-label="Current tabs" className="w-80 border-l bg-muted/30 flex flex-col overflow-hidden">
             <div className="p-4 border-b">
               <h3 className="font-semibold text-sm">Current</h3>
             </div>
@@ -976,7 +975,7 @@ export const TabManagement = ({
                 {Object.entries(tabsByWindow).map(([windowName, windowTabs]) => {
                   const windowId = windowTabs[0]?.windowId ?? 0
                   return (
-                    <div key={windowName} className="mb-4">
+                    <div key={windowName} className="mb-4" data-window-id={windowId}>
                       {/* Only show window name if there are multiple windows */}
                       {Object.keys(tabsByWindow).length > 1 && (
                         <DraggableWindowHeader
@@ -1006,7 +1005,7 @@ export const TabManagement = ({
                 })}
               </div>
             </ScrollArea>
-          </div>
+          </aside>
         )}
 
         {/* Mobile Tabs Panel (slides in from right) */}

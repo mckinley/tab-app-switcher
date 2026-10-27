@@ -114,6 +114,8 @@ export default defineBackground(() => {
     if (!tabTracker || tab.id === undefined) return
     tabTracker.handleTabCreated(tab)
     broadcastTabsUpdate()
+    // Tabs after it in its window moved along one
+    syncTabPositions([tab.windowId])
   })
 
   // Tab updated (URL, title, favicon changes)
@@ -132,25 +134,24 @@ export default defineBackground(() => {
     if (!tabTracker) return
     tabTracker.handleTabRemoved(tabId, removeInfo.windowId)
     broadcastTabsUpdate()
+    if (!removeInfo.isWindowClosing) syncTabPositions([removeInfo.windowId])
   })
 
-  // Tab replaced (rare, during certain browser operations)
+  // Tab replaced by another (prerendering): the new one takes its place
   browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
-    if (!tabTracker) return
-    // Handle as remove + create
-    const state = tabTracker.getState()
-    const oldTab = state.sessionTabs.get(removedTabId)
-    if (oldTab) {
-      tabTracker.handleTabRemoved(removedTabId, oldTab.windowId)
-    }
-    // The new tab will be picked up by onCreated or we need to query it
-    browser.tabs.get(addedTabId).then((tab) => {
-      if (tab) {
-        tabTracker!.handleTabCreated(tab)
-      }
-    })
-    broadcastTabsUpdate()
+    browser.tabs
+      .get(addedTabId)
+      .then((tab) => {
+        tabTracker?.handleTabReplaced(tab, removedTabId)
+        broadcastTabsUpdate()
+      })
+      .catch((error) => console.error("[TAS] Error handling a replaced tab:", error))
   })
+
+  // Tabs dragged to a new position, or out of one window and into another
+  browser.tabs.onMoved.addListener((_tabId, moveInfo) => syncTabPositions([moveInfo.windowId]))
+  browser.tabs.onDetached.addListener((_tabId, detachInfo) => syncTabPositions([detachInfo.oldWindowId]))
+  browser.tabs.onAttached.addListener((_tabId, attachInfo) => syncTabPositions([attachInfo.newWindowId]))
 
   // Window created
   browser.windows.onCreated.addListener((window) => {
@@ -352,6 +353,18 @@ function handleCommand(command: CommandPayload): void {
       createWindowWithUrls(command.urls).catch((error) => console.error("[TAS] Couldn't open window:", error))
       break
   }
+}
+
+/**
+ * Re-read where the tabs in these windows are (Tab Management lists them in tab-strip order)
+ */
+function syncTabPositions(windowIds: number[]): void {
+  tabTracker
+    ?.syncTabPositions(windowIds)
+    .then((moved) => {
+      if (moved) broadcastTabsUpdate()
+    })
+    .catch((error) => console.error("[TAS] Error reading tab positions:", error))
 }
 
 /**

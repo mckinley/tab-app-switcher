@@ -110,6 +110,16 @@ export type EventPayload =
   | { event: "window.focused"; windowId: number }
   | { event: "window.created"; window: BrowserWindow }
   | { event: "window.removed"; windowId: number }
+  // Tabs that changed window or position (a move, or a tab opened or closed before them).
+  // Older native apps ignore it.
+  | { event: "tabs.moved"; tabs: TabPosition[] }
+
+/** Where a tab is now: its window and its position in that window's tab strip */
+export interface TabPosition {
+  tabId: number
+  windowId: number
+  index: number
+}
 
 /**
  * command: Server → Client
