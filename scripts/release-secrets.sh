@@ -6,8 +6,9 @@
 #   npm run release:secrets
 #
 # It reads the Chrome, Firefox and Edge credentials from extension/.env, the notarization
-# credentials from native/.env, and the "Developer ID Application" certificate with its private
-# key from the login keychain (macOS asks for the keychain password to export it). Run it again
+# credentials and the App Store Connect API key (for Safari) from native/.env, and the
+# "Developer ID Application" certificate with its private key from the login keychain (macOS
+# asks for the keychain password to export it). Run it again
 # whenever one of them changes, such as a new app-specific password or a renewed certificate.
 # Only the secrets' names are printed.
 #
@@ -22,7 +23,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OPENSSL="${OPENSSL:-/usr/bin/openssl}"
 
 EXTENSION_SECRETS="CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN FIREFOX_API_KEY FIREFOX_API_SECRET EDGE_CLIENT_ID EDGE_API_KEY EDGE_PRODUCT_ID"
-NATIVE_SECRETS="APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID"
+NATIVE_SECRETS="APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID"
 
 if [ "$(uname)" != "Darwin" ]; then
   echo "❌ Run this on the Mac that has the Developer ID certificate in its keychain."
@@ -73,9 +74,21 @@ echo "▶ Store credentials from extension/.env"
 set_from_env "$ROOT/extension/.env" $EXTENSION_SECRETS
 
 echo ""
-echo "▶ Notarization credentials from native/.env"
+echo "▶ Notarization credentials and App Store Connect API key from native/.env"
 # shellcheck disable=SC2086
 set_from_env "$ROOT/native/.env" $NATIVE_SECRETS
+
+# The App Store Connect API key's contents, from the file native/.env points at
+key_path="$(grep -E '^ASC_KEY_PATH=.+' "$ROOT/native/.env" | tail -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//' || true)"
+key_path="${key_path/#\~/$HOME}"
+if [ -n "$key_path" ] && [ -f "$key_path" ]; then
+  gh secret set ASC_KEY_P8 --repo "$REPO" < "$key_path"
+elif [ -n "$key_path" ]; then
+  echo "❌ ASC_KEY_PATH in native/.env points at $key_path, which doesn't exist."
+  exit 1
+else
+  echo "⚠️  ASC_KEY_PATH isn't set in native/.env, so Safari stays a manual step (see native/.env.example)"
+fi
 
 echo ""
 echo "▶ Developer ID Application certificate from the keychain"

@@ -4,9 +4,9 @@ name: Release
 # starts this. It checks the secrets and that the store credentials still work, runs CI, builds,
 # signs and notarizes the Mac app into a draft GitHub release, and then submits the extension to
 # the Chrome, Firefox and Edge stores, so a failure stops it before the stores get a version the
-# Mac app doesn't have. Once the Mac app is uploaded the release is published (which is when
-# installed apps update) and the site redeploys so its download link points at it. Safari is
-# still published by hand (`npm run publish:safari` in extension/, on a Mac).
+# Mac app doesn't have. With an App Store Connect API key it also signs, uploads and submits the
+# Safari extension for App Review. Once the Mac app is uploaded the release is published (which
+# is when installed apps update) and the site redeploys so its download link points at it.
 #
 # Run it by hand (Actions → Release → Run workflow) for a dry run: everything is built, nothing
 # is signed or published, and the packages are attached to the run. Its summary says which
@@ -86,6 +86,9 @@ jobs:
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
           EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
           missing() {
             for name in "$@"; do
@@ -101,14 +104,15 @@ jobs:
             for part in "Mac app:$mac" \
               "Chrome:$(missing CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN)" \
               "Firefox:$(missing FIREFOX_API_KEY FIREFOX_API_SECRET)" \
-              "Edge:$(missing EDGE_CLIENT_ID EDGE_API_KEY EDGE_PRODUCT_ID)"; do
+              "Edge:$(missing EDGE_CLIENT_ID EDGE_API_KEY EDGE_PRODUCT_ID)" \
+              "Safari:$(missing ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID)"; do
               names=${part#*:}
               if [ -n "$names" ]; then status="❌ Missing secrets:$names"; else status="✅ Ready"; fi
               echo "| ${part%%:*} | $status |"
             done
-            echo "| Safari | By hand: \`npm run publish:safari\` in extension/ on a Mac |"
             echo ""
             echo "\`npm run release:secrets\` on the Mac with the certificate and the .env files adds missing secrets."
+            echo "Without the App Store Connect key, publish Safari by hand: \`npm run publish:safari\` in extension/ on a Mac."
           } >> "$GITHUB_STEP_SUMMARY"
           # An unsigned app can't be opened or auto-updated, so never publish one
           if [ "$PUBLISH" = "true" ] && [ -n "$mac" ]; then
@@ -129,8 +133,11 @@ jobs:
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
           EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
-          node scripts/check-release-credentials.mjs chrome firefox edge || {
+          node scripts/check-release-credentials.mjs chrome firefox edge appstoreconnect || {
             echo "::error::A store refused its credentials (see the log). Update the secret and tag again; nothing was published."
             exit 1
           }
@@ -165,14 +172,43 @@ jobs:
           cache: "npm"
 
       # Apple refuses to notarize while an updated agreement waits to be accepted, so find out
-      # before the build
+      # before the build (a dry run reports it without failing)
       - name: Check Apple notarization
-        if: env.PUBLISH == 'true'
+        continue-on-error: ${{ env.PUBLISH != 'true' }}
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: node scripts/check-release-credentials.mjs --require apple
+
+      # The certificate opens with its password and is the Developer ID one, without signing anything
+      - name: Check the signing certificate
+        continue-on-error: ${{ env.PUBLISH != 'true' }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            echo "::warning::No CSC_LINK secret, so the Mac app can't be signed"
+            exit 1
+          fi
+          p12="$RUNNER_TEMP/check.p12"
+          keychain="$RUNNER_TEMP/check.keychain-db"
+          echo "$CSC_LINK" | base64 --decode > "$p12"
+          security create-keychain -p check "$keychain"
+          security import "$p12" -k "$keychain" -P "$CSC_KEY_PASSWORD" -A > /dev/null
+          identities=$(security find-identity -p codesigning "$keychain")
+          security delete-keychain "$keychain"
+          # macOS's own openssl reads the keychain's .p12 format
+          cert=$(/usr/bin/openssl pkcs12 -in "$p12" -passin "pass:$CSC_KEY_PASSWORD" -nokeys 2> /dev/null || true)
+          if [ -n "$cert" ] && ! echo "$cert" | /usr/bin/openssl x509 -noout -checkend $((30 * 24 * 60 * 60)) > /dev/null; then
+            echo "::warning::The Developer ID certificate expires within 30 days. Renew it at developer.apple.com, then run npm run release:secrets."
+          fi
+          rm -f "$p12"
+          echo "$identities" | grep -F "Developer ID Application" || {
+            echo "::error::CSC_LINK has no Developer ID Application certificate. Run npm run release:secrets on the Mac again."
+            exit 1
+          }
 
       # Native modules come prebuilt (npmRebuild is off), and electron-builder fetches Electron itself
       - name: Install dependencies
@@ -297,6 +333,62 @@ jobs:
           path: extension/.output/*.zip
           retention-days: 14
 
+  # Signed with Apple's cloud-managed certificates through the API key, so no certificate is stored
+  safari:
+    name: Safari extension
+    needs: [version, checks, mac]
+    if: needs.version.outputs.local != 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      PUBLISH: ${{ needs.version.outputs.publish }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      # A runner has no development certificate to archive with
+      SAFARI_ARCHIVE_SIGNING: adhoc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # What's New falls back to the commits since the last release
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prepare WXT types for extension
+        run: npm run postinstall --workspace=extension
+
+      - name: Build the extension and its Xcode project
+        working-directory: extension
+        run: npm run build:safari && npm run convert:safari
+
+      - name: Sign, upload and submit for App Review
+        if: env.PUBLISH == 'true'
+        working-directory: extension
+        run: |
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "::warning::Safari wasn't published: there's no App Store Connect API key (ASC_KEY_PATH in native/.env, then npm run release:secrets). Run npm run publish:safari in extension/ on a Mac instead."
+            exit 0
+          fi
+          ./scripts/publish-safari.sh
+
+      - name: Archive and sign (dry run)
+        if: env.PUBLISH != 'true'
+        working-directory: extension
+        env:
+          SAFARI_SKIP_UPLOAD: "1"
+        run: ./scripts/publish-safari.sh
+
   publish:
     name: Publish the release
     needs: [version, mac]
@@ -314,7 +406,7 @@ jobs:
             echo ""
             echo "- Mac app: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG (installed apps update from here)"
             echo "- Chrome, Firefox and Edge: see each extension job above; store review takes a day or two"
-            echo "- Safari: run \`npm run publish:safari\` in extension/ on a Mac, then submit the build in App Store Connect ([checklist](https://github.com/$GITHUB_REPOSITORY/blob/main/resources/app-store-connect.md))"
+            echo "- Safari: submitted for App Review by the Safari job above when the App Store Connect key is set; otherwise run \`npm run publish:safari\` in extension/ on a Mac ([checklist](https://github.com/$GITHUB_REPOSITORY/blob/main/resources/app-store-connect.md))"
           } >> "$GITHUB_STEP_SUMMARY"
 
   site:

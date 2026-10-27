@@ -219,9 +219,12 @@ npm run publish:safari
 
 This will build, convert, archive, and upload to App Store Connect automatically.
 
-After uploading, one manual step remains (about 5 minutes): add the version in App Store Connect,
-pick the build and submit it for review. [resources/app-store-connect.md](../resources/app-store-connect.md)
-lists every field App Store Connect asks for, with the text to paste.
+With an App Store Connect API key in `native/.env` (see `native/.env.example`), it also submits the
+version for App Review (`scripts/submit-safari.mjs`), and the Release workflow does all of it on a
+macOS runner. Without the key, one manual step remains (about 5 minutes): add the version in App
+Store Connect, pick the build and submit it for review.
+[resources/app-store-connect.md](../resources/app-store-connect.md) lists every field App Store
+Connect asks for, with the text to paste.
 
 #### Updating the Extension
 

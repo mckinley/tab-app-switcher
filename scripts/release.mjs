@@ -12,8 +12,9 @@
  * (scripts/check-release-credentials.mjs), runs the checks CI runs (format, lint, typechecks, unit
  * tests), bumps the version in every project, commits, tags vX.Y.Z and pushes both. The tag
  * starts .github/workflows/release.yml, which builds, signs and notarizes the Mac app into a
- * GitHub release and submits the extension to the Chrome, Firefox and Edge stores. Safari is
- * still separate: `npm run publish:safari` in extension/, on a Mac.
+ * GitHub release and submits the extension to the Chrome, Firefox and Edge stores, and with an App
+ * Store Connect API key, to Safari's App Review. Without the key, Safari is `npm run
+ * publish:safari` in extension/, on a Mac.
  *
  * The workflow needs the signing and store credentials as repository secrets; `npm run
  * release:secrets` copies them there from a Mac (scripts/release-secrets.sh).
@@ -250,8 +251,8 @@ async function main() {
   console.log(`   Chrome Web Store: https://chrome.google.com/webstore/detail/mfcjanplaceclfoipcengelejgfngcan`)
   console.log(`   Firefox Add-ons: https://addons.mozilla.org/firefox/addon/tab-application-switcher/`)
   console.log(`   Edge Add-ons: https://microsoftedge.microsoft.com/addons/detail/epfinbjjhhlpbfcdmdhnddbjebmbkjck`)
-  console.log(`\n   Safari: run \`npm run publish:safari\` in extension/, then submit the build in App Store Connect`)
-  console.log(`   (every field it asks for: resources/app-store-connect.md).`)
+  console.log(`\n   Safari: submitted for App Review with the App Store Connect API key when it's set. Without it,`)
+  console.log(`   run \`npm run publish:safari\` in extension/ and follow resources/app-store-connect.md.`)
 }
 
 main().catch((error) => {

@@ -55,17 +55,23 @@ tests), bumps the version in every project, commits, tags `vX.Y.Z` and pushes. T
 
 1. Checks the secrets and credentials again, then runs CI, including the end-to-end tests
 2. Builds, signs and notarizes the Mac app into a draft GitHub release
-3. Submits the extension to the Chrome, Firefox and Edge stores, publishes the GitHub release
-   (installed Mac apps update from it) and redeploys the site, so its download link points at the
-   new version
+3. Submits the extension to the Chrome, Firefox and Edge stores, and signs, uploads and submits
+   the Safari extension for App Review; publishes the GitHub release (installed Mac apps update
+   from it) and redeploys the site, so its download link points at the new version
 
-`node scripts/check-release-credentials.mjs` runs the credential checks on their own.
+Before releasing, add the new version's section to [resources/whats-new.md](resources/whats-new.md):
+it's the App Store's "What's New" for Safari and the top of the GitHub release. Without it, they
+list the commit subjects. `node scripts/check-release-credentials.mjs` runs the credential checks
+on their own.
 
-Safari is still published by hand: `npm run publish:safari` in `extension/` on a Mac, then submit
-the build for review in App Store Connect, following [resources/app-store-connect.md](resources/app-store-connect.md).
+Safari needs an App Store Connect API key (below). Without one, publish it by hand:
+`npm run publish:safari` in `extension/` on a Mac, then submit the build for review in App Store
+Connect, following [resources/app-store-connect.md](resources/app-store-connect.md). That
+checklist also covers what to do when Apple stops a submission.
 
 To try the pipeline without publishing anything, run the Release workflow by hand from the Actions
-tab: it builds everything unsigned and attaches the packages to the run.
+tab: it builds everything, checks every credential and the signing certificate, signs the Safari
+build without uploading it, and attaches the packages to the run.
 
 `npm run release -- patch --local` publishes from your Mac instead, with the credentials in
 `extension/.env` and `native/.env`, Safari included. Its tag says so, and the Release workflow
@@ -82,9 +88,17 @@ its keychain, with the [GitHub CLI](https://cli.github.com) signed in:
 npm run release:secrets
 ```
 
-It sets the Chrome, Firefox and Edge store credentials from `extension/.env`, `APPLE_ID`,
-`APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` from `native/.env`, and `CSC_LINK` and
-`CSC_KEY_PASSWORD` from the certificate (macOS asks for the keychain password to export it). Run
+It sets the Chrome, Firefox and Edge store credentials from `extension/.env`; `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` and the App Store Connect API key (`ASC_KEY_ID`,
+`ASC_ISSUER_ID`, and `ASC_KEY_P8` from the file at `ASC_KEY_PATH`) from `native/.env`; and
+`CSC_LINK` and `CSC_KEY_PASSWORD` from the certificate (macOS asks for the keychain password to
+export it).
+
+The API key is made once in [App Store Connect](https://appstoreconnect.apple.com/access/integrations/api)
+→ Users and Access → Integrations → Team Keys → **+**, with **Admin** access, which Apple's
+cloud-managed signing certificates need. Download the `.p8` (Apple only offers it once), keep it
+outside the repo, and set `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` in `native/.env` (see
+`native/.env.example`). Run
 it again when any of them changes, such as a renewed certificate. A dry run of the Release
 workflow lists anything still missing in its summary.
 

@@ -10,7 +10,8 @@
  *
  * Chrome: trades the refresh token for an access token and reads the store item. Firefox: an
  * authenticated Add-ons call. Edge: an authenticated Add-ons API call. Apple (on a Mac): lists
- * past notarizations, which Apple refuses while an agreement is waiting to be accepted.
+ * past notarizations, which Apple refuses while an agreement is waiting to be accepted. App Store
+ * Connect: finds the Safari app with the API key that uploads and submits it.
  *
  * Credentials come from the environment, then extension/.env and native/.env when they exist.
  * `npm run release` runs this before tagging, and the Release workflow before it builds.
@@ -18,22 +19,10 @@
 
 import { execFileSync } from "child_process"
 import { createHmac, randomUUID } from "crypto"
-import { existsSync, readFileSync } from "fs"
-import { join, dirname } from "path"
-import { fileURLToPath } from "url"
+import { client, findApp, missingKeyEnv } from "./app-store-connect.mjs"
+import { loadReleaseEnv } from "./env.mjs"
 
-const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..")
 const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"
-
-/** Simple KEY=value .env lines, without overriding what's already in the environment */
-function loadEnvFile(path) {
-  if (!existsSync(path)) return
-  for (const line of readFileSync(path, "utf8").split("\n")) {
-    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/)
-    if (!match || process.env[match[1]]) continue
-    process.env[match[1]] = match[2].replace(/^(["'])(.*)\1$/, "$2")
-  }
-}
 
 async function failure(response) {
   const body = (await response.text()).slice(0, 300).replace(/\s+/g, " ")
@@ -100,6 +89,20 @@ const services = {
     },
   },
 
+  appstoreconnect: {
+    name: "App Store Connect",
+    env: ["ASC_KEY_ID", "ASC_ISSUER_ID"],
+    async check(env) {
+      const missing = missingKeyEnv(env)
+      if (missing.length) return `not set (${missing.join(", ")})`
+      try {
+        await findApp(client(env))
+      } catch (error) {
+        return `the API key was refused (${error.message})`
+      }
+    },
+  },
+
   apple: {
     name: "Apple notarization",
     env: ["APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD", "APPLE_TEAM_ID"],
@@ -145,8 +148,7 @@ async function main() {
     process.exit(2)
   }
 
-  loadEnvFile(join(rootDir, "extension/.env"))
-  loadEnvFile(join(rootDir, "native/.env"))
+  loadReleaseEnv()
 
   let failed = false
   for (const name of names.length ? names : Object.keys(services)) {

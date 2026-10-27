@@ -1,9 +1,14 @@
 # Submitting the Safari extension in App Store Connect
 
-`npm run publish:safari` (or `npm run release -- patch --local`) uploads a Safari build to App
-Store Connect, but each version still has to be submitted for review by hand. This is everything
-App Store Connect asks for, in order, so it goes through the first time. It takes about five
-minutes.
+With an App Store Connect API key (README.md → Releasing), the release does all of this:
+`scripts/submit-safari.mjs` adds the version, picks the build, sets What's New from
+[whats-new.md](whats-new.md), copies the reviewer contact details from the last version, adds the
+notes below and submits. `node scripts/submit-safari.mjs --check` shows what it would do.
+
+Without the key, `npm run publish:safari` (or `npm run release -- patch --local`) uploads the
+build, and the version has to be submitted by hand. This is everything App Store Connect asks
+for, in order, so it goes through the first time. It takes about five minutes. Section 4 also
+applies with the key: when Apple adds questions, the submission stops until someone answers them.
 
 ## 1. Wait for the build to process
 
