@@ -7,6 +7,8 @@
  * - connectionId: Per WebSocket connection (in-memory only)
  */
 
+import { browser } from "wxt/browser"
+
 const INSTANCE_ID_KEY = "tas_instanceId"
 const RUNTIME_SESSION_ID_KEY = "tas_runtimeSessionId"
 
@@ -27,6 +29,10 @@ export async function getInstanceId(): Promise<string> {
   return newId
 }
 
+// The runtime session ID where there's no storage.session (Firefox before 115). Firefox runs
+// the background as a persistent page, so it lasts exactly as long as the browser session.
+let memorySessionId: string | undefined
+
 /**
  * Get or create the runtime session ID for this browser session.
  * Stored in chrome.storage.session (persists across MV3 service worker restarts,
@@ -37,15 +43,19 @@ export async function getInstanceId(): Promise<string> {
  * - Browser restart → new runtimeSessionId (new session on native app)
  */
 export async function getRuntimeSessionId(): Promise<string> {
-  // chrome.storage.session is MV3 only, persists across service worker restarts
-  // but clears when browser closes
-  const result = await browser.storage.session.get(RUNTIME_SESSION_ID_KEY)
+  const session = browser.storage.session as typeof browser.storage.session | undefined
+  if (!session) {
+    memorySessionId ??= crypto.randomUUID()
+    return memorySessionId
+  }
+
+  const result = await session.get(RUNTIME_SESSION_ID_KEY)
   if (result[RUNTIME_SESSION_ID_KEY]) {
     return result[RUNTIME_SESSION_ID_KEY] as string
   }
 
   const newId = crypto.randomUUID()
-  await browser.storage.session.set({ [RUNTIME_SESSION_ID_KEY]: newId })
+  await session.set({ [RUNTIME_SESSION_ID_KEY]: newId })
   console.log("[TAS] Created new runtimeSessionId:", newId)
   return newId
 }

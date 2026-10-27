@@ -27,16 +27,23 @@ import './assets/globals.css'
 // Tab values in alphabetical order
 type SettingsTab = 'about' | 'appearance' | 'connection' | 'keys' | 'options' | 'sorting'
 
-// Get initial tab from URL query parameter
+const SETTINGS_TABS: SettingsTab[] = [
+  'about',
+  'appearance',
+  'connection',
+  'keys',
+  'options',
+  'sorting'
+]
+
+/** The tab the main process asks for, in the URL or a switch-tab message. First run asks for 'setup'. */
+function toSettingsTab(tab: string | null): SettingsTab {
+  if (tab === 'setup') return 'connection'
+  return SETTINGS_TABS.find((t) => t === tab) ?? 'about'
+}
+
 function getInitialTab(): SettingsTab {
-  const params = new URLSearchParams(window.location.search)
-  const tab = params.get('tab')
-  if (tab === 'about') return 'about'
-  if (tab === 'appearance') return 'appearance'
-  if (tab === 'connection' || tab === 'setup') return 'connection'
-  if (tab === 'options') return 'options'
-  if (tab === 'sorting') return 'sorting'
-  return 'about' // Default to about
+  return toSettingsTab(new URLSearchParams(window.location.search).get('tab'))
 }
 
 /**
@@ -83,7 +90,7 @@ function SettingsContent(): JSX.Element {
   useEffect(() => {
     if (window.api?.settings?.onSwitchTab) {
       window.api.settings.onSwitchTab((tab) => {
-        setActiveTab(tab as SettingsTab)
+        setActiveTab(toSettingsTab(tab))
       })
     }
   }, [])

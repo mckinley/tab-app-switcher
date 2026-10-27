@@ -318,11 +318,12 @@ export default defineBackground(() => {
  */
 function handleCommand(command: CommandPayload): void {
   switch (command.command) {
+    // The tab may have closed since the app last heard about it
     case "activateTab":
-      activateTab(command.tabId)
+      activateTab(command.tabId).catch((error) => console.error("[TAS] Couldn't switch to tab:", error))
       break
     case "closeTab":
-      closeTab(command.tabId)
+      closeTab(command.tabId).catch((error) => console.error("[TAS] Couldn't close tab:", error))
       break
     case "requestSnapshot":
       if (tabTracker && transport) {

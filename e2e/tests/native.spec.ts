@@ -241,3 +241,25 @@ test('the "Last accessed" order follows tab switches', async () => {
     .poll(async () => (await native!.displayTabs()).slice(0, 3).map((t) => t.title))
     .toEqual(["Inbox", "Docs", "Calendar"])
 })
+
+test("Settings opens on the tab asked for: Connection on first run, Keys from the menu bar", async () => {
+  native = await launchNative()
+  const app = native.app
+
+  // First run opens Settings at Setup, which is the Connection tab
+  await expect.poll(() => app.windows().some((w) => w.url().includes("settings.html"))).toBe(true)
+  const settings = app.windows().find((w) => w.url().includes("settings.html"))!
+  const selectedTab = settings.getByRole("tab", { selected: true })
+  await expect(selectedTab).toHaveText("Connection")
+
+  // The menu bar's "Settings..." asks for Keys, in the URL when it opens the window...
+  await settings.goto(settings.url().replace("tab=setup", "tab=keys"))
+  await expect(selectedTab).toHaveText("Keys")
+
+  // ...and by message when the window is already open
+  await app.evaluate(({ BrowserWindow }) => {
+    const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("settings.html"))
+    win?.webContents.send("switch-tab", "setup")
+  })
+  await expect(selectedTab).toHaveText("Connection")
+})
