@@ -36,6 +36,11 @@ if [ -z "$TEAM_ID" ]; then
 fi
 
 cd "$ROOT/site"
+# secret put reads the value from a pipe, so wrangler can't stop to sign in there
+if ! npx wrangler whoami 2>&1 | grep -q "You are logged in"; then
+  echo "▶ Signing in to Cloudflare"
+  npx wrangler login
+fi
 put() {
   echo "▶ $1"
   printf %s "$2" | npx wrangler secret put "$1" > /dev/null
