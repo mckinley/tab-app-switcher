@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   /** The latest published Mac app version, set by .github/workflows/deploy.yml */
   readonly PUBLIC_MAC_APP_VERSION?: string;
+  /** The file name of that release's Mac zip, set by .github/workflows/deploy.yml */
+  readonly PUBLIC_MAC_APP_ZIP?: string;
 }
 
 declare module "*.jpg" {

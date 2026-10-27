@@ -8,8 +8,12 @@ const GITHUB_REPO = "mckinley/tab-app-switcher"
  */
 export const NATIVE_VERSION: string = import.meta.env.PUBLIC_MAC_APP_VERSION || nativePackage.version
 
+/** That release's zip, which the deploy workflow also passes in (releases before 1.2.5 were arm64 only) */
+const MAC_ZIP: string =
+  import.meta.env.PUBLIC_MAC_APP_ZIP || `Tab-Application-Switcher-${NATIVE_VERSION}-universal-mac.zip`
+
 // GitHub release URL - direct download of the macOS zip
-export const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/Tab-Application-Switcher-${NATIVE_VERSION}-arm64-mac.zip`
+export const MACOS_DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${NATIVE_VERSION}/${MAC_ZIP}`
 
 // Extension Store URLs
 const CHROME_EXTENSION_ID = "mfcjanplaceclfoipcengelejgfngcan"

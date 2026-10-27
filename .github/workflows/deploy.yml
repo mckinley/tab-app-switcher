@@ -35,8 +35,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName | ltrimstr("v")' || true)
-          echo "Mac app download: ${version:-the version in native/package.json}"
+          zip=$(gh release view --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[].name | select(endswith("-mac.zip"))][0] // empty' || true)
+          echo "Mac app download: ${version:-the version in native/package.json} ${zip}"
           echo "PUBLIC_MAC_APP_VERSION=$version" >> "$GITHUB_ENV"
+          echo "PUBLIC_MAC_APP_ZIP=$zip" >> "$GITHUB_ENV"
 
       - name: Build site
         run: npm run build --workspace=site

@@ -19,9 +19,14 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  # One app for Apple Silicon and Intel Macs
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch: universal
+    - target: zip
+      arch: universal
+  # uiohook-napi ships prebuilt binaries for both, the same files in each half of the build
+  x64ArchFiles: '**/uiohook-napi/prebuilds/**'
   entitlementsInherit: build/entitlements.mac.plist
   notarize: true
 linux:
