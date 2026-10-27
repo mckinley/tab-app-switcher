@@ -9,6 +9,9 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # A local npm install compiles uiohook-napi for this Mac's architecture only, which breaks the
+  # universal build; leaving it out makes the app load the prebuilds for both, as in CI
+  - '!**/node_modules/uiohook-napi/build/**'
 asarUnpack:
   - resources/**
 win:
