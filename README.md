@@ -48,15 +48,18 @@ npm run release minor   # 1.0.0 → 1.1.0
 npm run release major   # 1.0.0 → 2.0.0
 ```
 
-This runs the checks CI runs (format, lint, typechecks, unit tests), bumps the version in every
-project, commits, tags `vX.Y.Z` and pushes. The tag starts the
-[Release workflow](.github/workflows/release.yml), which takes about 15 minutes:
+This checks that the store and Apple credentials still work (an expired key or an Apple agreement
+waiting to be accepted stops it here), runs the checks CI runs (format, lint, typechecks, unit
+tests), bumps the version in every project, commits, tags `vX.Y.Z` and pushes. The tag starts the
+[Release workflow](.github/workflows/release.yml), which takes about 20 minutes:
 
-1. Runs CI, including the end-to-end tests
-2. Builds, signs and notarizes the Mac app into a draft GitHub release, and in parallel submits the
-   extension to the Chrome, Firefox and Edge stores
-3. Publishes the GitHub release (installed Mac apps update from it) and redeploys the site, so its
-   download link points at the new version
+1. Checks the secrets and credentials again, then runs CI, including the end-to-end tests
+2. Builds, signs and notarizes the Mac app into a draft GitHub release
+3. Submits the extension to the Chrome, Firefox and Edge stores, publishes the GitHub release
+   (installed Mac apps update from it) and redeploys the site, so its download link points at the
+   new version
+
+`node scripts/check-release-credentials.mjs` runs the credential checks on their own.
 
 Safari is still published by hand: `npm run publish:safari` in `extension/` on a Mac, then submit
 the build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).

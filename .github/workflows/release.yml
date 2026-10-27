@@ -1,11 +1,12 @@
 name: Release
 
 # `npm run release` (scripts/release.mjs) bumps the version and pushes a vX.Y.Z tag, which
-# starts this. It runs CI, then in parallel builds, signs and notarizes the Mac app into a draft
-# GitHub release and submits the extension to the Chrome, Firefox and Edge stores. Once the Mac
-# app is uploaded the release is published (which is when installed apps update) and the site
-# redeploys so its download link points at it. Safari is still published by hand
-# (`npm run publish:safari` in extension/, on a Mac).
+# starts this. It checks the secrets and that the store credentials still work, runs CI, builds,
+# signs and notarizes the Mac app into a draft GitHub release, and then submits the extension to
+# the Chrome, Firefox and Edge stores, so a failure stops it before the stores get a version the
+# Mac app doesn't have. Once the Mac app is uploaded the release is published (which is when
+# installed apps update) and the site redeploys so its download link points at it. Safari is
+# still published by hand (`npm run publish:safari` in extension/, on a Mac).
 #
 # Run it by hand (Actions → Release → Run workflow) for a dry run: everything is built, nothing
 # is signed or published, and the packages are attached to the run. Its summary says which
@@ -115,6 +116,25 @@ jobs:
             exit 1
           fi
 
+      # An expired key fails here rather than after the Mac app is out (Apple is checked on macOS)
+      - name: Check the store credentials still work
+        if: steps.version.outputs.local != 'true'
+        continue-on-error: ${{ steps.version.outputs.publish != 'true' }}
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
+          FIREFOX_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+        run: |
+          node scripts/check-release-credentials.mjs chrome firefox edge || {
+            echo "::error::A store refused its credentials (see the log). Update the secret and tag again; nothing was published."
+            exit 1
+          }
+
   checks:
     name: CI
     needs: version
@@ -143,6 +163,16 @@ jobs:
         with:
           node-version-file: ".tool-versions"
           cache: "npm"
+
+      # Apple refuses to notarize while an updated agreement waits to be accepted, so find out
+      # before the build
+      - name: Check Apple notarization
+        if: env.PUBLISH == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: node scripts/check-release-credentials.mjs --require apple
 
       # Native modules come prebuilt (npmRebuild is off), and electron-builder fetches Electron itself
       - name: Install dependencies
@@ -188,9 +218,10 @@ jobs:
             native/dist/latest-mac.yml
           retention-days: 14
 
+  # After the Mac app, so a release that fails there doesn't reach the stores
   extension:
     name: ${{ matrix.store }} extension
-    needs: [version, checks]
+    needs: [version, checks, mac]
     if: needs.version.outputs.local != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20

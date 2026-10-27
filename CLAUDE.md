@@ -83,11 +83,13 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - **CI:** `.github/workflows/ci.yml` runs `lint:all` and `test:all`, and the e2e suite in a
   second job, on pushes and PRs to `main`, with Node from `.tool-versions`.
 - **Extension and native:** `npm run release patch|minor|major` (`scripts/release.mjs`) checks
-  that `main` is clean and current, runs `check` and `test:all`, bumps the version in every
-  project, commits, tags `vX.Y.Z` and pushes both. The tag runs `.github/workflows/release.yml`:
-  CI, then the Mac app built, signed and notarized on macOS into a draft GitHub release, and
-  Chrome, Firefox and Edge store submissions in parallel; then it publishes the release and
-  redeploys the site. Run that workflow by hand for a dry run that publishes nothing; its summary
+  that `main` is clean and current, that the release credentials still work
+  (`scripts/check-release-credentials.mjs`: store APIs, and `notarytool history` on a Mac, which
+  fails while an Apple agreement is waiting), runs `check` and `test:all`, bumps the version in
+  every project, commits, tags `vX.Y.Z` and pushes both. The tag runs
+  `.github/workflows/release.yml`: the same secret and credential checks, CI, the Mac app built,
+  signed and notarized on macOS into a draft GitHub release, then the Chrome, Firefox and Edge
+  store submissions; then it publishes the release and redeploys the site. Run that workflow by hand for a dry run that publishes nothing; its summary
   lists any missing secrets, which `npm run release:secrets` (`scripts/release-secrets.sh`) copies
   to GitHub from the Mac with the `.env` files and the Developer ID certificate.
   `npm run release -- patch --local` publishes from a Mac with `extension/.env` and `native/.env`

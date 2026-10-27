@@ -8,7 +8,8 @@
  *   npm run release major    # 1.2.4 -> 2.0.0
  *   npm run release 1.3.0    # a specific version
  *
- * On an up-to-date, clean main, this runs the checks CI runs (format, lint, typechecks, unit
+ * On an up-to-date, clean main, this checks that the release credentials still work
+ * (scripts/check-release-credentials.mjs), runs the checks CI runs (format, lint, typechecks, unit
  * tests), bumps the version in every project, commits, tags vX.Y.Z and pushes both. The tag
  * starts .github/workflows/release.yml, which builds, signs and notarizes the Mac app into a
  * GitHub release and submits the extension to the Chrome, Firefox and Edge stores. Safari is
@@ -183,6 +184,17 @@ async function main() {
   }
 
   checkGitState()
+
+  // An expired key or an Apple agreement waiting to be accepted should stop the release before
+  // it's tagged. A local release needs every credential here; otherwise the workflow checks its
+  // own secrets, and this checks whatever this computer has.
+  console.log(`\n🔑 Checking the release credentials...`)
+  const services = !local ? "" : nativeOnly ? "--require apple" : "--require chrome firefox edge apple"
+  try {
+    run(`node scripts/check-release-credentials.mjs ${services}`)
+  } catch {
+    fail("Fix the credentials above first. Nothing was tagged or published.")
+  }
 
   const currentVersion = getCurrentVersion()
   const newVersion = bumpVersion(currentVersion, versionType)
