@@ -107,6 +107,16 @@ test.describe("real key presses", () => {
 
         await expect.poll(() => profile.activeTitle()).toBe(titles[3 % titles.length])
       })
+
+      test("Shift+Tab, with Alt still held, moves the selection back", async () => {
+        const [profile] = browser.profiles
+        await profile.openTabs(["Inbox", "Calendar", "Docs"])
+        await profile.activate("Docs")
+
+        await chord("alt", ["Tab", "Tab", "shift+Tab"], 600)
+
+        await expect.poll(() => profile.activeTitle()).toBe("Calendar")
+      })
     })
   }
 })

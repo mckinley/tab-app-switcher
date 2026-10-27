@@ -49,9 +49,10 @@ export const MODIFIER_RELEASE_ACTION: TasAction = "activateSelected"
 export function getKeyBindings(keyboard: KeyboardSettings = DEFAULT_KEYBOARD_SETTINGS): KeyBinding[] {
   return [
     // === Modifier + Key combinations ===
-    // Navigation while holding modifier
-    { key: keyboard.activateForward, withModifier: true, action: "navigateNext" },
+    // Navigation while holding modifier. The Shift binding comes first: the plain one doesn't
+    // check Shift, so it would take Modifier+Shift+Tab too.
     { key: keyboard.activateForward, withModifier: true, withShift: true, action: "navigatePrev" },
+    { key: keyboard.activateForward, withModifier: true, action: "navigateNext" },
     { key: keyboard.activateBackward, withModifier: true, action: "navigatePrev" },
 
     // Tab management while holding modifier

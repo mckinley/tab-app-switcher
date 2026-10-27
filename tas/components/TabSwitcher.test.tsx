@@ -109,6 +109,19 @@ describe("TabSwitcher with useTabNavigation", () => {
     expect(screen.getByText("No tabs open")).toBeTruthy()
   })
 
+  it("moves back with Shift and the modifier held, and forward without Shift", () => {
+    render(<Switcher onSelect={() => {}} />)
+    const altTab = (shiftKey: boolean) =>
+      act(() => void fireEvent.keyDown(window, { key: "Tab", code: "Tab", altKey: true, shiftKey }))
+
+    altTab(false)
+    expect(selectedId()).toBe("3")
+    altTab(true)
+    expect(selectedId()).toBe("2")
+    altTab(true)
+    expect(selectedId()).toBe("1")
+  })
+
   it("says when nothing matches", () => {
     render(<Switcher onSelect={() => {}} />)
     fireEvent.change(screen.getByPlaceholderText(/to search tabs/), { target: { value: "zzz" } })
