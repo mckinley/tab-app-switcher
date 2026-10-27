@@ -70,57 +70,85 @@ cd "$EXTENSION_DIR"
 echo "Uploading to Edge Add-ons..."
 echo "  Product ID: $EDGE_PRODUCT_ID"
 
-# Upload the package
-UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -H "Authorization: ApiKey $EDGE_API_KEY" \
-  -H "X-ClientID: $EDGE_CLIENT_ID" \
-  -H "Content-Type: application/zip" \
-  -X POST \
-  --data-binary "@$ZIP_FILE" \
+RESPONSE_FILE=$(mktemp)
+HEADERS_FILE=$(mktemp)
+trap 'rm -f "$RESPONSE_FILE" "$HEADERS_FILE"' EXIT
+
+# POSTs to the API; the response body goes to $RESPONSE_FILE and the headers to $HEADERS_FILE
+post() {
+  curl -s -o "$RESPONSE_FILE" -D "$HEADERS_FILE" -w "%{http_code}" \
+    -H "Authorization: ApiKey $EDGE_API_KEY" \
+    -H "X-ClientID: $EDGE_CLIENT_ID" \
+    -X POST "$@"
+}
+
+# The operation an accepted request started, from the end of its Location header
+operation_id() {
+  awk 'tolower($1) == "location:" { print $2 }' "$HEADERS_FILE" | tr -d '\r' | sed 's|.*/||'
+}
+
+# Polls an operation until it succeeds (status 0) or fails (status 1), for up to 5 minutes
+wait_for_operation() {
+  local url="$1"
+  local what="$2"
+  local response status
+  for _ in $(seq 1 60); do
+    response=$(curl -s -H "Authorization: ApiKey $EDGE_API_KEY" -H "X-ClientID: $EDGE_CLIENT_ID" "$url")
+    status=$(echo "$response" | grep -o '"status" *: *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
+    case "$status" in
+      Succeeded)
+        return 0
+        ;;
+      Failed)
+        echo "Error: $what failed"
+        echo "$response"
+        return 1
+        ;;
+    esac
+    sleep 5
+  done
+  echo "Error: $what didn't finish within 5 minutes"
+  echo "$response"
+  return 1
+}
+
+# Upload the package, then wait for Edge to finish processing it
+HTTP_CODE=$(post -H "Content-Type: application/zip" --data-binary "@$ZIP_FILE" \
   "$API_BASE/v1/products/$EDGE_PRODUCT_ID/submissions/draft/package")
-
-HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
-RESPONSE_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
-
 if [ "$HTTP_CODE" != "202" ]; then
   echo "Error: Upload failed with status $HTTP_CODE"
-  echo "$RESPONSE_BODY"
+  cat "$RESPONSE_FILE"
   echo ""
   if [ "$HTTP_CODE" = "404" ]; then
     echo "404 usually means the Product ID is incorrect."
     echo "Make sure you're using the GUID from 'Extension Identity', not the URL slug."
-  elif [ "$HTTP_CODE" = "401" ]; then
-    echo "401 usually means the API credentials are invalid or expired."
+  elif [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+    echo "$HTTP_CODE usually means the API key has expired. Make a new one in Partner Center →"
+    echo "Microsoft Edge → Publish API and put it in extension/.env as EDGE_API_KEY."
   fi
   exit 1
 fi
+OPERATION_ID=$(operation_id)
+echo "Upload accepted (operation $OPERATION_ID). Waiting for Edge to process the package..."
+wait_for_operation "$API_BASE/v1/products/$EDGE_PRODUCT_ID/submissions/draft/package/operations/$OPERATION_ID" "Processing the package"
+echo "Package processed."
 
-# Extract operation ID from response
-OPERATION_ID=$(echo "$RESPONSE_BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-echo "Upload accepted. Operation ID: $OPERATION_ID"
-echo "Waiting for processing..."
-sleep 5
-
-# Publish the submission
-echo "Publishing submission..."
-PUBLISH_RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -H "Authorization: ApiKey $EDGE_API_KEY" \
-  -H "X-ClientID: $EDGE_CLIENT_ID" \
-  -H "Content-Type: text/plain" \
-  -X POST \
-  -d "Automated publish via API" \
+# Submit the draft for review, then wait for Edge to accept the submission
+echo "Submitting for review..."
+HTTP_CODE=$(post -H "Content-Type: text/plain" -d "Automated publish via API" \
   "$API_BASE/v1/products/$EDGE_PRODUCT_ID/submissions")
-
-HTTP_CODE=$(echo "$PUBLISH_RESPONSE" | tail -n1)
-RESPONSE_BODY=$(echo "$PUBLISH_RESPONSE" | sed '$d')
-
 if [ "$HTTP_CODE" != "202" ]; then
-  echo "Error: Publish failed with status $HTTP_CODE"
-  echo "$RESPONSE_BODY"
+  echo "Error: Submitting failed with status $HTTP_CODE"
+  cat "$RESPONSE_FILE"
+  echo ""
+  exit 1
+fi
+OPERATION_ID=$(operation_id)
+if ! wait_for_operation "$API_BASE/v1/products/$EDGE_PRODUCT_ID/submissions/operations/$OPERATION_ID" "Submitting"; then
+  echo "InProgressSubmission means an earlier version is still in review: wait for it, or cancel it in Partner Center."
   exit 1
 fi
 
 echo ""
-echo "✅ Edge extension submitted for review"
+echo "✅ Edge extension v$VERSION submitted for review"
 echo "Check status at: https://partner.microsoft.com/dashboard/microsoftedge/overview"
-

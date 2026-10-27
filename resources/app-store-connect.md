@@ -54,3 +54,11 @@ questions ("Unable to Add for Review").
 
 **Save**, then **Add for Review** → **Submit to App Review**. Review usually takes one to three
 days, and with automatic release the version goes out when it's approved.
+
+## If Apple refuses the upload
+
+Notarization failing with "A required agreement is missing or has expired" (HTTP 403), or the
+Safari export failing with "PLA Update available", both mean Apple has an updated agreement
+waiting. The account holder accepts it at https://developer.apple.com/account, and should check
+App Store Connect → Business → Agreements too. A minute or two later it works again.
+`npm run release` checks for this before it tags a version (`scripts/check-release-credentials.mjs`).
