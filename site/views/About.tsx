@@ -31,7 +31,7 @@ export default function About() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation subnavItems={subnavItems} />
 
-      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-12 space-y-16">
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-12 space-y-16 w-full">
         {/* Getting Started */}
         <section id="getting-started" className="scroll-mt-32 space-y-6 sm:space-y-8">
           <h2 className="text-2xl sm:text-3xl font-bold">Getting Started</h2>

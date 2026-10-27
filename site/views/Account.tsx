@@ -63,7 +63,7 @@ const Account = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation subnavItems={subnavItems} />
 
-      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-12">
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-8 py-12 w-full">
         <h1 className="text-3xl font-bold text-foreground mb-8">Account</h1>
 
         <div className="space-y-6">
@@ -71,17 +71,17 @@ const Account = () => {
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-4">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={userName || "User"} className="w-16 h-16 rounded-full" />
+                <img src={avatarUrl} alt={userName || "User"} className="w-16 h-16 shrink-0 rounded-full" />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                <div className="w-16 h-16 shrink-0 rounded-full bg-muted flex items-center justify-center">
                   <span className="text-2xl font-semibold text-muted-foreground">
                     {userName?.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground">{userName}</h2>
-                <p className="text-muted-foreground">{user.email}</p>
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold text-foreground break-words">{userName}</h2>
+                <p className="text-muted-foreground break-words">{user.email}</p>
               </div>
             </div>
           </div>
