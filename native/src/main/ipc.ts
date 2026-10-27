@@ -3,7 +3,7 @@
  * Registers all ipcMain handlers for renderer-main communication
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import Store from 'electron-store'
 import { getActiveSessions, sendCommand, type Session } from './websocketServer'
 import {
@@ -13,6 +13,7 @@ import {
   setTasOverlayActive
 } from './windows'
 import { createTray, destroyTray, getTray } from './tray'
+import { checkForUpdatesNow, installUpdate } from './autoUpdater'
 import type { Tab, BrowserType } from '@tas/types/tabs'
 import type { SortStrategy } from '@tas/sorting'
 import type { KeyboardSettings } from '@tas/keyboard'
@@ -38,6 +39,11 @@ interface IpcDependencies {
     sessionKey: string
     tabId: number
   } | null
+  findSessionForRestore: (displayTabId: string) => {
+    session: Session
+    sessionKey: string
+    sessionId: string
+  } | null
   rebuildDisplayTabs: () => void
   broadcastDisplayTabs: () => void
   activateBrowserApp: (browser: BrowserType) => void
@@ -55,6 +61,11 @@ interface AppSettingsSchema {
 }
 
 let deps: IpcDependencies | null = null
+
+/** Requests from the Tab Management window (NativeTabManagementAdapter) */
+type TabManagementCommand =
+  | { command: 'reorderTab'; tabId: string; newIndex: number; targetWindowId?: number }
+  | { command: 'createWindow'; urls: string[] }
 
 /**
  * Initialize IPC handlers with dependencies
@@ -118,10 +129,9 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
     setAppOption(key, value)
   )
 
-  ipcMain.on('check-for-updates', () => {
-    // Trigger manual update check via autoUpdater
-    // The autoUpdater module should export a function for this
-  })
+  ipcMain.handle('check-for-updates', () => checkForUpdatesNow())
+
+  ipcMain.on('install-update', () => installUpdate())
 
   // Sort strategy sync IPC handlers
   ipcMain.handle('get-sort-sync-status', () => {
@@ -162,72 +172,72 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
     return { syncedCount }
   })
 
-  // Tab management IPC handlers - route to correct session
-  ipcMain.on('activate-tab', (_event, tabId: string, browser?: BrowserType) => {
+  // Tab management IPC handlers - route to the browser session that owns the tab. A tab
+  // whose session isn't connected is left alone: sending its id to other browser profiles
+  // could switch to or close a different tab there.
+  ipcMain.on('activate-tab', (_event, tabId: string) => {
     // Immediately disable Alt-release behavior since a selection was made
     // This prevents double-triggering if user releases Alt after clicking
     setTasOverlayActive(false)
 
     const found = findSessionForTab(tabId)
-    const displayTabs = getDisplayTabs()
-
     if (found) {
-      // Send command to the correct session
       sendCommand(found.sessionKey, {
         command: 'activateTab',
         tabId: found.tabId,
         windowId: 0 // Extension will look up the window
       })
-
-      // Activate the browser application
       activateBrowserApp(found.session.browserType)
-    } else {
-      // Fallback: try to find in displayTabs and use browser hint
-      const tab = displayTabs.find((t) => t.id === tabId)
-      const targetBrowser = browser || tab?.browser || 'chrome'
+      return
+    }
 
-      // Extract numeric tab ID (legacy format)
-      const numericTabId = parseInt(tabId.split(':').pop() || tabId, 10)
-      if (!isNaN(numericTabId)) {
-        // Send to all sessions of this browser type
-        const sessions = getActiveSessions().filter((s) => s.browserType === targetBrowser)
-        sessions.forEach((session) => {
-          const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
-          sendCommand(sessionKey, {
-            command: 'activateTab',
-            tabId: numericTabId,
-            windowId: 0
-          })
-        })
-        activateBrowserApp(targetBrowser)
-      }
+    // A Recently Closed or Other Devices row
+    const owner = deps?.findSessionForRestore(tabId)
+    if (owner?.session.commands.includes('restoreSession')) {
+      sendCommand(owner.sessionKey, { command: 'restoreSession', sessionId: owner.sessionId })
+      activateBrowserApp(owner.session.browserType)
+      return
+    }
+    // Older extensions can't restore sessions; open the page instead
+    const tab = getDisplayTabs().find((t) => t.id === tabId)
+    if (owner && tab && /^https?:/.test(tab.url)) {
+      shell.openExternal(tab.url)
+      return
+    }
+    console.warn(`[TAS] No connected browser has tab ${tabId}`)
+  })
+
+  ipcMain.on('close-tab', (_event, tabId: string) => {
+    const found = findSessionForTab(tabId)
+    if (found) {
+      sendCommand(found.sessionKey, { command: 'closeTab', tabId: found.tabId })
+    } else {
+      console.warn(`[TAS] No connected browser has tab ${tabId}`)
     }
   })
 
-  ipcMain.on('close-tab', (_event, tabId: string, browser?: BrowserType) => {
-    const found = findSessionForTab(tabId)
-    const displayTabs = getDisplayTabs()
-
-    if (found) {
-      sendCommand(found.sessionKey, {
-        command: 'closeTab',
-        tabId: found.tabId
-      })
-    } else {
-      // Fallback: try to find in displayTabs
-      const tab = displayTabs.find((t) => t.id === tabId)
-      const targetBrowser = browser || tab?.browser || 'chrome'
-
-      const numericTabId = parseInt(tabId.split(':').pop() || tabId, 10)
-      if (!isNaN(numericTabId)) {
-        const sessions = getActiveSessions().filter((s) => s.browserType === targetBrowser)
-        sessions.forEach((session) => {
-          const sessionKey = `${session.instanceId}:${session.runtimeSessionId}`
-          sendCommand(sessionKey, {
-            command: 'closeTab',
-            tabId: numericTabId
-          })
+  // Tab Management window: move a tab, or open a collection in a new window
+  ipcMain.on('command-to-extension', (_event, request: TabManagementCommand) => {
+    if (request.command === 'reorderTab') {
+      const found = findSessionForTab(request.tabId)
+      if (found?.session.commands.includes('moveTab')) {
+        sendCommand(found.sessionKey, {
+          command: 'moveTab',
+          tabId: found.tabId,
+          index: request.newIndex,
+          windowId: request.targetWindowId
         })
+      }
+    } else if (request.command === 'createWindow') {
+      // In the browser the person used last, if it can
+      const recent = getDisplayTabs()
+        .map((tab) => findSessionForTab(tab.id))
+        .find((owner) => owner?.session.commands.includes('createWindow'))
+      if (recent) {
+        sendCommand(recent.sessionKey, { command: 'createWindow', urls: request.urls })
+        activateBrowserApp(recent.session.browserType)
+      } else {
+        request.urls.filter((url) => /^https?:/.test(url)).forEach((url) => shell.openExternal(url))
       }
     }
   })

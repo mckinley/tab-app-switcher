@@ -100,7 +100,11 @@ function getDisplayTabs(): Tab[] {
  * Format: "instancePrefix:originalTabId" (e.g., "a1b2c3d4:42")
  */
 function buildDisplayId(session: Session, tabId: number): string {
-  return `${session.instanceId.substring(0, 8)}:${tabId}`
+  return `${displayIdPrefix(session)}:${tabId}`
+}
+
+function displayIdPrefix(session: Session): string {
+  return session.instanceId.substring(0, 8)
 }
 
 /**
@@ -166,16 +170,26 @@ function rebuildDisplayTabs(): void {
       allSessionWindows.push(win)
     })
 
-    // Collect recently closed tabs
+    // Collect recently closed tabs and other devices. Their session ids get the browser
+    // session's prefix, so opening one can be sent back to the browser it came from.
+    const prefix = displayIdPrefix(session)
+    const withOwner = (tab: SessionTab): SessionTab => ({
+      ...tab,
+      sessionId: `${prefix}:${tab.sessionId}`
+    })
     if (session.recentlyClosed) {
-      allRecentlyClosed.push(...session.recentlyClosed)
+      allRecentlyClosed.push(...session.recentlyClosed.map(withOwner))
     }
-
-    // Collect other devices
     if (session.otherDevices) {
-      allOtherDevices.push(...session.otherDevices)
+      allOtherDevices.push(
+        ...session.otherDevices.map((device) => ({
+          ...device,
+          tabs: device.tabs.map(withOwner)
+        }))
+      )
     }
   })
+  allRecentlyClosed.sort((a, b) => b.lastModified - a.lastModified)
 
   // Use the shared sorting module with sections
   const sortedTabs = sortTabsWithSections({
@@ -200,8 +214,9 @@ function rebuildDisplayTabs(): void {
       }
     }
 
-    // Session/device tabs (recently closed, other devices) don't need transformation
-    return tab
+    // Recently closed and other devices rows: "session:<prefix>:<sessionId>"
+    const owner = tab.sessionId && findSessionForRestore(tab.id)
+    return owner ? { ...tab, browser: owner.session.browserType } : tab
   })
 
   // Persist to disk (debounced via tabStorage)
@@ -310,6 +325,23 @@ function findSessionForTab(displayTabId: string): {
   }
 
   return null
+}
+
+/**
+ * Find the browser session a Recently Closed or Other Devices row came from.
+ * Their display IDs are "session:<instancePrefix>:<sessionId>" (see rebuildDisplayTabs).
+ */
+function findSessionForRestore(displayTabId: string): {
+  session: Session
+  sessionKey: string
+  sessionId: string
+} | null {
+  const match = /^session:([^:]+):(.+)$/.exec(displayTabId)
+  if (!match) return null
+  const [, prefix, sessionId] = match
+  const session = getActiveSessions().find((s) => s.instanceId.startsWith(prefix))
+  if (!session) return null
+  return { session, sessionKey: `${session.instanceId}:${session.runtimeSessionId}`, sessionId }
 }
 
 // =============================================================================
@@ -479,7 +511,10 @@ function startApp(): void {
   setInterval(() => cleanupStaleSessions(), 60 * 60 * 1000)
 
   // Setup auto-updater
-  setupAutoUpdater({ onUpdateReady: updateTrayMenu })
+  setupAutoUpdater({
+    onUpdateReady: updateTrayMenu,
+    checkAutomatically: () => appSettingsStore.get('checkUpdatesAutomatically')
+  })
 
   // Setup auth handlers
   setupAuthHandlers()
@@ -489,6 +524,7 @@ function startApp(): void {
     appSettingsStore,
     getDisplayTabs,
     findSessionForTab,
+    findSessionForRestore,
     rebuildDisplayTabs,
     broadcastDisplayTabs,
     activateBrowserApp,

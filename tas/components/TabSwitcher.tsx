@@ -166,8 +166,10 @@ export const TabSwitcher = ({
       searchInputRef.current?.blur()
     },
     onCloseTab: () => {
-      if (visibleTabs[selectedIndex]) {
-        onCloseTab(visibleTabs[selectedIndex].id)
+      // Recently Closed and Other Devices rows aren't open tabs
+      const tab = visibleTabs[selectedIndex]
+      if (tab && !tab.sessionId) {
+        onCloseTab(tab.id)
       }
     },
   })
@@ -248,10 +250,14 @@ export const TabSwitcher = ({
                           tab={tab}
                           isSelected={globalIndex === selectedIndex}
                           onClick={() => onSelectTab(tab.id)}
-                          onClose={(e) => {
-                            e.stopPropagation()
-                            onCloseTab(tab.id)
-                          }}
+                          onClose={
+                            tab.sessionId
+                              ? undefined
+                              : (e) => {
+                                  e.stopPropagation()
+                                  onCloseTab(tab.id)
+                                }
+                          }
                           showBrowserIcon={hasMultipleBrowsers}
                         />
                       </div>

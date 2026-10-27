@@ -23,6 +23,7 @@ import {
   type TabAugmentation,
   type SessionTab,
   type DeviceSession,
+  type OptionalCommand,
   createEnvelope,
   isValidEnvelope,
   isConnectPayload,
@@ -67,6 +68,7 @@ export interface Session {
   browserType: BrowserType
   extensionVersion: string
   sortStrategy?: SortStrategy // Extension's current sort strategy
+  commands: OptionalCommand[] // Optional commands the extension handles
   hasSnapshot: boolean
   lastSnapshotSeq: number
   sessionTabs: BrowserTab[]
@@ -272,6 +274,7 @@ function handleConnect(
       browserType: payload.browserType,
       extensionVersion: payload.extensionVersion,
       sortStrategy: payload.sortStrategy,
+      commands: Array.isArray(payload.commands) ? payload.commands : [],
       hasSnapshot: false,
       lastSnapshotSeq: -1,
       sessionTabs: [],
@@ -288,6 +291,7 @@ function handleConnect(
     // Update metadata (extension might have been updated)
     session.extensionVersion = payload.extensionVersion
     session.sortStrategy = payload.sortStrategy
+    session.commands = Array.isArray(payload.commands) ? payload.commands : []
     session.lastActivity = Date.now()
   }
 

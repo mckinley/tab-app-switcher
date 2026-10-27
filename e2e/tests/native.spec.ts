@@ -91,6 +91,28 @@ test("lists every profile's tabs and switches to a tab in the other profile", as
   expect(await p2.activeTitle()).toBe("P2-mail")
 })
 
+test("a recently closed tab reopens from the overlay", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Old report"])
+  await profile.closeTab("Old report")
+  await profile.activate("Inbox")
+  await expect
+    .poll(async () => (await native!.displayTabs()).find((t) => t.title === "Old report")?.section)
+    .toBe("recentlyClosed")
+
+  xdotool("keydown", "alt")
+  xdotool("key", "Tab")
+  await native.waitForOverlay()
+  await tabTo(native, "Old report")
+  xdotool("keyup", "alt")
+
+  await expect.poll(() => profile.openTitles()).toContain("Old report")
+  await expect.poll(() => profile.activeTitle()).toBe("Old report")
+})
+
 test("search: Alt+F, type, then Enter opens the highlighted match, not the row at that position", async () => {
   native = await launchNative()
   browser = await launchBrowser(pages, ["P1"])

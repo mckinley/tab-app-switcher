@@ -18,6 +18,10 @@ export interface Profile {
   openTabs(titles: string[]): Promise<void>
   /** Make the tab with this title active and give its window real keyboard focus. */
   activate(title: string): Promise<void>
+  /** Close the tab with this title. */
+  closeTab(title: string): Promise<void>
+  /** Titles of every open tab in this profile. */
+  openTitles(): Promise<string[]>
   /** Give this profile's window real keyboard focus without changing its active tab. */
   focus(): Promise<void>
   /** Title of the active tab in this profile's last-focused window. */
@@ -182,6 +186,19 @@ function makeProfile(name: string, worker: Worker, context: BrowserContext, page
       }, title)
       await sleep(150)
       await focusWindow(title)
+    },
+
+    async closeTab(title) {
+      await worker.evaluate(async (t) => {
+        const [tab] = await chrome.tabs.query({ title: t })
+        if (!tab?.id) throw new Error(`no tab titled ${t}`)
+        await chrome.tabs.remove(tab.id)
+      }, title)
+      await sleep(300)
+    },
+
+    async openTitles() {
+      return worker.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.title ?? ""))
     },
 
     async focus() {

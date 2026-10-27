@@ -17,6 +17,11 @@ interface AboutInfo {
   commitHash: string
 }
 
+// Update check result (matches @tas/types/updates UpdateStatus)
+type UpdateStatus =
+  | { state: 'unavailable' | 'error'; message: string }
+  | { state: 'up-to-date' | 'downloading' | 'ready'; version: string }
+
 // Keyboard settings type (matches @tas/types/tabs KeyboardSettings)
 interface KeyboardSettings {
   modifier: string
@@ -77,7 +82,8 @@ const api = {
     getAppOptions: (): Promise<AppOptions> => ipcRenderer.invoke('get-app-options'),
     setAppOption: (key: string, value: unknown): Promise<boolean> =>
       ipcRenderer.invoke('set-app-option', key, value),
-    checkForUpdates: (): void => ipcRenderer.send('check-for-updates'),
+    checkForUpdates: (): Promise<UpdateStatus> => ipcRenderer.invoke('check-for-updates'),
+    installUpdate: (): void => ipcRenderer.send('install-update'),
     onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void): void => {
       ipcRenderer.on('theme-changed', (_event, theme) => callback(theme))
     },

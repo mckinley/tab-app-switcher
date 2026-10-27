@@ -22,6 +22,7 @@ import { handleLogMessage } from "@tas/utils/logger"
 import { createTabTracker, type TabTracker } from "../utils/tabTracker"
 import { createNativeAppTransport, type NativeAppTransport } from "../utils/nativeAppConnection"
 import { getFaviconDataUrl } from "../utils/faviconCache"
+import { activateTab, createWindowWithUrls, moveTab, openSwitcherTab, restoreSession } from "../utils/tabActions"
 
 // Connected extension pages (popup, tabs page) for push updates
 type Port = Parameters<Parameters<typeof browser.runtime.onConnect.addListener>[0]>[0]
@@ -224,8 +225,7 @@ export default defineBackground(() => {
     }
 
     if (message.type === "ACTIVATE_TAB") {
-      const tabId = Number(message.tabId)
-      activateTab(tabId)
+      openSwitcherTab(String(message.tabId))
         .then(() => sendResponse({ success: true }))
         .catch((error) => sendResponse({ success: false, error: error.message }))
       return true
@@ -233,6 +233,11 @@ export default defineBackground(() => {
 
     if (message.type === "CLOSE_TAB") {
       const tabId = Number(message.tabId)
+      // Recently Closed and Other Devices rows aren't open tabs
+      if (Number.isNaN(tabId)) {
+        sendResponse({ success: false, error: "Not an open tab" })
+        return false
+      }
       closeTab(tabId)
         .then(() => sendResponse({ success: true }))
         .catch((error) => sendResponse({ success: false, error: error.message }))
@@ -318,6 +323,18 @@ function handleCommand(command: CommandPayload): void {
       // Storage change listener will trigger broadcastTabsUpdate()
       break
     }
+    // Optional commands, listed in the connect payload (nativeAppConnection.ts)
+    case "restoreSession":
+      restoreSession(command.sessionId).catch((error) => console.error("[TAS] Couldn't restore session:", error))
+      break
+    case "moveTab":
+      moveTab(command.tabId, command.index, command.windowId).catch((error) =>
+        console.error("[TAS] Couldn't move tab:", error),
+      )
+      break
+    case "createWindow":
+      createWindowWithUrls(command.urls).catch((error) => console.error("[TAS] Couldn't open window:", error))
+      break
   }
 }
 
@@ -382,18 +399,6 @@ async function reopenToolbarPopup(): Promise<void> {
     }
   }
   popupStartIndex = null
-}
-
-/**
- * Activate a tab and its window
- */
-async function activateTab(tabId: number): Promise<void> {
-  await browser.tabs.update(tabId, { active: true })
-  const tab = await browser.tabs.get(tabId)
-  if (tab.windowId) {
-    await browser.windows.update(tab.windowId, { focused: true })
-  }
-  // TabTracker will be updated via onActivated listener
 }
 
 /**

@@ -47,7 +47,14 @@ export interface ConnectPayload {
   browserType: BrowserType
   extensionVersion: string
   sortStrategy?: SortStrategy // Extension's current sort strategy setting
+  /**
+   * Optional commands this extension handles. Older extensions don't send it and ignore
+   * commands they don't know, so the native app checks this before relying on one.
+   */
+  commands?: OptionalCommand[]
 }
+
+export type OptionalCommand = "restoreSession" | "moveTab" | "createWindow"
 
 /**
  * connected: Server → Client
@@ -114,6 +121,10 @@ export type CommandPayload =
   | { command: "requestSnapshot" } // Force a full resync
   | { command: "refresh" } // Clear state and re-query all tabs from browser API
   | { command: "setSortStrategy"; strategy: SortStrategy } // Set extension's sort strategy
+  // Optional commands: only sent to extensions that list them in ConnectPayload.commands
+  | { command: "restoreSession"; sessionId: string } // Reopen a Recently Closed / Other Devices entry
+  | { command: "moveTab"; tabId: number; index: number; windowId?: number }
+  | { command: "createWindow"; urls: string[] }
 
 // ============================================================================
 // Browser API Types (preserved exactly as returned by browser APIs)

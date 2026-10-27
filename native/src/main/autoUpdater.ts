@@ -1,9 +1,12 @@
 import pkg from 'electron-updater'
 import { app } from 'electron'
+import type { UpdateStatus } from '@tas/types/updates'
 
 const { autoUpdater } = pkg
 
 let updateDownloaded = false
+// The version being downloaded or ready to install, once an update is found
+let updateVersion: string | null = null
 
 export function isUpdateReady(): boolean {
   return updateDownloaded
@@ -13,18 +16,47 @@ export function installUpdate(): void {
   autoUpdater.quitAndInstall()
 }
 
-export function setupAutoUpdater(callbacks: { onUpdateReady: () => void }): void {
+/** Updates come from GitHub Releases, which only the installed (packaged) app can use */
+function canUpdate(): boolean {
+  return process.env.NODE_ENV !== 'development' && app.isPackaged
+}
+
+/**
+ * Check now (Settings → Check for Updates). A newer version downloads in the background and
+ * installs on quit, or right away with installUpdate().
+ */
+export async function checkForUpdatesNow(): Promise<UpdateStatus> {
+  if (!canUpdate()) {
+    return { state: 'unavailable', message: 'Updates are only available in the installed app.' }
+  }
+  if (updateDownloaded && updateVersion) return { state: 'ready', version: updateVersion }
+
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    if (!result?.isUpdateAvailable) return { state: 'up-to-date', version: app.getVersion() }
+    return { state: 'downloading', version: result.updateInfo.version }
+  } catch (error) {
+    console.error('Auto-updater error:', error)
+    return { state: 'error', message: "Couldn't reach the update server. Try again later." }
+  }
+}
+
+export function setupAutoUpdater(callbacks: {
+  onUpdateReady: () => void
+  /** The "Check for updates automatically" setting */
+  checkAutomatically: () => boolean
+}): void {
   // Configure logging
   autoUpdater.logger = console
 
   // Don't check for updates in development
-  if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+  if (!canUpdate()) {
     console.log('Auto-updater disabled in development mode')
     return
   }
 
   const checkForUpdates = (): void => {
-    if (updateDownloaded) return
+    if (updateDownloaded || !callbacks.checkAutomatically()) return
     autoUpdater.checkForUpdatesAndNotify()
   }
 
@@ -50,6 +82,7 @@ export function setupAutoUpdater(callbacks: { onUpdateReady: () => void }): void
 
   autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info)
+    updateVersion = info.version
   })
 
   autoUpdater.on('update-not-available', (info) => {
@@ -64,6 +97,7 @@ export function setupAutoUpdater(callbacks: { onUpdateReady: () => void }): void
   autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded - will install on quit:', info)
     updateDownloaded = true
+    updateVersion = info.version
     callbacks.onUpdateReady()
   })
 

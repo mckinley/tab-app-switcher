@@ -49,10 +49,13 @@ interface AppOptions {
   keyboard: KeyboardSettings
 }
 
+type UpdateStatus = import('@tas/types/updates').UpdateStatus
+
 interface OptionsAPI {
   getAppOptions: () => Promise<AppOptions>
   setAppOption: (key: string, value: unknown) => Promise<boolean>
-  checkForUpdates: () => void
+  checkForUpdates: () => Promise<UpdateStatus>
+  installUpdate: () => void
   onThemeChanged: (callback: (theme: 'light' | 'dark' | 'system') => void) => void
   onKeyboardChanged: (callback: (keyboard: KeyboardSettings) => void) => void
   onSortStrategyChanged: (

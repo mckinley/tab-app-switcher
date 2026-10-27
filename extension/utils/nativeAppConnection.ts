@@ -207,6 +207,7 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
           browserType: detectBrowserType(),
           extensionVersion: getExtensionVersion(),
           sortStrategy,
+          commands: ["restoreSession", "moveTab", "createWindow"],
         }
 
         send("connect", connectPayload)

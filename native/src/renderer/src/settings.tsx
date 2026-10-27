@@ -146,6 +146,7 @@ function SettingsContent(): JSX.Element {
           getOptions={window.api?.options?.getAppOptions}
           setOption={window.api?.options?.setAppOption}
           checkForUpdates={window.api?.options?.checkForUpdates}
+          installUpdate={window.api?.options?.installUpdate}
         />
       )
     },

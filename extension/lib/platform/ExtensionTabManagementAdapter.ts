@@ -7,6 +7,7 @@
 
 import type { ActionResult } from "@tas/lib/platform"
 import { ExtensionPlatformAdapter } from "./ExtensionPlatformAdapter"
+import { createWindowWithUrls, moveTab, openSwitcherTab } from "../../utils/tabActions"
 
 export class ExtensionTabManagementAdapter extends ExtensionPlatformAdapter {
   constructor() {
@@ -32,7 +33,7 @@ export class ExtensionTabManagementAdapter extends ExtensionPlatformAdapter {
 
   async activateTab(tabId: string): Promise<ActionResult> {
     try {
-      await browser.tabs.update(parseInt(tabId), { active: true })
+      await openSwitcherTab(tabId)
       return { success: true }
     } catch (error) {
       return { success: false, error: String(error) }
@@ -50,13 +51,7 @@ export class ExtensionTabManagementAdapter extends ExtensionPlatformAdapter {
 
   async reorderTabs(tabId: string, newIndex: number, targetWindowId?: number): Promise<ActionResult> {
     try {
-      const numericTabId = parseInt(tabId)
-      const tab = await browser.tabs.get(numericTabId)
-
-      await browser.tabs.move(numericTabId, {
-        windowId: targetWindowId ?? tab.windowId,
-        index: newIndex,
-      })
+      await moveTab(parseInt(tabId), newIndex, targetWindowId)
       return { success: true }
     } catch (error) {
       return { success: false, error: String(error) }
@@ -65,24 +60,7 @@ export class ExtensionTabManagementAdapter extends ExtensionPlatformAdapter {
 
   async createWindowWithTabs(urls: string[]): Promise<ActionResult> {
     try {
-      if (urls.length === 0) {
-        return { success: true }
-      }
-
-      const newWindow = await browser.windows.create({
-        url: urls[0],
-        focused: true,
-      })
-
-      if (newWindow?.id) {
-        for (let i = 1; i < urls.length; i++) {
-          await browser.tabs.create({
-            windowId: newWindow.id,
-            url: urls[i],
-            active: false,
-          })
-        }
-      }
+      await createWindowWithUrls(urls)
       return { success: true }
     } catch (error) {
       return { success: false, error: String(error) }

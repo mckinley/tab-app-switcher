@@ -36,6 +36,23 @@ test("clicking a tab in the popup switches to it", async () => {
   await expect.poll(() => profile.activeTitle()).toBe("Calendar")
 })
 
+test("a recently closed tab reopens from the popup", async () => {
+  const [profile] = browser.profiles
+  await profile.openTabs(["Inbox", "Old report"])
+  await profile.closeTab("Old report")
+
+  const popup = await browser.context.newPage()
+  await popup.goto(`chrome-extension://${browser.extensionId}/popup.html`)
+  const row = popup.locator("[data-tab-id^='session:']", { hasText: "Old report" })
+  await expect(row).toBeVisible()
+  // Not an open tab, so it has no close button
+  await expect(row.getByRole("button", { name: /close/i })).toHaveCount(0)
+  await row.click()
+
+  await expect.poll(() => profile.openTitles()).toContain("Old report")
+  await expect.poll(() => profile.activeTitle()).toBe("Old report")
+})
+
 test.describe("real key presses", () => {
   test.skip(!hasXdotool(), "needs an X display and xdotool (run with e2e/run.sh)")
 

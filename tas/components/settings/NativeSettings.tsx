@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Separator } from "@tab-app-switcher/ui/components/separator"
+import type { UpdateStatus } from "../../types/updates"
 
 export interface NativeOptionsData {
   launchOnLogin: boolean
@@ -18,15 +19,47 @@ export interface NativeSettingsProps {
   getOptions?: () => Promise<NativeOptionsData & { theme: string }>
   /** Callback to set an option */
   setOption?: (key: string, value: unknown) => Promise<boolean>
-  /** Callback to check for updates */
-  checkForUpdates?: () => void
+  /** Callback to check for updates now */
+  checkForUpdates?: () => Promise<UpdateStatus>
+  /** Restart the app to install a downloaded update */
+  installUpdate?: () => void
   /** Additional CSS classes */
   className?: string
 }
 
-export const NativeSettings = ({ getOptions, setOption, checkForUpdates, className }: NativeSettingsProps) => {
+function describeUpdateStatus(status: UpdateStatus): string {
+  switch (status.state) {
+    case "up-to-date":
+      return `You have the latest version (${status.version}).`
+    case "downloading":
+      return `Downloading version ${status.version}. It installs the next time the app restarts.`
+    case "ready":
+      return `Version ${status.version} is ready to install.`
+    default:
+      return status.message
+  }
+}
+
+export const NativeSettings = ({
+  getOptions,
+  setOption,
+  checkForUpdates,
+  installUpdate,
+  className,
+}: NativeSettingsProps) => {
   const [options, setOptions] = useState<NativeOptionsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | "checking" | null>(null)
+
+  const handleCheckForUpdates = async (): Promise<void> => {
+    if (!checkForUpdates) return
+    setUpdateStatus("checking")
+    try {
+      setUpdateStatus(await checkForUpdates())
+    } catch {
+      setUpdateStatus({ state: "error", message: "Couldn't check for updates. Try again later." })
+    }
+  }
 
   useEffect(() => {
     const loadOptions = async (): Promise<void> => {
@@ -119,9 +152,26 @@ export const NativeSettings = ({ getOptions, setOption, checkForUpdates, classNa
             <span className="text-sm">Check for updates automatically</span>
           </label>
 
-          <Button variant="outline" size="sm" onClick={checkForUpdates}>
-            Check for Updates...
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCheckForUpdates}
+              disabled={!checkForUpdates || updateStatus === "checking"}
+            >
+              {updateStatus === "checking" ? "Checking..." : "Check for Updates..."}
+            </Button>
+            {updateStatus !== "checking" && updateStatus?.state === "ready" && installUpdate && (
+              <Button size="sm" onClick={installUpdate}>
+                Restart to Install
+              </Button>
+            )}
+          </div>
+          {updateStatus && updateStatus !== "checking" && (
+            <p className="text-xs text-muted-foreground" role="status">
+              {describeUpdateStatus(updateStatus)}
+            </p>
+          )}
         </div>
       </div>
     </div>
