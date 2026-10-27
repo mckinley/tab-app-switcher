@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { TabSwitcher } from "@tas/components/TabSwitcher"
+import { useTabNavigation } from "@tas/hooks/useTabNavigation"
 import { KeyboardSettings, ThemeSettings } from "@tas/components/settings"
 import { TabManagement } from "@tas/components/TabManagement"
 import { type Tab, type KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
@@ -141,7 +142,6 @@ const Index = () => {
   }, [keyboard])
 
   const [isSwitcherActive, setIsSwitcherActive] = useState(false)
-  const [selectedIndex, setSelectedIndex] = useState(1)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isTabManagementOpen, setIsTabManagementOpen] = useState(false)
   const [demoCollections, setDemoCollections] = useState<Collection[]>([])
@@ -151,6 +151,7 @@ const Index = () => {
 
   // Get tabs in MRU order for the switcher
   const mruTabs = getTabsInMruOrder()
+  const { selectedIndex, navigate, reset, onVisibleTabsChange } = useTabNavigation(mruTabs)
 
   const handleSelectTab = (tabId: string) => {
     console.log("Selected tab:", tabId)
@@ -170,18 +171,7 @@ const Index = () => {
     addTab()
   }
 
-  const handleNavigate = useCallback(
-    (direction: "next" | "prev") => {
-      setSelectedIndex((prev) => {
-        if (direction === "next") {
-          return (prev + 1) % mruTabs.length
-        } else {
-          return prev === 0 ? mruTabs.length - 1 : prev - 1
-        }
-      })
-    },
-    [mruTabs.length],
-  )
+  const handleNavigate = useCallback((direction: "next" | "prev") => void navigate(direction), [navigate])
 
   // Mac-like Application Switcher behavior with configurable modifier key
   useEffect(() => {
@@ -201,7 +191,7 @@ const Index = () => {
         e.preventDefault()
         if (!isSwitcherActive) {
           setIsSwitcherActive(true)
-          setSelectedIndex(1) // Start with second tab selected
+          reset() // Start with second tab selected
         } else {
           handleNavigate("next")
         }
@@ -212,7 +202,7 @@ const Index = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [isSwitcherActive, selectedIndex, isPanelOpen, keyboard, handleNavigate])
+  }, [isSwitcherActive, isPanelOpen, keyboard, handleNavigate, reset])
 
   const demoTabsSlot = (
     <ChromeTabsPreview
@@ -532,6 +522,7 @@ const Index = () => {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenTabManagement={() => setIsTabManagementOpen(true)}
           isEnabled={!isPanelOpen}
+          onVisibleTabsChange={onVisibleTabsChange}
         />
       </Container>
 

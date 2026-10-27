@@ -7,7 +7,7 @@
  * - About window
  */
 
-import { BrowserWindow, globalShortcut, screen, shell } from 'electron'
+import { BrowserWindow, screen, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -21,12 +21,16 @@ let aboutWindow: BrowserWindow | null = null
 
 // Track if TAS overlay is actively shown (for Alt release detection)
 let tasOverlayActive = false
+// The search box has focus, so releasing the modifier doesn't pick a tab
+let tasSearchActive = false
 
 // Dependencies injected from main
 interface WindowDependencies {
   getDisplayTabs: () => Tab[]
   registerTasNavigationShortcuts: () => void
   unregisterTasNavigationShortcuts: () => void
+  registerActivationShortcut: () => void
+  unregisterActivationShortcut: () => void
   onTasOverlayCreated?: () => void
 }
 
@@ -72,6 +76,34 @@ export function setTasOverlayActive(active: boolean): void {
   tasOverlayActive = active
 }
 
+export function isTasSearchActive(): boolean {
+  return tasSearchActive
+}
+
+export function setTasSearchActive(active: boolean): void {
+  tasSearchActive = active
+}
+
+/** Cover the display the pointer is on, so the overlay opens where the person is working */
+function fitToCurrentDisplay(window: BrowserWindow): void {
+  const { bounds } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+  window.setBounds(bounds)
+}
+
+/** While the overlay shows, its keys navigate instead of opening it */
+function enableOverlayShortcuts(): void {
+  tasOverlayActive = true
+  tasSearchActive = false
+  deps?.unregisterActivationShortcut()
+  deps?.registerTasNavigationShortcuts()
+}
+
+function enableActivationShortcut(): void {
+  tasSearchActive = false
+  deps?.unregisterTasNavigationShortcuts()
+  deps?.registerActivationShortcut()
+}
+
 /**
  * Select current tab and hide overlay
  * Called when Alt is released while overlay is active
@@ -97,13 +129,7 @@ export function hideTasOverlay(): void {
   if (tasWindow && !tasWindow.isDestroyed()) {
     tasOverlayActive = false
     tasWindow.hide()
-    deps?.unregisterTasNavigationShortcuts()
-    // Re-register Alt+Tab trigger
-    if (!globalShortcut.isRegistered('Alt+Tab')) {
-      globalShortcut.register('Alt+Tab', () => {
-        createTasOverlay()
-      })
-    }
+    enableActivationShortcut()
   }
 }
 
@@ -125,6 +151,7 @@ export function createTasOverlay(): void {
     }
     // Reset selection to second tab when reopening
     tasWindow.webContents.send('reset-selection')
+    fitToCurrentDisplay(tasWindow)
 
     // Show without stealing focus on macOS (like native app switcher)
     if (process.platform === 'darwin') {
@@ -134,17 +161,14 @@ export function createTasOverlay(): void {
       tasWindow.focus()
     }
 
-    // Mark overlay as active for Alt release detection
-    tasOverlayActive = true
-
-    // Unregister Alt+Tab trigger, register navigation shortcuts
-    globalShortcut.unregister('Alt+Tab')
-    deps.registerTasNavigationShortcuts()
+    enableOverlayShortcuts()
     return
   }
 
-  const primaryDisplay = screen.getPrimaryDisplay()
-  const { width, height } = primaryDisplay.size // Use full display size, not workArea
+  // Full display size, not workArea, on the display the pointer is on
+  const { x, y, width, height } = screen.getDisplayNearestPoint(
+    screen.getCursorScreenPoint()
+  ).bounds
 
   // Create frameless, always-on-top, full-screen overlay window
   // Full-screen ensures we capture ALL clicks (like macOS app switcher)
@@ -152,8 +176,8 @@ export function createTasOverlay(): void {
   tasWindow = new BrowserWindow({
     width,
     height,
-    x: 0,
-    y: 0,
+    x,
+    y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -175,18 +199,13 @@ export function createTasOverlay(): void {
   })
 
   tasWindow.on('ready-to-show', () => {
-    // Unregister Alt+Tab trigger, register navigation shortcuts
-    globalShortcut.unregister('Alt+Tab')
-    deps?.registerTasNavigationShortcuts()
+    enableOverlayShortcuts()
 
     // Send cached displayTabs to the window
     const tabs = deps?.getDisplayTabs() ?? []
     if (tasWindow && tabs.length > 0) {
       tasWindow.webContents.send('tabs-updated', tabs)
     }
-
-    // Mark overlay as active for Alt release detection
-    tasOverlayActive = true
 
     // Show without stealing focus on macOS (like native app switcher)
     if (process.platform === 'darwin') {
@@ -213,23 +232,13 @@ export function createTasOverlay(): void {
 
   tasWindow.on('hide', () => {
     // Cleanup is handled by hideTasOverlay, but ensure shortcuts are correct
-    deps?.unregisterTasNavigationShortcuts()
-    if (!globalShortcut.isRegistered('Alt+Tab')) {
-      globalShortcut.register('Alt+Tab', () => {
-        createTasOverlay()
-      })
-    }
+    enableActivationShortcut()
   })
 
   tasWindow.on('closed', () => {
     tasWindow = null
-    deps?.unregisterTasNavigationShortcuts()
-    // Re-register global shortcut when window is closed
-    if (!globalShortcut.isRegistered('Alt+Tab')) {
-      globalShortcut.register('Alt+Tab', () => {
-        createTasOverlay()
-      })
-    }
+    tasOverlayActive = false
+    enableActivationShortcut()
   })
 
   // Load TAS UI

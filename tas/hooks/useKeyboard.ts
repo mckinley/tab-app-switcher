@@ -111,11 +111,20 @@ export function useKeyboard({
       // Don't handle ANY keys when settings dialog or tab management panel is open
       if (isSettingsOpen || isTabManagementOpen) return
 
-      // If search is focused, only handle Escape to exit
+      // While typing a search, only keys that can't be part of the query: Escape leaves the
+      // search, Enter picks the highlighted match, and the arrow keys move through matches
       if (isSearchFocused) {
-        if (e.key === "Escape") {
+        if (e.isComposing) return
+        const searchActions: Record<string, () => void> = {
+          Escape: onBlurSearch,
+          Enter: onActivateSelected,
+          ArrowDown: onNavigateNext,
+          ArrowUp: onNavigatePrev,
+        }
+        const action = searchActions[e.key]
+        if (action) {
           e.preventDefault()
-          onBlurSearch()
+          action()
         }
         return
       }

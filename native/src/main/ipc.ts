@@ -114,57 +114,9 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
     }
   })
 
-  ipcMain.handle('set-app-option', (_event, key: string, value: unknown) => {
-    if (key === 'launchOnLogin' && typeof value === 'boolean') {
-      appSettingsStore.set('launchOnLogin', value)
-      app.setLoginItemSettings({ openAtLogin: value })
-    } else if (key === 'hideMenuBarIcon' && typeof value === 'boolean') {
-      appSettingsStore.set('hideMenuBarIcon', value)
-      const tray = getTray()
-      if (tray) {
-        if (value) {
-          destroyTray()
-        }
-      } else if (!value) {
-        createTray()
-      }
-    } else if (key === 'checkUpdatesAutomatically' && typeof value === 'boolean') {
-      appSettingsStore.set('checkUpdatesAutomatically', value)
-    } else if (key === 'theme' && (value === 'light' || value === 'dark' || value === 'system')) {
-      appSettingsStore.set('theme', value)
-      // Broadcast theme change to all windows
-      const windows = BrowserWindow.getAllWindows()
-      windows.forEach((win) => {
-        win.webContents.send('theme-changed', value)
-      })
-    } else if (
-      key === 'sortStrategy' &&
-      ['lastActivated', 'windowGrouped', 'lastAccessed', 'lastDeactivated'].includes(
-        value as string
-      )
-    ) {
-      appSettingsStore.set('sortStrategy', value as SortStrategy)
-      // Rebuild with new strategy and broadcast to all windows
-      deps?.rebuildDisplayTabs()
-      deps?.broadcastDisplayTabs()
-      // Broadcast sort strategy change to all windows
-      const windows = BrowserWindow.getAllWindows()
-      windows.forEach((win) => {
-        win.webContents.send('sort-strategy-changed', value)
-      })
-    } else if (key === 'keyboard' && typeof value === 'object' && value !== null) {
-      const keyboard = value as KeyboardSettings
-      appSettingsStore.set('keyboard', keyboard)
-      // Update global shortcuts with new keyboard settings
-      deps?.updateKeyboardShortcuts(keyboard)
-      // Broadcast keyboard change to all windows
-      const windows = BrowserWindow.getAllWindows()
-      windows.forEach((win) => {
-        win.webContents.send('keyboard-changed', keyboard)
-      })
-    }
-    return true
-  })
+  ipcMain.handle('set-app-option', (_event, key: string, value: unknown) =>
+    setAppOption(key, value)
+  )
 
   ipcMain.on('check-for-updates', () => {
     // Trigger manual update check via autoUpdater
@@ -297,3 +249,59 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
 
 // Re-export browserAppNames for use by activateBrowserApp in index.ts
 export { browserAppNames }
+
+/**
+ * Change one app setting, from the settings window (or the end-to-end tests). Applies it
+ * right away and tells every window.
+ */
+export function setAppOption(key: string, value: unknown): boolean {
+  if (!deps) return false
+  const { appSettingsStore } = deps
+  if (key === 'launchOnLogin' && typeof value === 'boolean') {
+    appSettingsStore.set('launchOnLogin', value)
+    app.setLoginItemSettings({ openAtLogin: value })
+  } else if (key === 'hideMenuBarIcon' && typeof value === 'boolean') {
+    appSettingsStore.set('hideMenuBarIcon', value)
+    const tray = getTray()
+    if (tray) {
+      if (value) {
+        destroyTray()
+      }
+    } else if (!value) {
+      createTray()
+    }
+  } else if (key === 'checkUpdatesAutomatically' && typeof value === 'boolean') {
+    appSettingsStore.set('checkUpdatesAutomatically', value)
+  } else if (key === 'theme' && (value === 'light' || value === 'dark' || value === 'system')) {
+    appSettingsStore.set('theme', value)
+    // Broadcast theme change to all windows
+    const windows = BrowserWindow.getAllWindows()
+    windows.forEach((win) => {
+      win.webContents.send('theme-changed', value)
+    })
+  } else if (
+    key === 'sortStrategy' &&
+    ['lastActivated', 'windowGrouped', 'lastAccessed', 'lastDeactivated'].includes(value as string)
+  ) {
+    appSettingsStore.set('sortStrategy', value as SortStrategy)
+    // Rebuild with new strategy and broadcast to all windows
+    deps?.rebuildDisplayTabs()
+    deps?.broadcastDisplayTabs()
+    // Broadcast sort strategy change to all windows
+    const windows = BrowserWindow.getAllWindows()
+    windows.forEach((win) => {
+      win.webContents.send('sort-strategy-changed', value)
+    })
+  } else if (key === 'keyboard' && typeof value === 'object' && value !== null) {
+    const keyboard = value as KeyboardSettings
+    appSettingsStore.set('keyboard', keyboard)
+    // Update global shortcuts with new keyboard settings
+    deps?.updateKeyboardShortcuts(keyboard)
+    // Broadcast keyboard change to all windows
+    const windows = BrowserWindow.getAllWindows()
+    windows.forEach((win) => {
+      win.webContents.send('keyboard-changed', keyboard)
+    })
+  }
+  return true
+}

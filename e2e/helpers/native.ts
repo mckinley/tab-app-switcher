@@ -16,6 +16,10 @@ export interface NativeApp {
   sessions(): Promise<{ browserType: string; instanceId: string; tabCount: number }[]>
   /** The tab list the overlay shows, in order. */
   displayTabs(): Promise<NativeTab[]>
+  /** Change a setting the way the settings window does (e.g. "keyboard"). */
+  setAppOption(key: string, value: unknown): Promise<void>
+  /** Whether the overlay window is showing. */
+  overlayVisible(): Promise<boolean>
   /** Wait until `count` browser sessions are connected and have sent their tabs. */
   waitForSessions(count: number): Promise<void>
   /** The switcher overlay window, if it has been created. */
@@ -30,7 +34,7 @@ export interface NativeApp {
 }
 
 type E2EGlobal = typeof globalThis & {
-  __tasE2E: { sessions(): unknown; displayTabs(): unknown }
+  __tasE2E: { sessions(): unknown; displayTabs(): unknown; setAppOption(key: string, value: unknown): unknown }
 }
 
 /** Launch the built native app with a fresh settings folder. */
@@ -59,6 +63,16 @@ export async function launchNative(): Promise<NativeApp> {
     app,
     sessions: () => app.evaluate(() => (globalThis as E2EGlobal).__tasE2E.sessions()) as never,
     displayTabs: () => app.evaluate(() => (globalThis as E2EGlobal).__tasE2E.displayTabs()) as never,
+    async setAppOption(key, value) {
+      await app.evaluate((_electron, [k, v]) => (globalThis as E2EGlobal).__tasE2E.setAppOption(k, v), [
+        key,
+        value,
+      ] as const)
+    },
+    overlayVisible: () =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().some((w) => w.webContents.getURL().includes("tas.html") && w.isVisible()),
+      ),
 
     async waitForSessions(count) {
       for (let i = 0; i < 100; i++) {
@@ -75,10 +89,7 @@ export async function launchNative(): Promise<NativeApp> {
       for (let i = 0; i < 50; i++) {
         const page = native.overlay()
         if (page) {
-          const visible = await app.evaluate(({ BrowserWindow }) =>
-            BrowserWindow.getAllWindows().some((w) => w.webContents.getURL().includes("tas.html") && w.isVisible()),
-          )
-          if (visible && (await page.locator("[data-tab-id]").count()) > 0) return page
+          if ((await native.overlayVisible()) && (await page.locator("[data-tab-id]").count()) > 0) return page
         }
         await sleep(100)
       }

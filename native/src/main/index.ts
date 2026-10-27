@@ -3,7 +3,7 @@
  * Orchestrates the Electron app lifecycle and wires up modules
  */
 
-import { app, globalShortcut, systemPreferences } from 'electron'
+import { app, globalShortcut, Notification, systemPreferences } from 'electron'
 import { uIOhook, UiohookKey } from 'uiohook-napi'
 import Store from 'electron-store'
 import { exec } from 'child_process'
@@ -11,6 +11,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import {
   startWebSocketServer,
   getActiveSessions,
+  cleanupStaleSessions,
   type Session,
   type SessionKey
 } from './websocketServer'
@@ -37,6 +38,7 @@ import {
   getTasWindow,
   getTabManagementWindow,
   isTasOverlayActive,
+  isTasSearchActive,
   selectCurrentTabAndHide
 } from './windows'
 import { createTray, updateTrayMenu, destroyTray } from './tray'
@@ -44,9 +46,13 @@ import {
   registerTasNavigationShortcuts,
   unregisterTasNavigationShortcuts,
   updateKeyboardSettings,
-  initKeyboardSettings
+  initKeyboardSettings,
+  getKeyboardSettings,
+  initActivationShortcut,
+  registerActivationShortcut,
+  unregisterActivationShortcut
 } from './shortcuts'
-import { registerIpcHandlers, browserAppNames } from './ipc'
+import { registerIpcHandlers, browserAppNames, setAppOption } from './ipc'
 
 // =============================================================================
 // App Settings Store
@@ -363,7 +369,31 @@ function checkAccessibilityPermissions(): boolean {
 // App Initialization
 // =============================================================================
 
-app.whenReady().then(() => {
+// One copy of the app at a time: a second copy couldn't get the shortcut or the WebSocket port.
+// Opening the app again shows its settings instead.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => createSettingsWindow())
+  app.whenReady().then(startApp)
+}
+
+// The modifier key's left and right key codes, for noticing when it's released
+const MODIFIER_KEYCODES: Record<string, number[]> = {
+  Alt: [UiohookKey.Alt, UiohookKey.AltRight],
+  Cmd: [UiohookKey.Meta, UiohookKey.MetaRight],
+  Ctrl: [UiohookKey.Ctrl, UiohookKey.CtrlRight],
+  Shift: [UiohookKey.Shift, UiohookKey.ShiftRight]
+}
+
+/** A shortcut as people write it, from an Electron accelerator ("Option+Tab" on a Mac) */
+function shortcutLabel(accelerator: string): string {
+  return process.platform === 'darwin'
+    ? accelerator.replace('Alt', 'Option').replace('Cmd', 'Command')
+    : accelerator
+}
+
+function startApp(): void {
   electronApp.setAppUserModelId('com.tab-app-switcher')
 
   // Check accessibility permissions on macOS (needed for global shortcuts)
@@ -376,17 +406,16 @@ app.whenReady().then(() => {
   initWindows({
     getDisplayTabs,
     registerTasNavigationShortcuts,
-    unregisterTasNavigationShortcuts
+    unregisterTasNavigationShortcuts,
+    registerActivationShortcut,
+    unregisterActivationShortcut
   })
 
-  // Set up uIOhook for Alt key release detection
+  // Set up uIOhook for modifier key release detection
   // This allows us to select the current tab when the user releases Alt (like native Alt+Tab)
   uIOhook.on('keyup', (e) => {
-    // Alt key codes: 56 = Left Alt, 3640 = Right Alt (AltGr)
-    if (
-      (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) &&
-      isTasOverlayActive()
-    ) {
+    const modifierKeys = MODIFIER_KEYCODES[getKeyboardSettings().modifier] ?? MODIFIER_KEYCODES.Alt
+    if (modifierKeys.includes(e.keycode) && isTasOverlayActive() && !isTasSearchActive()) {
       selectCurrentTabAndHide()
     }
   })
@@ -413,7 +442,8 @@ app.whenReady().then(() => {
             instanceId: s.instanceId,
             tabCount: s.sessionTabs.length
           })),
-        displayTabs: () => getDisplayTabs()
+        displayTabs: () => getDisplayTabs(),
+        setAppOption
       }
     })
   }
@@ -431,14 +461,22 @@ app.whenReady().then(() => {
     createSettingsWindow('setup')
   }
 
-  // Register global keyboard shortcut (Alt+Tab)
-  const registered = globalShortcut.register('Alt+Tab', () => {
-    createTasOverlay()
+  // Register the shortcut that opens the overlay (Alt+Tab unless changed in settings), and
+  // say so if another app already has it, since the app does nothing without it
+  initActivationShortcut({
+    onActivate: createTasOverlay,
+    onUnavailable: (accelerator) => {
+      if (!Notification.isSupported()) return
+      new Notification({
+        title: `${shortcutLabel(accelerator)} isn't available`,
+        body: 'Another app is using this shortcut, so it can’t open Tab Application Switcher. Choose a different shortcut in Settings.'
+      }).show()
+    }
   })
+  registerActivationShortcut()
 
-  if (!registered) {
-    console.error('Failed to register global shortcut Alt+Tab')
-  }
+  // Forget browser sessions that have been gone for a day (browser restarts make new ones)
+  setInterval(() => cleanupStaleSessions(), 60 * 60 * 1000)
 
   // Setup auto-updater
   setupAutoUpdater({ onUpdateReady: updateTrayMenu })
@@ -456,7 +494,7 @@ app.whenReady().then(() => {
     activateBrowserApp,
     updateKeyboardShortcuts: updateKeyboardSettings
   })
-})
+}
 
 // =============================================================================
 // App Lifecycle

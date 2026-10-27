@@ -10,13 +10,20 @@ import {
   getKeyBindings,
   DEFAULT_KEYBOARD_SETTINGS
 } from '@tas/keyboard'
-import { getTasWindow, hideTasOverlay } from './windows'
+import { getTasWindow, hideTasOverlay, isTasOverlayActive, setTasSearchActive } from './windows'
 
 // Track registered accelerators for cleanup
 const registeredAccelerators: string[] = []
 
 // Current keyboard settings (updated when user changes settings)
 let currentKeyboardSettings: KeyboardSettings = DEFAULT_KEYBOARD_SETTINGS
+
+// The shortcut that opens the overlay (modifier + activateForward, Alt+Tab by default)
+let activationAccelerator: string | null = null
+let onActivate: (() => void) | null = null
+let onActivationUnavailable: ((accelerator: string) => void) | null = null
+// Accelerators already reported as taken, so the warning isn't repeated on every hide
+const unavailableReported = new Set<string>()
 
 /**
  * Build Electron accelerator string from a shortcut binding
@@ -39,9 +46,61 @@ function toElectronAccelerator(
     ArrowRight: 'Right',
     Enter: 'Return'
   }
-  parts.push(keyMap[key] ?? key)
+  // Letters are written in upper case in accelerators
+  parts.push(keyMap[key] ?? (key.length === 1 ? key.toUpperCase() : key))
 
   return parts.join('+')
+}
+
+export function getKeyboardSettings(): KeyboardSettings {
+  return currentKeyboardSettings
+}
+
+/**
+ * Set what the activation shortcut does, and what to do when another app already has it
+ */
+export function initActivationShortcut(handlers: {
+  onActivate: () => void
+  onUnavailable: (accelerator: string) => void
+}): void {
+  onActivate = handlers.onActivate
+  onActivationUnavailable = handlers.onUnavailable
+}
+
+/**
+ * Register the shortcut that opens the overlay, from the user's keyboard settings.
+ * Returns false (and reports it once per accelerator) when another app has it.
+ */
+export function registerActivationShortcut(): boolean {
+  const accelerator = toElectronAccelerator(
+    currentKeyboardSettings.activateForward,
+    true,
+    false,
+    currentKeyboardSettings.modifier
+  )
+  if (activationAccelerator === accelerator && globalShortcut.isRegistered(accelerator)) return true
+
+  unregisterActivationShortcut()
+  if (globalShortcut.register(accelerator, () => onActivate?.())) {
+    activationAccelerator = accelerator
+    unavailableReported.delete(accelerator)
+    return true
+  }
+
+  console.error(`[TAS] Couldn't register ${accelerator}; another app may be using it`)
+  if (!unavailableReported.has(accelerator)) {
+    unavailableReported.add(accelerator)
+    onActivationUnavailable?.(accelerator)
+  }
+  return false
+}
+
+/**
+ * Unregister the overlay's activation shortcut (while the overlay is open its keys navigate)
+ */
+export function unregisterActivationShortcut(): void {
+  if (activationAccelerator) globalShortcut.unregister(activationAccelerator)
+  activationAccelerator = null
 }
 
 /**
@@ -68,13 +127,16 @@ export function executeTasAction(action: TasAction): void {
       hideTasOverlay()
       break
     case 'focusSearch':
-      // Give window focus so user can type in search
+      // Give window focus so user can type in search. Releasing the modifier to type
+      // mustn't pick a tab, so Enter picks the highlighted match instead.
       if (tasWindow && !tasWindow.isDestroyed()) {
+        setTasSearchActive(true)
         tasWindow.focus()
         tasWindow.webContents.send('focus-search')
       }
       break
     case 'blurSearch':
+      setTasSearchActive(false)
       tasWindow?.webContents.send('blur-search')
       break
   }
@@ -120,8 +182,9 @@ export function registerTasNavigationShortcuts(): void {
  */
 export function updateKeyboardSettings(keyboard: KeyboardSettings): void {
   currentKeyboardSettings = keyboard
-  // Note: Shortcuts are only active when TAS overlay is shown,
-  // so they will automatically use the new settings next time the overlay opens
+  // Navigation shortcuts are only registered while the overlay is shown, so they pick up the
+  // new settings next time it opens. The activation shortcut changes now.
+  if (!isTasOverlayActive()) registerActivationShortcut()
 }
 
 /**

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test"
 import { startPageServer, type PageServer } from "../helpers/pages"
 import { launchBrowser, type TestBrowser } from "../helpers/browser"
 import { launchNative, type NativeApp } from "../helpers/native"
-import { focusedWindowTitle, hasXdotool, sleep, xdotool } from "../helpers/keys"
+import { chord, focusedWindowTitle, hasXdotool, sleep, xdotool } from "../helpers/keys"
 import { assertBuilt } from "../helpers/paths"
 
 // The native app and the extension together: the app's own Alt+Tab, its overlay, and its
@@ -20,7 +20,7 @@ test.beforeAll(async () => {
 })
 test.afterAll(async () => pages?.close())
 test.afterEach(async () => {
-  xdotool("keyup", "alt")
+  xdotool("keyup", "alt", "ctrl")
   await browser?.close()
   await native?.close()
   browser = native = undefined
@@ -89,4 +89,59 @@ test("lists every profile's tabs and switches to a tab in the other profile", as
   await expect.poll(() => p1.activeTitle()).toBe("P1-mail")
   await expect.poll(() => focusedWindowTitle()).toMatch(/^P1-mail/)
   expect(await p2.activeTitle()).toBe("P2-mail")
+})
+
+test("search: Alt+F, type, then Enter opens the highlighted match, not the row at that position", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Team docs", "Calendar", "Design docs"])
+  await profile.activate("Calendar")
+
+  xdotool("keydown", "alt")
+  xdotool("key", "Tab")
+  await native.waitForOverlay()
+  xdotool("key", "f")
+  // Letting go of Alt to type doesn't pick a tab while the search box has focus
+  xdotool("keyup", "alt")
+  await sleep(400)
+  expect(await native.overlayVisible()).toBe(true)
+  expect(await profile.activeTitle()).toBe("Calendar")
+
+  xdotool("type", "--delay", "50", "docs")
+  await expect.poll(() => native!.overlayTitles()).toEqual(["Design docs", "Team docs"])
+  expect(await native.overlaySelectedTitle()).toBe("Design docs")
+
+  xdotool("key", "Down")
+  await expect.poll(() => native!.overlaySelectedTitle()).toBe("Team docs")
+  xdotool("key", "Return")
+
+  await expect.poll(() => profile.activeTitle()).toBe("Team docs")
+  await expect.poll(() => native!.overlayVisible()).toBe(false)
+})
+
+test("uses the modifier key from settings", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Calendar"])
+  await profile.activate("Calendar")
+
+  const keyboard = { modifier: "Ctrl", activateForward: "Tab", activateBackward: "`", search: "F", closeTab: "W" }
+  await native.setAppOption("keyboard", keyboard)
+
+  // Alt+Tab no longer opens the overlay
+  await chord("alt", ["Tab"])
+  await sleep(400)
+  expect(await native.overlayVisible()).toBe(false)
+
+  xdotool("keydown", "ctrl")
+  xdotool("key", "Tab")
+  await native.waitForOverlay()
+  expect(await native.overlaySelectedTitle()).toBe("Inbox")
+  xdotool("keyup", "ctrl")
+
+  await expect.poll(() => profile.activeTitle()).toBe("Inbox")
 })

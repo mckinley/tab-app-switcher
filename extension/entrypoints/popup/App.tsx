@@ -19,7 +19,7 @@ function PopupContent() {
   const { tabs } = useTabs()
   const { activateTab, closeTab, refreshTabs } = useTabActions()
   const { settings } = useSettings<ExtensionSettings>()
-  const { selectedIndex, setSelectedIndex, navigate } = useTabNavigation(tabs)
+  const { selectedIndex, setSelectedIndex, navigate, onVisibleTabsChange } = useTabNavigation(tabs)
   const { openSettings, openTabManagement } = useWindowActions()
   const { openShortcutsPage } = useBrowser()
 
@@ -109,6 +109,7 @@ function PopupContent() {
           onOpenTabManagement={openTabManagement}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          onVisibleTabsChange={onVisibleTabsChange}
         />
       </SwitcherContainer>
     </div>

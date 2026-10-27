@@ -78,15 +78,21 @@ export class NativePlatformAdapter extends BasePlatformAdapter<NativeSettings> {
   }
 
   subscribe(callback: (settings: Partial<NativeSettings>) => void): () => void {
-    // Listen for theme changes from main process
-    if (window.api?.options?.onThemeChanged) {
-      window.api.options.onThemeChanged((theme) => {
-        callback({ theme: theme as Theme })
-      })
-    }
+    // Settings changed in another window (main process broadcasts them to every window)
+    const unsubscribeTheme = window.electron.ipcRenderer.on('theme-changed', (_event, theme) => {
+      callback({ theme: theme as Theme })
+    })
+    const unsubscribeKeyboard = window.electron.ipcRenderer.on(
+      'keyboard-changed',
+      (_event, keyboard) => {
+        callback({ keyboard: keyboard as KeyboardSettings })
+      }
+    )
 
-    // No cleanup function available from current API
-    return () => {}
+    return () => {
+      unsubscribeTheme()
+      unsubscribeKeyboard()
+    }
   }
 
   async getVersion(): Promise<string> {

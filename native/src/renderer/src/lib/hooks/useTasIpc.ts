@@ -6,6 +6,8 @@ interface TasIpcHandlers {
   onNavigate: (direction: 'next' | 'prev') => void
   onSelectCurrent: () => void
   onCloseSelected: () => void
+  onFocusSearch: () => void
+  onBlurSearch: () => void
 }
 
 /**
@@ -16,6 +18,7 @@ interface TasIpcHandlers {
  * - navigate: Arrow key navigation from global shortcuts
  * - select-current: Enter key to activate selected tab
  * - close-selected-tab: Close the currently selected tab
+ * - focus-search / blur-search: The search shortcut (the overlay doesn't get the key itself)
  *
  * Uses refs internally to avoid stale closure issues with IPC handlers.
  *
@@ -85,12 +88,20 @@ export function useTasIpc(tabs: Tab[], selectedIndex: number, handlers: TasIpcHa
       'close-selected-tab',
       handleCloseSelectedTabFromMain
     )
+    const unsubscribeFocusSearch = window.electron.ipcRenderer.on('focus-search', () =>
+      handlersRef.current.onFocusSearch()
+    )
+    const unsubscribeBlurSearch = window.electron.ipcRenderer.on('blur-search', () =>
+      handlersRef.current.onBlurSearch()
+    )
 
     return () => {
       unsubscribeResetSelection()
       unsubscribeNavigate()
       unsubscribeSelectCurrent()
       unsubscribeCloseSelectedTab()
+      unsubscribeFocusSearch()
+      unsubscribeBlurSearch()
     }
   }, [])
 }

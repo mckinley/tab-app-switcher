@@ -1,18 +1,29 @@
-import { StrictMode, useState, useMemo } from 'react'
+import { StrictMode, useState, useMemo, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabSwitcher } from '@tas/components/TabSwitcher'
-import { DEFAULT_KEYBOARD_SETTINGS, KeyboardSettings } from '@tas/types/tabs'
+import { DEFAULT_KEYBOARD_SETTINGS } from '@tas/types/tabs'
+import type { NativeSettings } from '@tas/lib/settings'
 import { useTabNavigation } from '@tas/hooks/useTabNavigation'
 import { useTasIpc } from './lib/hooks/useTasIpc'
-import { NativePlatformProvider, useTabs, useTabActions, useWindowActions } from './lib/platform'
+import {
+  NativePlatformProvider,
+  useSettings,
+  useTabs,
+  useTabActions,
+  useWindowActions
+} from './lib/platform'
 import './assets/tas.css'
 
 function TasContent(): JSX.Element {
   const { tabs } = useTabs()
   const { activateTab, closeTab, refreshTabs } = useTabActions()
   const { openSettings, openTabManagement } = useWindowActions()
-  const { selectedIndex, setSelectedIndex, navigate, reset } = useTabNavigation(tabs)
-  const [keyboard] = useState<KeyboardSettings>(DEFAULT_KEYBOARD_SETTINGS)
+  // visibleTabs are the rows shown (after search); selectedIndex counts them
+  const { selectedIndex, setSelectedIndex, navigate, reset, visibleTabs, onVisibleTabsChange } =
+    useTabNavigation(tabs)
+  const { settings } = useSettings<NativeSettings>()
+  const keyboard = settings?.keyboard ?? DEFAULT_KEYBOARD_SETTINGS
+  const searchInputRef = useRef<HTMLInputElement>(null)
   // Key to force TabSwitcher remount when window is shown
   const [switcherKey, setSwitcherKey] = useState(0)
 
@@ -25,24 +36,28 @@ function TasContent(): JSX.Element {
       },
       onNavigate: navigate,
       onSelectCurrent: () => {
-        if (tabs.length > 0 && selectedIndex < tabs.length) {
-          window.electron.ipcRenderer.send('activate-tab', tabs[selectedIndex].id)
+        const tab = visibleTabs[selectedIndex]
+        if (tab) {
+          window.electron.ipcRenderer.send('activate-tab', tab.id)
           window.electron.ipcRenderer.send('hide-tas')
         }
       },
       onCloseSelected: () => {
-        if (tabs.length > 0 && selectedIndex < tabs.length) {
-          window.electron.ipcRenderer.send('close-tab', tabs[selectedIndex].id)
-          if (selectedIndex >= tabs.length - 1 && tabs.length > 1) {
-            setSelectedIndex(tabs.length - 2)
+        const tab = visibleTabs[selectedIndex]
+        if (tab) {
+          window.electron.ipcRenderer.send('close-tab', tab.id)
+          if (selectedIndex >= visibleTabs.length - 1 && visibleTabs.length > 1) {
+            setSelectedIndex(visibleTabs.length - 2)
           }
         }
-      }
+      },
+      onFocusSearch: () => searchInputRef.current?.focus(),
+      onBlurSearch: () => searchInputRef.current?.blur()
     }),
-    [tabs, selectedIndex, navigate, reset, setSelectedIndex]
+    [visibleTabs, selectedIndex, navigate, reset, setSelectedIndex]
   )
 
-  useTasIpc(tabs, selectedIndex, ipcHandlers)
+  useTasIpc(visibleTabs, selectedIndex, ipcHandlers)
 
   const handleSelectTab = (tabId: string): void => {
     // Activate tab via adapter, then hide overlay (context-specific behavior)
@@ -92,6 +107,8 @@ function TasContent(): JSX.Element {
           onOpenSettings={openSettings}
           onOpenTabManagement={openTabManagement}
           onRefresh={handleRefresh}
+          onVisibleTabsChange={onVisibleTabsChange}
+          searchInputRef={searchInputRef}
         />
       </div>
     </div>

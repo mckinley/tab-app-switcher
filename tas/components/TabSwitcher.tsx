@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, type RefObject } from "react"
 import { Search, LayoutGrid, Settings as SettingsIcon, RefreshCw } from "lucide-react"
 import { TabItem } from "./TabItem"
 import type { Tab, KeyboardSettings, TabSection } from "../types/tabs"
@@ -34,6 +34,13 @@ interface TabSwitcherProps {
   isEnabled?: boolean // Optional: Whether keyboard handling is enabled - defaults to true
   onRefresh?: () => void // Called when user clicks refresh button
   isRefreshing?: boolean // Whether a refresh is in progress
+  /**
+   * Called with the rows shown, top to bottom, whenever they change (a search, or new tabs).
+   * selectedIndex counts these rows; useTabNavigation's onVisibleTabsChange fits here.
+   */
+  onVisibleTabsChange?: (visibleTabs: Tab[], searchQuery: string) => void
+  /** Lets the parent focus or blur the search box (the native app's search shortcut) */
+  searchInputRef?: RefObject<HTMLInputElement>
 }
 
 export const TabSwitcher = ({
@@ -49,10 +56,13 @@ export const TabSwitcher = ({
   isEnabled = true,
   onRefresh,
   isRefreshing = false,
+  onVisibleTabsChange,
+  searchInputRef: externalSearchInputRef,
 }: TabSwitcherProps) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const ownSearchInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = externalSearchInputRef ?? ownSearchInputRef
   const containerRef = useRef<HTMLDivElement>(null)
   const selectedItemRef = useRef<HTMLDivElement>(null)
 
@@ -79,6 +89,13 @@ export const TabSwitcher = ({
 
     return groups
   }, [filteredTabs])
+
+  // The rows in the order they're shown, which is what selectedIndex counts
+  const visibleTabs = useMemo(() => groupedTabs.flatMap((group) => group.tabs.map(({ tab }) => tab)), [groupedTabs])
+
+  useEffect(() => {
+    onVisibleTabsChange?.(visibleTabs, searchQuery)
+  }, [visibleTabs, searchQuery, onVisibleTabsChange])
 
   // Check if tabs are from multiple browsers
   const hasMultipleBrowsers = useMemo(() => {
@@ -135,8 +152,8 @@ export const TabSwitcher = ({
     onNavigateNext: () => onNavigate("next"),
     onNavigatePrev: () => onNavigate("prev"),
     onActivateSelected: () => {
-      if (filteredTabs[selectedIndex]) {
-        onSelectTab(filteredTabs[selectedIndex].id)
+      if (visibleTabs[selectedIndex]) {
+        onSelectTab(visibleTabs[selectedIndex].id)
       }
     },
     onClose,
@@ -149,8 +166,8 @@ export const TabSwitcher = ({
       searchInputRef.current?.blur()
     },
     onCloseTab: () => {
-      if (filteredTabs[selectedIndex]) {
-        onCloseTab(filteredTabs[selectedIndex].id)
+      if (visibleTabs[selectedIndex]) {
+        onCloseTab(visibleTabs[selectedIndex].id)
       }
     },
   })
@@ -198,11 +215,15 @@ export const TabSwitcher = ({
       {/* Tab List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="px-2 py-2">
-          {filteredTabs.length === 0 ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="text-muted-foreground text-sm">No tabs open</div>
-              <p className="text-xs text-muted-foreground/70">Add a tab to get started</p>
-            </div>
+          {visibleTabs.length === 0 ? (
+            searchQuery ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No tabs match "{searchQuery}"</div>
+            ) : (
+              <div className="text-center py-12 space-y-4">
+                <div className="text-muted-foreground text-sm">No tabs open</div>
+                <p className="text-xs text-muted-foreground/70">Add a tab to get started</p>
+              </div>
+            )
           ) : (
             <div className="space-y-0.5">
               {groupedTabs.map((group) => (
