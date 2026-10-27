@@ -14,6 +14,8 @@ declare namespace App {
         BETTER_AUTH_SECRET: string;
         AUTH_GOOGLE_ID: string;
         AUTH_GOOGLE_SECRET: string;
+        /** Optional: more Chromium extension ids allowed to sign in, comma-separated (unpacked dev builds) */
+        APP_AUTH_EXTENSION_IDS?: string;
       };
     };
   }

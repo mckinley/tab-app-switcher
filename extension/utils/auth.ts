@@ -1,127 +1,86 @@
-import { setAuthHeaderProvider } from "@tas/utils/collectionsSync"
+/**
+ * Sign-in for the extension: Google sign-in in a browser window, then a bearer token kept in
+ * storage.local (see tas/utils/appAuth.ts and site/src/lib/appAuth.server.ts).
+ *
+ * Chrome, Edge and Firefox run the sign-in with identity.launchWebAuthFlow. Safari has no
+ * identity API, so there it opens in a tab that ends on the site's /api/app-auth/done page,
+ * where the sign-in content script hands the page's URL to the background.
+ */
+import { browser } from "wxt/browser"
+import {
+  appSignInUrl,
+  createPkce,
+  PRODUCTION_API_BASE,
+  readSignInCode,
+  redeemSignInCode,
+  type AuthPlatform,
+} from "@tas/utils/appAuth"
 
-const API_BASE = "https://tabappswitcher.com"
+const API_BASE = PRODUCTION_API_BASE
 const TOKEN_KEY = "tas_bearer_token"
+/** The verifier of a sign-in running in a Safari tab */
+const PENDING_KEY = "tas_pending_sign_in"
+const PENDING_LIFETIME_MS = 10 * 60 * 1000
 
-// Get the identity API (Chrome uses chrome.identity, Firefox uses browser.identity)
-function getIdentityAPI() {
-  if (typeof chrome !== "undefined" && chrome.identity) {
-    return chrome.identity
-  }
-  if (typeof browser !== "undefined" && browser.identity) {
-    return browser.identity
-  }
-  throw new Error(
-    "browser.identity API is not available. " +
-      "This usually means you're running in WXT dev mode. " +
-      "To test sign-in, build the extension and load it unpacked.",
-  )
+/** Where Safari's sign-in tab ends, which the sign-in content script matches */
+export const SIGN_IN_DONE_URL = `${API_BASE}/api/app-auth/done`
+
+async function getToken(): Promise<string | null> {
+  const { [TOKEN_KEY]: token } = await browser.storage.local.get(TOKEN_KEY)
+  return typeof token === "string" ? token : null
 }
 
-/** Get stored bearer token */
-async function getStoredToken(): Promise<string | null> {
-  return new Promise((resolve) => {
-    if (typeof chrome !== "undefined" && chrome.storage?.local) {
-      chrome.storage.local.get(TOKEN_KEY, (result) => resolve((result[TOKEN_KEY] as string) || null))
-    } else if (typeof browser !== "undefined" && browser.storage?.local) {
-      browser.storage.local.get(TOKEN_KEY).then((result) => resolve((result[TOKEN_KEY] as string) || null))
-    } else {
-      resolve(localStorage.getItem(TOKEN_KEY))
-    }
-  })
+async function setToken(token: string | null): Promise<void> {
+  if (token) await browser.storage.local.set({ [TOKEN_KEY]: token })
+  else await browser.storage.local.remove(TOKEN_KEY)
 }
 
-/** Store bearer token */
-async function storeToken(token: string): Promise<void> {
-  if (typeof chrome !== "undefined" && chrome.storage?.local) {
-    await chrome.storage.local.set({ [TOKEN_KEY]: token })
-  } else if (typeof browser !== "undefined" && browser.storage?.local) {
-    await browser.storage.local.set({ [TOKEN_KEY]: token })
-  } else {
-    localStorage.setItem(TOKEN_KEY, token)
+async function signIn(): Promise<void> {
+  const { verifier, challenge } = await createPkce()
+
+  if (browser.identity?.launchWebAuthFlow) {
+    const redirect = browser.identity.getRedirectURL()
+    const resultUrl = await browser.identity
+      .launchWebAuthFlow({ url: appSignInUrl(API_BASE, redirect, challenge), interactive: true })
+      .catch(() => undefined)
+    // Closing the window rejects
+    if (!resultUrl) throw new Error("Sign-in was cancelled")
+    await setToken(await redeemSignInCode(API_BASE, readSignInCode(resultUrl), verifier))
+    return
   }
-}
 
-/** Clear stored token */
-async function clearToken(): Promise<void> {
-  if (typeof chrome !== "undefined" && chrome.storage?.local) {
-    await chrome.storage.local.remove(TOKEN_KEY)
-  } else if (typeof browser !== "undefined" && browser.storage?.local) {
-    await browser.storage.local.remove(TOKEN_KEY)
-  } else {
-    localStorage.removeItem(TOKEN_KEY)
-  }
-}
-
-/** Initialize auth header provider for collections sync */
-export function initExtensionAuth() {
-  setAuthHeaderProvider(async () => {
-    const token = await getStoredToken()
-    return token ? { Authorization: `Bearer ${token}` } : ({} as Record<string, string>)
-  })
+  // Safari: the background finishes when the tab reaches SIGN_IN_DONE_URL, and the storage
+  // change tells the page
+  await browser.storage.local.set({ [PENDING_KEY]: { verifier, startedAt: Date.now() } })
+  await browser.tabs.create({ url: appSignInUrl(API_BASE, SIGN_IN_DONE_URL, challenge) })
 }
 
 /**
- * Sign in with Google using browser's identity API (for extensions).
- * Opens OAuth via Better Auth, captures bearer token from the callback.
+ * Background: finish a Safari sign-in from the URL of the page it ended on. Only a sign-in this
+ * extension started can finish, since the code needs its verifier.
  */
-export async function signInWithGoogleExtension(): Promise<void> {
-  const identity = getIdentityAPI()
-  const redirectUrl = identity.getRedirectURL()
+export async function finishSignInFromPage(pageUrl: string): Promise<boolean> {
+  if (!pageUrl.startsWith(`${SIGN_IN_DONE_URL}?`)) return false
+  const { [PENDING_KEY]: pending } = await browser.storage.local.get(PENDING_KEY)
+  const { verifier, startedAt } = (pending ?? {}) as { verifier?: string; startedAt?: number }
+  if (!verifier || !startedAt || Date.now() - startedAt > PENDING_LIFETIME_MS) return false
 
-  // Better Auth social sign-in URL
-  const params = new URLSearchParams({
-    callbackURL: redirectUrl,
-  })
-  const authUrl = `${API_BASE}/api/auth/sign-in/social?provider=google&${params.toString()}`
+  await browser.storage.local.remove(PENDING_KEY)
+  await setToken(await redeemSignInCode(API_BASE, readSignInCode(pageUrl), verifier))
+  return true
+}
 
-  // Launch the OAuth flow in a popup
-  const responseUrl = await identity.launchWebAuthFlow({
-    url: authUrl,
-    interactive: true,
-  })
-
-  if (!responseUrl) {
-    throw new Error("OAuth flow was cancelled")
-  }
-
-  // After Better Auth completes OAuth, it redirects back.
-  // Extract the session token from the URL or fetch it.
-  const url = new URL(responseUrl)
-  const sessionToken = url.searchParams.get("session_token")
-
-  if (sessionToken) {
-    await storeToken(sessionToken)
-  } else {
-    // Fallback: fetch session from the API using the cookie that was set
-    const res = await fetch(`${API_BASE}/api/auth/get-session`, {
-      credentials: "include",
-    })
-    if (res.ok) {
-      const token = res.headers.get("set-auth-token")
-      if (token) {
-        await storeToken(token)
-      }
+/** For setAuthPlatform() on extension pages that show the account */
+export const extensionAuthPlatform: AuthPlatform = {
+  apiBase: API_BASE,
+  getToken,
+  signIn,
+  clearToken: () => setToken(null),
+  subscribe(onChange) {
+    const listener = (changes: Record<string, unknown>, areaName: string) => {
+      if (areaName === "local" && TOKEN_KEY in changes) onChange()
     }
-  }
-}
-
-/**
- * Sign out — clear local token and call server signout
- */
-export async function signOutExtension(): Promise<void> {
-  const token = await getStoredToken()
-  if (token) {
-    await fetch(`${API_BASE}/api/auth/sign-out`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => {}) // best-effort
-  }
-  await clearToken()
-}
-
-/** Check if user has a stored token */
-export async function isExtensionAuthenticated(): Promise<boolean> {
-  const token = await getStoredToken()
-  return !!token
+    browser.storage.onChanged.addListener(listener)
+    return () => browser.storage.onChanged.removeListener(listener)
+  },
 }

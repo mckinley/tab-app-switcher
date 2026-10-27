@@ -1,7 +1,6 @@
 import { TabManagement } from "@tas/components/TabManagement"
 import { SwitcherContainer } from "@tas/components/SwitcherContainer"
 import { ExtensionPlatformProvider, useTabs, useTabActions, extensionTabManagementAdapter } from "../../lib/platform"
-import { signInWithGoogleExtension, signOutExtension } from "../../utils/auth"
 import "./globals.css"
 
 function TabManagementContent() {
@@ -33,8 +32,6 @@ function TabManagementContent() {
         onCloseTab={handleCloseTab}
         onReorderTabs={handleReorderTabs}
         onSendCollectionToWindow={handleSendCollectionToWindow}
-        onSignIn={signInWithGoogleExtension}
-        onSignOut={signOutExtension}
       />
     </SwitcherContainer>
   )

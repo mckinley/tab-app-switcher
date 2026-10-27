@@ -1,11 +1,12 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
 interface AuthAPI {
-  signIn: () => void
-  signOut: () => void
-  onToken: (callback: (token: string) => void) => void
-  onSignedOut: (callback: () => void) => void
-  onError: (callback: (error: string) => void) => void
+  getToken: () => Promise<string | null>
+  /** Opens sign-in in the browser; resolves once signed in */
+  signIn: () => Promise<void>
+  clearToken: () => Promise<void>
+  /** Calls back when the token changes; returns an unsubscribe function */
+  onChange: (callback: () => void) => () => void
 }
 
 interface ConnectionStatus {

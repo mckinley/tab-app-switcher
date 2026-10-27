@@ -1,7 +1,7 @@
-import { StrictMode, useEffect } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TabManagement } from '@tas/components/TabManagement'
-import { setAuthHeaderProvider } from '@tas/utils/collectionsSync'
+import { PRODUCTION_API_BASE, setAuthPlatform } from '@tas/utils/appAuth'
 import {
   NativePlatformProvider,
   useTabs,
@@ -10,28 +10,18 @@ import {
 } from './lib/platform'
 import './assets/globals.css'
 
-// Store bearer token in memory (received from main process via IPC)
-let bearerToken: string | null = null
-
-// Initialize auth header provider for collections sync
-setAuthHeaderProvider(async (): Promise<Record<string, string>> => {
-  return bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}
+// The main process signs in through the browser and keeps the token (main/auth.ts)
+setAuthPlatform({
+  apiBase: PRODUCTION_API_BASE,
+  getToken: () => window.api.auth.getToken(),
+  signIn: () => window.api.auth.signIn(),
+  clearToken: () => window.api.auth.clearToken(),
+  subscribe: (onChange) => window.api.auth.onChange(onChange)
 })
 
 function TabManagementContent(): JSX.Element {
   const { tabs } = useTabs()
   const { activateTab, closeTab, reorderTabs, createWindowWithTabs } = useTabActions()
-
-  // Listen for auth token from main process
-  useEffect(() => {
-    window.api.auth.onToken((token: string) => {
-      bearerToken = token
-    })
-
-    window.api.auth.onSignedOut(() => {
-      bearerToken = null
-    })
-  }, [])
 
   const handleSelectTab = (tabId: string): void => {
     activateTab(tabId)
@@ -58,15 +48,6 @@ function TabManagementContent(): JSX.Element {
     window.close()
   }
 
-  const handleSignIn = async (): Promise<void> => {
-    window.api.auth.signIn()
-  }
-
-  const handleSignOut = async (): Promise<void> => {
-    window.api.auth.signOut()
-    bearerToken = null
-  }
-
   return (
     <div className="w-full h-screen bg-background">
       <TabManagement
@@ -76,8 +57,6 @@ function TabManagementContent(): JSX.Element {
         onCloseTab={handleCloseTab}
         onReorderTabs={handleReorderTabs}
         onSendCollectionToWindow={handleSendCollectionToWindow}
-        onSignIn={handleSignIn}
-        onSignOut={handleSignOut}
       />
     </div>
   )

@@ -36,24 +36,31 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   strategies (`tas/sorting`), collections storage/sync, `useAuth`, design tokens and a
   Tailwind preset. `tas/types/protocol.ts` defines the extension-to-native WebSocket
   protocol.
-- `extension/` (WXT + React): entrypoints `background`, `content`, `popup`, `options`,
-  `tabs`, `welcome`. The `tas_activate` command is Alt+Tab, or Alt+1 on Firefox and Safari.
-  `utils/tabTracker.ts` keeps MRU order. `utils/nativeAppConnection.ts` connects to the
-  native app at `ws://localhost:48125`. `utils/auth.ts` signs in against
-  `https://tabappswitcher.com/api/auth` and keeps a bearer token. Cross-browser notes are
-  in `extension/CROSS_BROWSER.md`.
+- `extension/` (WXT + React): entrypoints `background`, `popup`, `options`, `tabs`,
+  `welcome`, and `signin` (a Safari-only content script). The `tas_activate` command is
+  Alt+Tab, or Alt+1 on Firefox and Safari. `utils/tabTracker.ts` keeps MRU order.
+  `utils/nativeAppConnection.ts` connects to the native app at `ws://localhost:48125`.
+  `utils/auth.ts` signs in through the site's `/api/app-auth` with
+  `identity.launchWebAuthFlow` (in Safari, a tab plus the `signin` script) and keeps a bearer
+  token in `storage.local`. Cross-browser notes are in `extension/CROSS_BROWSER.md`.
 - `native/` (Electron, electron-vite): `src/main` (tray, global shortcuts, WebSocket server
   on port 48125, auth, auto-updater), `src/preload`, `src/renderer` (switcher overlay,
   settings, tab management). Auto-updates come from GitHub Releases on this repo. See
   `native/CROSS_PLATFORM.md`. The WebSocket server listens on 127.0.0.1 and ::1 only and
   refuses any connection whose Origin isn't a `chrome-extension://`, `moz-extension://` or
   `safari-web-extension://` URL, so web pages can't read tabs or send commands.
+  `src/main/auth.ts` signs in through the person's browser, which comes back to
+  `http://127.0.0.1:48125/auth/callback` on that server, and keeps the bearer token encrypted
+  with `safeStorage`.
 - `site/` (Astro 5 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
   `site/src/pages/*.astro` mount `site/islands/*` with `client:only="react"`, which render
   `site/views/*`. The home-page demo (`site/views/Index.tsx`) runs the real `tas` switcher
   on in-memory demo tabs. Server routes: `src/pages/api/auth/[...all].ts`
-  (Better Auth with the bearer plugin, Google sign-in) and `src/pages/api/collections`
-  (CRUD on the `collection` table in D1, binding `DB`).
+  (Better Auth with the bearer plugin, Google sign-in), `src/pages/api/app-auth/[action].ts`
+  (sign-in for the extension and native app: a one-time code with PKCE, traded for a bearer
+  token; see `src/lib/appAuth.server.ts`) and `src/pages/api/collections` (CRUD on the
+  `collection` table in D1, binding `DB`). The apps register how they keep their token with
+  `setAuthPlatform` (`tas/utils/appAuth.ts`), which `useAuth` and the collections sync use.
 - `e2e/` (`@tab-app-switcher/e2e`): Playwright end-to-end tests. They run the built extension
   in Chromium (several profiles in one browser) and the built native app, and press real keys
   with xdotool under Xvfb + openbox (`e2e/run.sh`). The native app exposes its state to the
@@ -85,9 +92,11 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   and submit to public stores.
 - Extension and native versions are kept in sync by the release script. Don't bump them
   by hand.
-- The extension, native app and `tas/hooks/useAuth.ts` call the production API at
-  `https://tabappswitcher.com`. Changes to `/api/auth` or `/api/collections` affect
-  shipped clients, including old versions still installed.
+- The extension and native app call the production API at `https://tabappswitcher.com` (the
+  site's pages call their own origin). Changes to `/api/auth`, `/api/app-auth` or
+  `/api/collections` affect shipped clients, including old versions still installed. The
+  allowed sign-in redirects (store extension ids, the Firefox add-on id's hash, the native
+  callback) are in `site/src/lib/appAuth.server.ts`.
 - If you change the WebSocket protocol in `tas/types/protocol.ts`, keep the extension and
   native app compatible across versions; users update them separately.
 - The site's D1 database (`tab-app-switcher-db`) has no migrations. Its schema lives in

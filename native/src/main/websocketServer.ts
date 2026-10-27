@@ -8,7 +8,7 @@
  * - Clean session separation on browser restarts
  */
 
-import { createServer, type Server } from 'http'
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import type { BrowserType } from '@tas/types/tabs'
 import type { SortStrategy } from '@tas/sorting'
@@ -112,6 +112,8 @@ export function startWebSocketServer(options?: {
   onConnectionChange?: () => void
   onSnapshot?: (sessionKey: SessionKey, session: Session) => void
   onEvent?: (sessionKey: SessionKey, session: Session, event: EventPayload) => void
+  /** Plain HTTP requests (the sign-in callback). Returns false for ones it doesn't handle. */
+  onHttpRequest?: (request: IncomingMessage, response: ServerResponse) => boolean
   /** For tests; the extension always connects to 48125 */
   port?: number
 }): void {
@@ -129,7 +131,8 @@ export function startWebSocketServer(options?: {
   wss = server
 
   httpServers = HOSTS.map((host) => {
-    const http = createServer((_request, response) => {
+    const http = createServer((request, response) => {
+      if (options?.onHttpRequest?.(request, response)) return
       response.writeHead(426, { Connection: 'close' }).end()
     })
 

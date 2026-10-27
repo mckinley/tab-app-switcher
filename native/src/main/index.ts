@@ -16,7 +16,7 @@ import {
   type SessionKey
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
-import { setupAuthHandlers } from './auth'
+import { handleAuthRequest, setupAuthHandlers } from './auth'
 import { loadTabData, saveTabData, flushTabData } from './tabStorage'
 import type { Tab, BrowserType } from '@tas/types/tabs'
 import type {
@@ -486,7 +486,9 @@ function startApp(): void {
   startWebSocketServer({
     onConnectionChange: handleConnectionChange,
     onSnapshot: handleSnapshot,
-    onEvent: handleEvent
+    onEvent: handleEvent,
+    // The browser comes back here after sign-in
+    onHttpRequest: handleAuthRequest
   })
 
   // The end-to-end tests (e2e/) launch the app with TAS_E2E=1 and read its state through this.

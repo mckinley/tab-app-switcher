@@ -23,6 +23,7 @@ import { createTabTracker, type TabTracker } from "../utils/tabTracker"
 import { createNativeAppTransport, type NativeAppTransport } from "../utils/nativeAppConnection"
 import { getFaviconDataUrl } from "../utils/faviconCache"
 import { activateTab, createWindowWithUrls, moveTab, openSwitcherTab, restoreSession } from "../utils/tabActions"
+import { finishSignInFromPage } from "../utils/auth"
 
 // Connected extension pages (popup, tabs page) for push updates
 type Port = Parameters<Parameters<typeof browser.runtime.onConnect.addListener>[0]>[0]
@@ -216,7 +217,7 @@ export default defineBackground(() => {
   // Message Handling (from popup and other extension pages)
   // ============================================================================
 
-  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "GET_TABS") {
       getTabsForDisplay().then((tabs) => {
         sendResponse({ tabs })
@@ -254,6 +255,17 @@ export default defineBackground(() => {
     if (message.type === "POPUP_OPENED") {
       sendResponse({ startIndex: popupStartIndex, openedFromElsewhere: popupOpenedFromElsewhere })
       popupStartIndex = null
+      return false
+    }
+
+    // Safari's sign-in tab reached the site's done page (signin.content.ts). Go by the tab's
+    // own URL, and close it once signed in; Tab Management sees the new token.
+    if (message.type === "SIGN_IN_PAGE_DONE") {
+      finishSignInFromPage(sender.url ?? "")
+        .then((signedIn) => {
+          if (signedIn && sender.tab?.id !== undefined) browser.tabs.remove(sender.tab.id)
+        })
+        .catch((error) => console.error("[TAS] Sign-in failed:", error))
       return false
     }
 

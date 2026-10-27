@@ -1,29 +1,20 @@
 /**
  * Collections sync service - offline-first with last-write-wins conflict resolution
  *
- * Platform-agnostic: uses fetch() to call the collections API.
- * Auth headers are injected by the platform (cookies for site, bearer token for extension/native).
+ * Platform-agnostic: uses fetch() to call the collections API, signed in with the site's
+ * cookie or the app's bearer token (see utils/appAuth).
  */
 
 import type { Collection, CollectionTab } from "../types/collections"
+import { authRequestInit, getApiBase } from "./appAuth"
 
-const API_BASE = "https://tabappswitcher.com"
-
-/** Platform-specific auth header provider. Set by each platform at init. */
-let authHeaderProvider: (() => Promise<Record<string, string>>) | null = null
-
-/** Set the auth header provider for the current platform */
-export function setAuthHeaderProvider(provider: () => Promise<Record<string, string>>) {
-  authHeaderProvider = provider
-}
-
-async function getHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" }
-  if (authHeaderProvider) {
-    const authHeaders = await authHeaderProvider()
-    Object.assign(headers, authHeaders)
-  }
-  return headers
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
+  const { headers, credentials } = await authRequestInit()
+  return fetch(`${getApiBase()}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...headers },
+    credentials,
+  })
 }
 
 interface CloudCollection {
@@ -55,11 +46,7 @@ function cloudToLocal(cloud: CloudCollection): Collection {
 }
 
 export async function fetchCloudCollections(): Promise<Collection[]> {
-  const headers = await getHeaders()
-  const res = await fetch(`${API_BASE}/api/collections`, {
-    headers,
-    credentials: "include",
-  })
+  const res = await request("/api/collections")
 
   if (!res.ok) throw new Error(`Failed to fetch collections: ${res.status}`)
   const data = (await res.json()) as CloudCollection[]
@@ -67,11 +54,8 @@ export async function fetchCloudCollections(): Promise<Collection[]> {
 }
 
 export async function upsertCloudCollection(collection: Collection): Promise<void> {
-  const headers = await getHeaders()
-  const res = await fetch(`${API_BASE}/api/collections/${collection.id}`, {
+  const res = await request(`/api/collections/${collection.id}`, {
     method: "PUT",
-    headers,
-    credentials: "include",
     body: JSON.stringify({
       name: collection.name,
       tabs: collection.tabs,
@@ -84,12 +68,7 @@ export async function upsertCloudCollection(collection: Collection): Promise<voi
 }
 
 export async function deleteCloudCollection(collectionId: string): Promise<void> {
-  const headers = await getHeaders()
-  const res = await fetch(`${API_BASE}/api/collections/${collectionId}`, {
-    method: "DELETE",
-    headers,
-    credentials: "include",
-  })
+  const res = await request(`/api/collections/${collectionId}`, { method: "DELETE" })
 
   if (!res.ok) throw new Error(`Failed to delete collection: ${res.status}`)
 }

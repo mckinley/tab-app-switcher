@@ -48,7 +48,7 @@ interface TabManagementProps {
   onSendCollectionToWindow?: (tabUrls: string[]) => void // Extension: create new window with these URLs
   /** URL to redirect to after OAuth (website only - uses redirect flow) */
   authRedirectUrl?: string
-  /** Custom sign in function (extension uses browser identity API) */
+  /** Custom sign in function (the site's demo opens the login page). Apps set an auth platform instead (utils/appAuth). */
   onSignIn?: () => Promise<void>
   /** Custom sign out function */
   onSignOut?: () => Promise<void>
@@ -167,6 +167,20 @@ export const TabManagement = ({
   })
   const signIn = onSignIn ?? defaultSignIn
   const signOut = onSignOut ?? defaultSignOut
+  const [isSigningIn, setIsSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState<string | null>(null)
+
+  const handleSignIn = useCallback(async () => {
+    setSignInError(null)
+    setIsSigningIn(true)
+    try {
+      await signIn()
+    } catch (error) {
+      setSignInError(error instanceof Error ? error.message : "Sign-in didn't finish")
+    } finally {
+      setIsSigningIn(false)
+    }
+  }, [signIn])
 
   // Sync hook for cloud sync (only in uncontrolled mode - controlled mode manages its own sync)
   const { syncToCloud, refreshFromCloud } = useCollectionsSync({
@@ -904,7 +918,7 @@ export const TabManagement = ({
                   ) : !user ? (
                     <div className="text-center space-y-4">
                       <p className="text-muted-foreground mb-4">Sign in to sync your tabs across devices</p>
-                      <Button onClick={signIn}>
+                      <Button onClick={handleSignIn} disabled={isSigningIn}>
                         <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                           <path
                             fill="currentColor"
@@ -923,8 +937,9 @@ export const TabManagement = ({
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                           />
                         </svg>
-                        Sign in with Google
+                        {isSigningIn ? "Waiting for sign-in..." : "Sign in with Google"}
                       </Button>
+                      {signInError && <p className="text-sm text-destructive">{signInError}</p>}
                     </div>
                   ) : (
                     <div className="space-y-4">

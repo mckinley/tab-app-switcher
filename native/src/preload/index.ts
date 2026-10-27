@@ -56,16 +56,17 @@ interface SortSyncStatus {
 // Custom APIs for renderer
 const api = {
   auth: {
-    signIn: (): void => ipcRenderer.send('auth-sign-in'),
-    signOut: (): void => ipcRenderer.send('auth-sign-out'),
-    onToken: (callback: (token: string) => void): void => {
-      ipcRenderer.on('auth-token', (_event, token) => callback(token))
+    getToken: (): Promise<string | null> => ipcRenderer.invoke('auth:get-token'),
+    // Resolves once the browser comes back signed in
+    signIn: async (): Promise<void> => {
+      const { error } = await ipcRenderer.invoke('auth:sign-in')
+      if (error) throw new Error(error)
     },
-    onSignedOut: (callback: () => void): void => {
-      ipcRenderer.on('auth-signed-out', () => callback())
-    },
-    onError: (callback: (error: string) => void): void => {
-      ipcRenderer.on('auth-error', (_event, error) => callback(error))
+    clearToken: (): Promise<void> => ipcRenderer.invoke('auth:clear-token'),
+    onChange: (callback: () => void): (() => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on('auth-changed', listener)
+      return () => ipcRenderer.removeListener('auth-changed', listener)
     }
   },
   settings: {
