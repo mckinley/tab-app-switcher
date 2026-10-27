@@ -124,6 +124,8 @@ export const Container = ({ children, variant, isVisible, onClose, enabled = tru
                 "z-10", // Above panel content
                 // Modal: show inside on mobile, hide on desktop (shown outside instead)
                 variant === "modal" && "sm:hidden",
+                // Full screen: Tab Management has its own close button in its phone layout
+                variant === "full-screen" && "hidden md:flex",
               )}
               aria-label="Close"
             >

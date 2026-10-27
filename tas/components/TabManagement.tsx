@@ -692,6 +692,13 @@ export const TabManagement = ({
                 <Layers className="w-4 h-4" />
                 <span className="truncate">Tabs</span>
               </button>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="flex-none w-10 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )}

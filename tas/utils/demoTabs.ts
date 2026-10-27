@@ -74,26 +74,27 @@ const DEMO_TAB_POOL_BASE: Omit<Tab, "lastActivated">[] = [
 ]
 
 /**
- * Get demo tabs with generated lastActivated values
+ * Give demo tabs lastActivated values in the order they're listed, as a most-recently-used
+ * list: the first was active just now, the last days ago
  */
-function getDemoTabsWithTimestamps(): Tab[] {
+function withDemoTimestamps(tabs: Omit<Tab, "lastActivated">[]): Tab[] {
   const timestamps = generateDemoTimestamps()
-  return DEMO_TAB_POOL_BASE.map((tab, index) => ({
+  return tabs.map((tab, index) => ({
     ...tab,
-    lastActivated: timestamps[index],
+    lastActivated: timestamps[Math.min(index, timestamps.length - 1)],
   }))
 }
 
-export const DEMO_TAB_POOL: Tab[] = getDemoTabsWithTimestamps()
+export const DEMO_TAB_POOL: Tab[] = withDemoTimestamps(DEMO_TAB_POOL_BASE)
 
 /**
- * Get a shuffled copy of the demo tabs with fresh timestamps
+ * The demo tabs in a random most-recently-used order, with times to match
  */
 export function getShuffledDemoTabs(): Tab[] {
-  const tabs = getDemoTabsWithTimestamps()
+  const tabs = [...DEMO_TAB_POOL_BASE]
   for (let i = tabs.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[tabs[i], tabs[j]] = [tabs[j], tabs[i]]
   }
-  return tabs
+  return withDemoTimestamps(tabs)
 }

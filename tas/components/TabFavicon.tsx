@@ -10,9 +10,10 @@ const FALLBACK_FAVICON =
  */
 function isValidFaviconUrl(url: string): boolean {
   if (!url || url.trim() === "") return false
-  // Allow data URLs, http/https URLs
+  // Allow data URLs, http/https URLs, and the site's own files (the home page demo's tabs)
   if (url.startsWith("data:")) return true
   if (url.startsWith("http://") || url.startsWith("https://")) return true
+  if (url.startsWith("/")) return true
   // Reject everything else (chrome-extension://, chrome://, file://, etc.)
   return false
 }

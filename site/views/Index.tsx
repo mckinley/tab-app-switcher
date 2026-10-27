@@ -5,7 +5,7 @@ import { KeyboardSettings, ThemeSettings } from "@tas/components/settings"
 import { TabManagement } from "@tas/components/TabManagement"
 import { type Tab, type KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 import type { Collection } from "@tas/types/collections"
-import { DEMO_TAB_POOL } from "@tas/utils/demoTabs"
+import { DEMO_TAB_POOL, getShuffledDemoTabs } from "@tas/utils/demoTabs"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
 import { TabsTooltip } from "@/components/TabsTooltip"
 import { useTheme } from "next-themes"
@@ -30,15 +30,8 @@ import logo from "@/assets/logo.jpg"
  * This simulates the extension's tab management API for the demo site
  */
 const useDemoTabs = () => {
-  // Initialize with a random subset of tabs
-  const [tabs, setTabs] = useState<Tab[]>(() => {
-    const shuffled = [...DEMO_TAB_POOL]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    return shuffled
-  })
+  // Start with the demo tabs in a random order, most recently used first
+  const [tabs, setTabs] = useState<Tab[]>(getShuffledDemoTabs)
 
   // Track the active tab (simulates browser's active tab)
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "")
@@ -54,8 +47,9 @@ const useDemoTabs = () => {
   // Activate a tab (similar to ACTIVATE_TAB message in extension)
   const activateTab = (tabId: string) => {
     setActiveTabId(tabId)
-    // Move to front of MRU order
+    // Move to front of MRU order, active as of now
     setMruOrder((prev) => [tabId, ...prev.filter((id) => id !== tabId)])
+    setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, lastActivated: Date.now() } : t)))
   }
 
   // Close a tab (similar to CLOSE_TAB message in extension)
@@ -88,11 +82,13 @@ const useDemoTabs = () => {
       const newTab = {
         ...randomTab,
         id: `${randomTab.id}-${Date.now()}`,
+        lastActivated: undefined,
       }
       setTabs((prev) => [...prev, newTab])
       setMruOrder((prev) => [...prev, newTab.id])
     } else {
-      const randomTab = availableTabs[Math.floor(Math.random() * availableTabs.length)]
+      // Opened in the background, so it hasn't been active yet
+      const randomTab = { ...availableTabs[Math.floor(Math.random() * availableTabs.length)], lastActivated: undefined }
       setTabs((prev) => [...prev, randomTab])
       setMruOrder((prev) => [...prev, randomTab.id])
     }
