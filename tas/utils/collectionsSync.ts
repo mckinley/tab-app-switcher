@@ -74,9 +74,18 @@ export async function deleteCloudCollection(collectionId: string): Promise<void>
 }
 
 /**
- * Merge local and cloud collections using last-write-wins strategy
+ * Merge local and cloud collections using last-write-wins strategy.
+ *
+ * `synced` is the version (updatedAt) of each collection the last time this device saw it in
+ * the cloud. A local collection that's missing from the cloud but was there, unchanged since,
+ * was deleted on another device, so it's dropped instead of being uploaded again.
  */
-export function mergeCollections(local: Collection[], cloud: Collection[], deletedIds: string[] = []): Collection[] {
+export function mergeCollections(
+  local: Collection[],
+  cloud: Collection[],
+  deletedIds: string[] = [],
+  synced: Record<string, number> = {},
+): Collection[] {
   const merged = new Map<string, Collection>()
   const deletedSet = new Set(deletedIds)
 
@@ -88,6 +97,8 @@ export function mergeCollections(local: Collection[], cloud: Collection[], delet
 
   for (const localC of local) {
     const cloudC = merged.get(localC.id)
+    const deletedElsewhere = !cloudC && synced[localC.id] !== undefined && localC.updatedAt <= synced[localC.id]
+    if (deletedElsewhere) continue
     if (!cloudC || localC.updatedAt > cloudC.updatedAt) {
       merged.set(localC.id, localC)
     }
@@ -97,19 +108,20 @@ export function mergeCollections(local: Collection[], cloud: Collection[], delet
 }
 
 /**
- * Sync local collections with cloud
+ * What a sync does: the merged list, what to upload, and which cloud copies to delete
  */
-export async function syncCollections(
+export function planSync(
   localCollections: Collection[],
+  cloudCollections: Collection[],
   deletedIds: string[] = [],
-): Promise<{ merged: Collection[]; needsPush: Collection[]; needsCloudDelete: string[] }> {
-  const cloudCollections = await fetchCloudCollections()
-  const merged = mergeCollections(localCollections, cloudCollections, deletedIds)
+  synced: Record<string, number> = {},
+): { merged: Collection[]; needsPush: Collection[]; needsCloudDelete: string[] } {
+  const merged = mergeCollections(localCollections, cloudCollections, deletedIds, synced)
 
   const cloudMap = new Map(cloudCollections.map((c) => [c.id, c]))
   const needsPush = merged.filter((c) => {
     const cloud = cloudMap.get(c.id)
-    return !cloud || c.updatedAt > new Date(cloud.updatedAt).getTime()
+    return !cloud || c.updatedAt > cloud.updatedAt
   })
 
   const needsCloudDelete = deletedIds.filter((id) => cloudMap.has(id))

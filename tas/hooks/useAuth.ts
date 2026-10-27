@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { createAuthClient } from "better-auth/client"
 import { getApiBase, getAuthPlatform } from "../utils/appAuth"
+import { clearLocalCollections } from "../utils/collectionsStorage"
 
 export interface AuthUser {
   id: string
@@ -90,6 +91,9 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     const platform = getAuthPlatform()
     if (!platform) {
       await getSiteAuthClient().signOut()
+      // The site's copy of the collections only mirrors the account, so don't leave it for
+      // whoever signs in next. The apps keep theirs: they work signed out too.
+      clearLocalCollections()
       setUser(null)
       return
     }

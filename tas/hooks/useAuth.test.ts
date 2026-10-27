@@ -92,10 +92,13 @@ describe("useAuth in the extension and the Mac app", () => {
     await act(() => result.current.signIn())
     expect(result.current.user).toEqual(alice)
 
+    localStorage.setItem("tab-collections", "[]")
     await act(() => result.current.signOut())
     expect(result.current.user).toBeNull()
     expect(token).toBeNull()
     expect(sessions["new-token"]).toBeUndefined()
+    // The apps' collections work signed out, so they stay
+    expect(localStorage.getItem("tab-collections")).toBe("[]")
   })
 
   it("picks up a sign-in that finished in another window", async () => {
@@ -117,5 +120,39 @@ describe("useAuth in the extension and the Mac app", () => {
         headers: expect.objectContaining({ Authorization: "Bearer app-token" }),
       }),
     )
+  })
+})
+
+describe("useAuth on the site", () => {
+  let signedIn: boolean
+
+  beforeEach(() => {
+    signedIn = true
+    localStorage.clear()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input instanceof Request ? input.url : input)
+        if (url.endsWith("/api/auth/get-session"))
+          return Response.json(signedIn ? { user: alice, session: { id: "s1", userId: alice.id } } : null)
+        if (url.endsWith("/api/auth/sign-out")) {
+          signedIn = false
+          return Response.json({ success: true })
+        }
+        return new Response("", { status: 404 })
+      }),
+    )
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it("forgets the account's collections on sign-out, so the next account doesn't get them", async () => {
+    localStorage.setItem("tab-collections", JSON.stringify([{ id: "a", name: "Reading", tabs: [] }]))
+    const { result } = renderHook(() => useAuth())
+    await waitFor(() => expect(result.current.user).toEqual(alice))
+
+    await act(() => result.current.signOut())
+
+    expect(result.current.user).toBeNull()
+    expect(localStorage.getItem("tab-collections")).toBeNull()
   })
 })

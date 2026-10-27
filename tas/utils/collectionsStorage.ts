@@ -10,6 +10,7 @@ import { fetchFaviconAsDataUrl, generateTitleFromUrl, normalizeUrl } from "./fav
 
 const STORAGE_KEY = "tab-collections"
 const DELETED_IDS_KEY = "tab-collections-deleted"
+const SYNCED_KEY = "tab-collections-synced"
 
 export function generateCollectionTabId(): string {
   return crypto.randomUUID()
@@ -345,4 +346,35 @@ export function clearDeletedCollectionId(collectionId: string): void {
  */
 export function clearAllDeletedCollectionIds(): void {
   localStorage.removeItem(DELETED_IDS_KEY)
+}
+
+/**
+ * The version (updatedAt) of each collection the last time this device saw it in the cloud,
+ * by id. Sync uses it to tell a collection deleted on another device from one made here. It's
+ * kept for one account: after signing in to another, every collection here is new to its cloud.
+ */
+export function getSyncedVersions(userId: string): Record<string, number> {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SYNCED_KEY) ?? "null") as {
+      userId?: unknown
+      versions?: Record<string, number>
+    } | null
+    return saved?.userId === userId && saved.versions && typeof saved.versions === "object" ? saved.versions : {}
+  } catch {
+    return {}
+  }
+}
+
+export function setSyncedVersions(userId: string, versions: Record<string, number>): void {
+  localStorage.setItem(SYNCED_KEY, JSON.stringify({ userId, versions }))
+}
+
+/**
+ * Forget this device's copy of the collections (the site does this on sign-out, where the
+ * copy only mirrors the account, so the next person to sign in doesn't get them)
+ */
+export function clearLocalCollections(): void {
+  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(DELETED_IDS_KEY)
+  localStorage.removeItem(SYNCED_KEY)
 }
