@@ -13,7 +13,7 @@
  * Sorting is done at display time using tas/sorting/.
  */
 
-import type { Browser } from "wxt/browser"
+import { browser, type Browser } from "wxt/browser"
 import type {
   BrowserTab,
   BrowserWindow,
@@ -54,6 +54,8 @@ export interface TabTracker {
   // Lifecycle
   initialize(): Promise<SnapshotPayload>
   refresh(): Promise<SnapshotPayload>
+  /** Re-read recently closed tabs and other devices (call when browser.sessions changes) */
+  refreshSessions(): Promise<void>
 
   // Event subscription
   onEvent(handler: TabTrackerEventHandler): void
@@ -113,6 +115,86 @@ function toBrowserWindow(win: Browser.windows.Window): BrowserWindow {
 /**
  * Create a new TabTracker instance
  */
+/**
+ * Session timestamps in seconds. Chrome reports `lastModified` in seconds and Firefox in
+ * milliseconds, so anything too large to be seconds is converted.
+ */
+function toSeconds(lastModified: number): number {
+  return lastModified > 1e11 ? Math.floor(lastModified / 1000) : lastModified
+}
+
+/**
+ * Call an optional browser.sessions method. Safari has no sessions API and Firefox doesn't
+ * support getDevices, and neither list is essential, so a missing or failing call gives [].
+ */
+async function readSessionsList<T>(name: string, call: (() => Promise<T[]>) | undefined): Promise<T[]> {
+  if (!call) return []
+  try {
+    return (await call()) ?? []
+  } catch (error) {
+    console.warn(`[TAS] sessions.${name} failed; leaving it out`, error)
+    return []
+  }
+}
+
+async function readRecentlyClosed(): Promise<SessionTab[]> {
+  const sessions = browser.sessions as Partial<typeof browser.sessions> | undefined
+  const recentlyClosed = await readSessionsList(
+    "getRecentlyClosed",
+    sessions?.getRecentlyClosed && (() => sessions.getRecentlyClosed!({ maxResults: 10 })),
+  )
+  return recentlyClosed
+    .filter((session) => session.tab) // Only tabs, not windows
+    .map((session) => ({
+      sessionId: session.tab!.sessionId!,
+      title: session.tab!.title ?? "Untitled",
+      url: session.tab!.url ?? "",
+      favIconUrl: session.tab!.favIconUrl,
+      lastModified: toSeconds(session.lastModified),
+    }))
+}
+
+async function readOtherDevices(): Promise<DeviceSession[]> {
+  const sessions = browser.sessions as Partial<typeof browser.sessions> | undefined
+  const devices = await readSessionsList(
+    "getDevices",
+    sessions?.getDevices && (() => sessions.getDevices!({ maxResults: 5 })),
+  )
+  // Sessions can have either .tab or .window - we need to extract tabs from both
+  return devices.map((device) => {
+    const deviceTabs: SessionTab[] = []
+
+    device.sessions.forEach((session) => {
+      if (session.tab) {
+        // Direct tab session
+        deviceTabs.push({
+          sessionId: session.tab.sessionId ?? `device-tab-${deviceTabs.length}`,
+          title: session.tab.title ?? "Untitled",
+          url: session.tab.url ?? "",
+          favIconUrl: session.tab.favIconUrl,
+          lastModified: toSeconds(session.lastModified),
+        })
+      } else if (session.window?.tabs) {
+        // Window session with tabs inside
+        session.window.tabs.forEach((tab) => {
+          deviceTabs.push({
+            sessionId: tab.sessionId ?? `device-tab-${deviceTabs.length}`,
+            title: tab.title ?? "Untitled",
+            url: tab.url ?? "",
+            favIconUrl: tab.favIconUrl,
+            lastModified: toSeconds(session.lastModified),
+          })
+        })
+      }
+    })
+
+    return {
+      deviceName: device.deviceName,
+      tabs: deviceTabs.slice(0, 10), // Limit tabs per device
+    }
+  })
+}
+
 export function createTabTracker(): TabTracker {
   const state: TabTrackerState = {
     sessionTabs: new Map(),
@@ -342,11 +424,11 @@ export function createTabTracker(): TabTracker {
 
     async initialize() {
       // Query all tabs, windows, recently closed, and other devices from browser
-      const [tabs, windows, recentlyClosed, devices] = await Promise.all([
+      const [tabs, windows, recentlyClosed, otherDevices] = await Promise.all([
         browser.tabs.query({}),
         browser.windows.getAll(),
-        browser.sessions.getRecentlyClosed({ maxResults: 10 }),
-        browser.sessions.getDevices({ maxResults: 5 }),
+        readRecentlyClosed(),
+        readOtherDevices(),
       ])
 
       const now = Date.now()
@@ -403,51 +485,8 @@ export function createTabTracker(): TabTracker {
         }),
       )
 
-      // Process recently closed tabs
       state.recentlyClosed = recentlyClosed
-        .filter((session) => session.tab) // Only tabs, not windows
-        .map((session) => ({
-          sessionId: session.tab!.sessionId!,
-          title: session.tab!.title ?? "Untitled",
-          url: session.tab!.url ?? "",
-          favIconUrl: session.tab!.favIconUrl,
-          lastModified: session.lastModified,
-        }))
-
-      // Process tabs from other devices
-      // Sessions can have either .tab or .window - we need to extract tabs from both
-      state.otherDevices = devices.map((device) => {
-        const deviceTabs: SessionTab[] = []
-
-        device.sessions.forEach((session) => {
-          if (session.tab) {
-            // Direct tab session
-            deviceTabs.push({
-              sessionId: session.tab.sessionId ?? `device-tab-${deviceTabs.length}`,
-              title: session.tab.title ?? "Untitled",
-              url: session.tab.url ?? "",
-              favIconUrl: session.tab.favIconUrl,
-              lastModified: session.lastModified,
-            })
-          } else if (session.window?.tabs) {
-            // Window session with tabs inside
-            session.window.tabs.forEach((tab) => {
-              deviceTabs.push({
-                sessionId: tab.sessionId ?? `device-tab-${deviceTabs.length}`,
-                title: tab.title ?? "Untitled",
-                url: tab.url ?? "",
-                favIconUrl: tab.favIconUrl,
-                lastModified: session.lastModified,
-              })
-            })
-          }
-        })
-
-        return {
-          deviceName: device.deviceName,
-          tabs: deviceTabs.slice(0, 10), // Limit tabs per device
-        }
-      })
+      state.otherDevices = otherDevices
 
       console.log(
         `[TAS] TabTracker initialized: ${state.sessionTabs.size} tabs, ${state.sessionWindows.size} windows, ${state.recentlyClosed.length} recently closed, ${state.otherDevices.length} devices`,
@@ -467,6 +506,12 @@ export function createTabTracker(): TabTracker {
 
       // Re-initialize
       return this.initialize()
+    },
+
+    async refreshSessions() {
+      const [recentlyClosed, otherDevices] = await Promise.all([readRecentlyClosed(), readOtherDevices()])
+      state.recentlyClosed = recentlyClosed
+      state.otherDevices = otherDevices
     },
 
     onEvent(handler) {

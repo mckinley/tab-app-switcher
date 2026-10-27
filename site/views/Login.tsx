@@ -5,10 +5,11 @@ import { Footer } from "@/components/Footer"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { SiGoogle } from "@icons-pack/react-simple-icons"
 import logo from "@/assets/logo.jpg"
+import { safeReturnTo } from "@/lib/safeReturnTo"
 
 export default function Login() {
   const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "")
-  const returnTo = searchParams.get("returnTo") || "/account"
+  const returnTo = safeReturnTo(searchParams.get("returnTo"))
 
   const { user, isLoading, signIn } = useAuth({
     callbackURL: returnTo,

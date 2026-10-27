@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { createTabTracker, type TabTracker } from "./tabTracker"
-import type { Browser } from "wxt/browser"
+import { browser, type Browser } from "wxt/browser"
 
 // Mock the browser API
 vi.mock("wxt/browser", () => ({
@@ -169,6 +169,68 @@ describe("TabTracker", () => {
       tracker.handleTabRemoved(1, 1)
 
       expect(state.currentlyActiveTabId).toBeNull()
+    })
+  })
+  describe("initialize", () => {
+    const sessions = browser.sessions as any
+
+    beforeEach(() => {
+      vi.mocked(browser.tabs.query as () => Promise<Browser.tabs.Tab[]>).mockResolvedValue([
+        createMockTab(1, { active: true, title: "One" }),
+        createMockTab(2, { title: "Two" }),
+      ])
+      vi.mocked(browser.windows.getAll as () => Promise<Browser.windows.Window[]>).mockResolvedValue([
+        { id: 1, focused: true } as any,
+      ])
+      sessions.getRecentlyClosed = vi.fn().mockResolvedValue([])
+      sessions.getDevices = vi.fn().mockResolvedValue([])
+    })
+
+    it("reads tabs when the browser has no sessions API (Safari)", async () => {
+      const saved = (browser as any).sessions
+      ;(browser as any).sessions = undefined
+      try {
+        const snapshot = await tracker.initialize()
+        expect(snapshot.sessionTabs.map((t) => t.id)).toEqual([1, 2])
+        expect(snapshot.recentlyClosed).toEqual([])
+        expect(snapshot.otherDevices).toEqual([])
+      } finally {
+        ;(browser as any).sessions = saved
+      }
+    })
+
+    it("reads tabs when getDevices is missing or fails (Firefox)", async () => {
+      sessions.getDevices = undefined
+      await expect(tracker.initialize()).resolves.toMatchObject({ otherDevices: [] })
+
+      sessions.getDevices = vi.fn().mockRejectedValue(new Error("getDevices is not supported"))
+      const snapshot = await tracker.refresh()
+      expect(snapshot.sessionTabs).toHaveLength(2)
+      expect(snapshot.otherDevices).toEqual([])
+    })
+
+    it("stores recently closed times in seconds, whether the browser reports seconds or milliseconds", async () => {
+      sessions.getRecentlyClosed = vi.fn().mockResolvedValue([
+        { lastModified: 1_700_000_000, tab: { sessionId: "chrome", title: "Chrome", url: "https://a.test" } },
+        { lastModified: 1_700_000_000_123, tab: { sessionId: "firefox", title: "Firefox", url: "https://b.test" } },
+      ])
+
+      const snapshot = await tracker.initialize()
+
+      expect(snapshot.recentlyClosed?.map((t) => t.lastModified)).toEqual([1_700_000_000, 1_700_000_000])
+    })
+
+    it("refreshSessions picks up newly closed tabs", async () => {
+      await tracker.initialize()
+      sessions.getRecentlyClosed = vi
+        .fn()
+        .mockResolvedValue([
+          { lastModified: 1_700_000_000, tab: { sessionId: "s1", title: "Closed", url: "https://c.test" } },
+        ])
+
+      await tracker.refreshSessions()
+
+      expect(tracker.getSnapshot().recentlyClosed?.map((t) => t.title)).toEqual(["Closed"])
     })
   })
 })

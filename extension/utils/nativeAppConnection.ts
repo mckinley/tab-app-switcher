@@ -40,7 +40,8 @@ async function getCurrentSortStrategy(): Promise<SortStrategy> {
 const WS_URL = "ws://localhost:48125"
 const INITIAL_RECONNECT_DELAY = 1000 // 1 second
 const MAX_RECONNECT_DELAY = 60000 // 1 minute
-const PING_INTERVAL = 30000 // 30 seconds
+// Under Chrome's 30 s service worker idle limit, so the open socket keeps the worker alive
+const PING_INTERVAL = 20000 // 20 seconds
 
 interface TransportState {
   instanceId: string | null
@@ -220,8 +221,9 @@ export async function createNativeAppTransport(tabTracker: TabTracker): Promise<
         scheduleReconnect()
       }
 
-      state.ws.onerror = (error) => {
-        console.error("[TAS] WebSocket error:", error)
+      state.ws.onerror = () => {
+        // Expected whenever the native app isn't running, so not logged as an error
+        console.debug("[TAS] Native app not reachable; will retry")
         // Close will fire after error, but ensure cleanup
         if (state.ws) {
           state.ws.close()

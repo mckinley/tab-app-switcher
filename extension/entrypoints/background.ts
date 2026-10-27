@@ -52,22 +52,20 @@ export default defineBackground(() => {
 
   // Initialize asynchronously
   ;(async () => {
-    // Create and initialize TabTracker
+    // Create and initialize TabTracker. Keep going if reading the browser's state fails, so
+    // the native app connection still starts and later tab events still arrive.
     tabTracker = createTabTracker()
-    await tabTracker.initialize()
+    try {
+      await tabTracker.initialize()
+    } catch (error) {
+      console.error("[TAS] Failed to read tabs at startup:", error)
+    }
 
-    // Create and connect NativeAppTransport
+    // Create and connect NativeAppTransport (it forwards tabTracker events itself)
     transport = await createNativeAppTransport(tabTracker)
 
     // Handle commands from native app
     transport.onCommand(handleCommand)
-
-    // Forward tab events to native app
-    tabTracker.onEvent((event) => {
-      if (transport?.isConnected()) {
-        transport.sendEvent(event)
-      }
-    })
 
     // Start connection
     transport.connect()
@@ -158,6 +156,16 @@ export default defineBackground(() => {
   browser.windows.onRemoved.addListener((windowId) => {
     if (!tabTracker) return
     tabTracker.handleWindowRemoved(windowId)
+  })
+
+  // Recently closed tabs or other devices changed (Safari has no sessions API)
+  browser.sessions?.onChanged?.addListener(async () => {
+    if (!tabTracker) return
+    await tabTracker.refreshSessions()
+    broadcastTabsUpdate()
+    if (transport?.isConnected()) {
+      transport.sendSnapshot(tabTracker.getSnapshot())
+    }
   })
 
   // Storage changed - broadcast when sort order changes
@@ -335,11 +343,13 @@ async function refreshTabs(): Promise<void> {
  * Open the switcher: the toolbar popup where the browser allows it, else a small popup window
  */
 async function openSwitcherPopup(): Promise<void> {
+  // MV2 builds (Firefox, Safari) have browserAction instead of action
+  const action = browser.action ?? (browser as unknown as { browserAction?: typeof browser.action }).browserAction
   try {
-    await browser.action.openPopup()
+    await action.openPopup()
   } catch (_openError) {
-    // Fallback: open as a popup window
-    const popupUrl = browser.runtime.getURL("/popup.html")
+    // Fallback: open as a popup window, which closes itself when it loses focus
+    const popupUrl = browser.runtime.getURL("/popup.html?mode=window")
     await browser.windows.create({
       url: popupUrl,
       type: "popup",

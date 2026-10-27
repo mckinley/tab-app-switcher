@@ -58,17 +58,13 @@ function PopupContent() {
       .catch(() => {})
   }, [setSelectedIndex])
 
-  // Focus management: ensure popup has focus and close if it loses focus
+  // Focus management: ensure popup has focus. The toolbar popup closes by itself when it loses
+  // focus; the fallback popup window (mode=window) has to close itself.
   useEffect(() => {
-    // Focus the window when popup opens
     window.focus()
+    if (new URLSearchParams(location.search).get("mode") !== "window") return
 
-    // Close popup if window loses focus
-    const handleBlur = () => {
-      // TODO: should this be re-enabled?
-      // window.close();
-    }
-
+    const handleBlur = () => window.close()
     window.addEventListener("blur", handleBlur)
     return () => {
       window.removeEventListener("blur", handleBlur)

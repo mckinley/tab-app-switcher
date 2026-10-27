@@ -56,11 +56,17 @@ jobs:
       - name: Prepare WXT types for extension
         run: npm run postinstall --workspace=extension
 
-      - name: Install Electron, Chromium and a virtual display
+      - name: Download Electron
+        timeout-minutes: 5
+        run: node node_modules/electron/install.js
+
+      - name: Install Chromium, a virtual display and xdotool
+        timeout-minutes: 10
         run: |
-          node node_modules/electron/install.js
+          # Skip rebuilding the man page index after each package, which can take minutes
+          sudo rm -f /var/lib/man-db/auto-update
           npx playwright install --with-deps chromium
-          sudo apt-get install -y xvfb xdotool openbox
+          sudo apt-get install -y --no-install-recommends xvfb xdotool openbox
 
       - name: Build the extension and native app
         run: npm run build:e2e
