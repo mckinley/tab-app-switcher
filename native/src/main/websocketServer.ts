@@ -371,6 +371,18 @@ function handleEvent(sessionKey: SessionKey, session: Session, envelope: Protoco
   // Apply the event to session state
   switch (event.event) {
     case 'tab.activated': {
+      // The tab that was current until now (the most recently activated) was just left
+      let currentId: string | undefined
+      let currentTime = 0
+      session.augmentation.forEach((a, id) => {
+        if ((a.lastActivated ?? 0) > currentTime) {
+          currentTime = a.lastActivated ?? 0
+          currentId = id
+        }
+      })
+      const previous = currentId === String(event.tabId) ? undefined : currentId
+      if (previous) session.augmentation.get(previous)!.lastDeactivated = event.timestamp
+
       // Update augmentation
       const aug = session.augmentation.get(String(event.tabId)) || {}
       aug.lastActivated = event.timestamp

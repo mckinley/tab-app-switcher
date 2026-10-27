@@ -39,27 +39,38 @@ export function loadTabData(): {
 
 /**
  * Save tab data to disk
- * Debounced to avoid excessive writes
+ * Debounced to avoid excessive writes: the list only needs to be close enough to show
+ * something right after launch, before the browsers reconnect. Call flushTabData on quit.
  */
 let saveTimeout: NodeJS.Timeout | null = null
+let pendingTabs: Tab[] | null = null
 let lastSavedCount = -1
-const SAVE_DEBOUNCE_MS = 1000
+const SAVE_DEBOUNCE_MS = 30_000
 
 export function saveTabData(displayTabs: Tab[]): void {
+  pendingTabs = displayTabs
+  if (!saveTimeout) saveTimeout = setTimeout(flushTabData, SAVE_DEBOUNCE_MS)
+}
+
+/** Write any pending tab list now */
+export function flushTabData(): void {
   if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = null
+  if (!pendingTabs) return
 
-  saveTimeout = setTimeout(() => {
-    store.set({
-      displayTabs,
-      lastSaved: Date.now()
-    })
+  // Only open tabs, and without favicon images (data URLs make the file large); Recently
+  // Closed and Other Devices are browsing history the app doesn't need to keep.
+  const displayTabs = pendingTabs
+    .filter((tab) => !tab.sessionId)
+    .map((tab) => (tab.favicon.startsWith('data:') ? { ...tab, favicon: '' } : tab))
+  pendingTabs = null
+  store.set({ displayTabs, lastSaved: Date.now() })
 
-    // Only log if tab count changed to reduce noise
-    if (displayTabs.length !== lastSavedCount) {
-      console.log('[TAS Storage] Saved', displayTabs.length, 'tabs to disk')
-      lastSavedCount = displayTabs.length
-    }
-  }, SAVE_DEBOUNCE_MS)
+  // Only log if tab count changed to reduce noise
+  if (displayTabs.length !== lastSavedCount) {
+    console.log('[TAS Storage] Saved', displayTabs.length, 'tabs to disk')
+    lastSavedCount = displayTabs.length
+  }
 }
 
 /**

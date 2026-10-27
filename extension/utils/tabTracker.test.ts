@@ -232,5 +232,32 @@ describe("TabTracker", () => {
 
       expect(tracker.getSnapshot().recentlyClosed?.map((t) => t.title)).toEqual(["Closed"])
     })
+
+    it("keeps the recent-tab order when the service worker restarts", async () => {
+      // An in-memory storage.session, shared by the worker before and after the restart
+      let stored: Record<string, unknown> = {}
+      ;(browser as any).storage = {
+        session: {
+          get: vi.fn(async (key: string) => ({ [key]: stored[key] })),
+          set: vi.fn(async (items: Record<string, unknown>) => void (stored = { ...stored, ...items })),
+        },
+      }
+      try {
+        await tracker.initialize()
+        vi.setSystemTime(2_000_000)
+        tracker.handleTabActivated(2, 1) // 1 → 2
+        vi.setSystemTime(3_000_000)
+        tracker.handleTabActivated(1, 1) // 2 → 1
+
+        const restarted = createTabTracker()
+        await restarted.initialize()
+
+        const aug = restarted.getSnapshot().augmentation
+        expect(aug["2"]).toMatchObject({ lastActivated: 2_000_000, lastDeactivated: 3_000_000 })
+        expect(aug["1"].lastDeactivated).toBe(2_000_000)
+      } finally {
+        delete (browser as any).storage
+      }
+    })
   })
 })

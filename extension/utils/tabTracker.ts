@@ -195,6 +195,21 @@ async function readOtherDevices(): Promise<DeviceSession[]> {
   })
 }
 
+// When each tab was last activated and left, kept in session storage so the order survives
+// the service worker being stopped and restarted (the browser clears it on restart, when
+// tab ids change anyway). Favicons aren't kept; they're re-read.
+const ACTIVITY_KEY = "tasTabActivity"
+type TabActivity = Record<string, { lastActivated?: number; lastDeactivated?: number }>
+
+async function readActivity(): Promise<TabActivity> {
+  try {
+    const stored = await browser.storage?.session?.get(ACTIVITY_KEY)
+    return (stored?.[ACTIVITY_KEY] as TabActivity | undefined) ?? {}
+  } catch {
+    return {}
+  }
+}
+
 export function createTabTracker(): TabTracker {
   const state: TabTrackerState = {
     sessionTabs: new Map(),
@@ -209,6 +224,14 @@ export function createTabTracker(): TabTracker {
 
   function emit(event: EventPayload): void {
     eventHandlers.forEach((handler) => handler(event))
+  }
+
+  function saveActivity(): void {
+    const activity: TabActivity = {}
+    state.augmentation.forEach(({ lastActivated, lastDeactivated }, tabId) => {
+      if (state.sessionTabs.has(tabId)) activity[tabId] = { lastActivated, lastDeactivated }
+    })
+    browser.storage?.session?.set({ [ACTIVITY_KEY]: activity })?.catch(() => {})
   }
 
   function updateAugmentationOnActivate(tabId: number): void {
@@ -233,6 +256,7 @@ export function createTabTracker(): TabTracker {
     aug.lastActivated = now
 
     state.currentlyActiveTabId = tabId
+    saveActivity()
   }
 
   return {
@@ -424,11 +448,12 @@ export function createTabTracker(): TabTracker {
 
     async initialize() {
       // Query all tabs, windows, recently closed, and other devices from browser
-      const [tabs, windows, recentlyClosed, otherDevices] = await Promise.all([
+      const [tabs, windows, recentlyClosed, otherDevices, activity] = await Promise.all([
         browser.tabs.query({}),
         browser.windows.getAll(),
         readRecentlyClosed(),
         readOtherDevices(),
+        readActivity(),
       ])
 
       const now = Date.now()
@@ -441,9 +466,11 @@ export function createTabTracker(): TabTracker {
         if (tab.id !== undefined) {
           state.sessionTabs.set(tab.id, toBrowserTab(tab))
 
-          // Initialize augmentation with browser's lastAccessed
+          // What this worker recorded before it was stopped, else the browser's lastAccessed
+          const saved = activity[tab.id]
           state.augmentation.set(tab.id, {
-            lastActivated: tab.lastAccessed ?? now,
+            lastActivated: saved?.lastActivated ?? tab.lastAccessed ?? now,
+            lastDeactivated: saved?.lastDeactivated,
           })
 
           // Track currently active tab (only in the focused window)

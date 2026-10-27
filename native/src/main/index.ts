@@ -17,7 +17,7 @@ import {
 } from './websocketServer'
 import { setupAutoUpdater } from './autoUpdater'
 import { setupAuthHandlers } from './auth'
-import { loadTabData, saveTabData } from './tabStorage'
+import { loadTabData, saveTabData, flushTabData } from './tabStorage'
 import type { Tab, BrowserType } from '@tas/types/tabs'
 import type {
   EventPayload,
@@ -107,6 +107,29 @@ function displayIdPrefix(session: Session): string {
   return session.instanceId.substring(0, 8)
 }
 
+// Window ids from different browsers (or browser profiles) can be the same number, so each
+// (session, window) pair gets its own display window id, kept stable across rebuilds.
+const displayWindowIds = new Map<string, number>()
+const originalWindowIds = new Map<number, { prefix: string; windowId: number }>()
+
+function toDisplayWindowId(session: Session, windowId: number): number {
+  const prefix = displayIdPrefix(session)
+  const key = `${prefix}:${windowId}`
+  let id = displayWindowIds.get(key)
+  if (id === undefined) {
+    id = displayWindowIds.size + 1
+    displayWindowIds.set(key, id)
+    originalWindowIds.set(id, { prefix, windowId })
+  }
+  return id
+}
+
+/** The browser's own id for a display window id, if that window belongs to `session` */
+function toBrowserWindowId(session: Session, displayWindowId: number): number | undefined {
+  const original = originalWindowIds.get(displayWindowId)
+  return original?.prefix === displayIdPrefix(session) ? original.windowId : undefined
+}
+
 /**
  * Rebuild displayTabs from all active sessions
  * This is called whenever session state changes
@@ -155,7 +178,8 @@ function rebuildDisplayTabs(): void {
       // Create tab with sorting ID for sortTabsWithSections
       allSessionTabs.push({
         ...browserTab,
-        id: sortingId
+        id: sortingId,
+        windowId: toDisplayWindowId(session, browserTab.windowId)
       })
 
       // Augmentation keyed by sorting ID (for sortTabsWithSections)
@@ -167,7 +191,8 @@ function rebuildDisplayTabs(): void {
 
     // Collect windows
     session.sessionWindows.forEach((win) => {
-      allSessionWindows.push(win)
+      if (win.id === undefined) return
+      allSessionWindows.push({ ...win, id: toDisplayWindowId(session, win.id) })
     })
 
     // Collect recently closed tabs and other devices. Their session ids get the browser
@@ -525,6 +550,7 @@ function startApp(): void {
     getDisplayTabs,
     findSessionForTab,
     findSessionForRestore,
+    toBrowserWindowId,
     rebuildDisplayTabs,
     broadcastDisplayTabs,
     activateBrowserApp,
@@ -553,6 +579,8 @@ process.on('unhandledRejection', (reason) => {
 })
 
 app.on('will-quit', () => {
+  flushTabData()
+
   // Stop uIOhook
   uIOhook.stop()
 

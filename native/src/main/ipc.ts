@@ -39,6 +39,7 @@ interface IpcDependencies {
     sessionKey: string
     tabId: number
   } | null
+  toBrowserWindowId: (session: Session, displayWindowId: number) => number | undefined
   findSessionForRestore: (displayTabId: string) => {
     session: Session
     sessionKey: string
@@ -220,14 +221,19 @@ export function registerIpcHandlers(dependencies: IpcDependencies): void {
   ipcMain.on('command-to-extension', (_event, request: TabManagementCommand) => {
     if (request.command === 'reorderTab') {
       const found = findSessionForTab(request.tabId)
-      if (found?.session.commands.includes('moveTab')) {
-        sendCommand(found.sessionKey, {
-          command: 'moveTab',
-          tabId: found.tabId,
-          index: request.newIndex,
-          windowId: request.targetWindowId
-        })
-      }
+      if (!found?.session.commands.includes('moveTab')) return
+      // A tab can only move between windows of its own browser profile
+      const windowId =
+        request.targetWindowId === undefined
+          ? undefined
+          : deps?.toBrowserWindowId(found.session, request.targetWindowId)
+      if (request.targetWindowId !== undefined && windowId === undefined) return
+      sendCommand(found.sessionKey, {
+        command: 'moveTab',
+        tabId: found.tabId,
+        index: request.newIndex,
+        windowId
+      })
     } else if (request.command === 'createWindow') {
       // In the browser the person used last, if it can
       const recent = getDisplayTabs()

@@ -104,16 +104,25 @@ export function sortByLastAccessed(tabs: BrowserTab[], _augmentation: Record<str
 
 /**
  * Sort by lastDeactivated timestamp (most recently deactivated first)
- * Shows tabs in order of when they lost focus
+ * Shows tabs in order of when they lost focus, after the current tab. The current tab (the
+ * most recently activated one) stays first, like in the other orders, because the switcher
+ * starts on the second row: the tab you just left.
  */
 export function sortByLastDeactivated(tabs: BrowserTab[], augmentation: Record<string, TabAugmentation>): BrowserTab[] {
-  return [...tabs].sort((a, b) => {
+  const byDeactivation = [...tabs].sort((a, b) => {
     const aId = String(a.id)
     const bId = String(b.id)
     const aTime = augmentation[aId]?.lastDeactivated ?? 0
     const bTime = augmentation[bId]?.lastDeactivated ?? 0
     return bTime - aTime
   })
+
+  let current: BrowserTab | undefined
+  for (const tab of tabs) {
+    const activated = augmentation[String(tab.id)]?.lastActivated ?? 0
+    if (activated > (current ? (augmentation[String(current.id)]?.lastActivated ?? 0) : 0)) current = tab
+  }
+  return current ? [current, ...byDeactivation.filter((tab) => tab !== current)] : byDeactivation
 }
 
 /**

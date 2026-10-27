@@ -167,6 +167,19 @@ describe("sortByLastDeactivated", () => {
     // Tab 2 first (has lastDeactivated), then 1 and 3 (both have 0)
     expect(sorted[0].id).toBe(2)
   })
+
+  it("keeps the current tab first, so the tab you just left is second", () => {
+    const tabs = [createTab(1), createTab(2), createTab(3)]
+    // Went 1 → 2 → 3: tab 3 is current, 2 was just left, 1 before that
+    const augmentation: Record<string, TabAugmentation> = {
+      "1": { lastActivated: 100, lastDeactivated: 200 },
+      "2": { lastActivated: 200, lastDeactivated: 300 },
+      "3": { lastActivated: 300, lastDeactivated: 50 },
+    }
+
+    const sorted = sortByLastDeactivated(tabs, augmentation)
+    expect(sorted.map((t) => t.id)).toEqual([3, 2, 1])
+  })
 })
 
 describe("applySortStrategy", () => {
