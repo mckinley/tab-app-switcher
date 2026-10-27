@@ -31,6 +31,11 @@ const connectedPorts: Set<Port> = new Set()
 let tabTracker: TabTracker | null = null
 let transport: NativeAppTransport | null = null
 
+// Where the popup's selection starts the next time it opens (set when the shortcut reopens it)
+let popupStartIndex: number | null = null
+// Whether the shortcut that opened the popup was pressed outside this profile's windows
+let popupOpenedFromElsewhere = false
+
 // Debounce for broadcasting updates to extension pages
 const BROADCAST_DEBOUNCE = 50
 let broadcastTimeout: ReturnType<typeof setTimeout> | null = null
@@ -167,28 +172,34 @@ export default defineBackground(() => {
   // ============================================================================
 
   browser.commands.onCommand.addListener(async (command) => {
-    if (command === "tas_activate") {
-      // Try to advance selection in existing popup
-      try {
-        await browser.runtime.sendMessage({
-          type: "ADVANCE_SELECTION",
-          direction: "next",
-        })
-      } catch (_error) {
-        // Popup not open, so open it
-        try {
-          await browser.action.openPopup()
-        } catch (_openError) {
-          // Fallback: open as a popup window
-          const popupUrl = browser.runtime.getURL("/popup.html")
-          await browser.windows.create({
-            url: popupUrl,
-            type: "popup",
-            width: 360,
-            height: 480,
-          })
-        }
-      }
+    if (command !== "tas_activate") return
+
+    // If the popup is already open, move its selection
+    const advanced = (await browser.runtime
+      .sendMessage({ type: "ADVANCE_SELECTION", direction: "next" })
+      .catch(() => undefined)) as { selectedIndex?: number } | undefined
+
+    if (typeof advanced?.selectedIndex !== "number") {
+      popupStartIndex = null
+      // A shortcut set to "In Chrome" only fires while one of this profile's windows is focused,
+      // so if none is, it's set to "Global" and was pressed in another profile or app.
+      popupOpenedFromElsewhere = !(await browser.windows.getLastFocused().then(
+        (w) => w.focused,
+        () => true,
+      ))
+      await openSwitcherPopup()
+      return
+    }
+
+    // With Chrome's default "In Chrome" shortcut scope, once a shortcut press reaches the open
+    // popup, Chrome drops that page's key-up events until another key goes down, so letting go
+    // of Alt would do nothing. A freshly opened popup does see the release, so reopen it with
+    // the new selection. (The "Global" scope doesn't have this problem, but only one Chrome
+    // profile can own a global shortcut, so it breaks Alt+Tab in every other profile.)
+    if (await isToolbarPopupOpen()) {
+      popupStartIndex = advanced.selectedIndex
+      await browser.runtime.sendMessage({ type: "CLOSE_POPUP" }).catch(() => {})
+      await reopenToolbarPopup()
     }
   })
 
@@ -225,6 +236,12 @@ export default defineBackground(() => {
         .then(() => sendResponse({ success: true }))
         .catch((error) => sendResponse({ success: false, error: error.message }))
       return true
+    }
+
+    if (message.type === "POPUP_OPENED") {
+      sendResponse({ startIndex: popupStartIndex, openedFromElsewhere: popupOpenedFromElsewhere })
+      popupStartIndex = null
+      return false
     }
 
     if (message.type === "CHECK_NATIVE_APP") {
@@ -312,6 +329,49 @@ async function refreshTabs(): Promise<void> {
 
   // Broadcast to popup and other extension pages
   broadcastTabsUpdate()
+}
+
+/**
+ * Open the switcher: the toolbar popup where the browser allows it, else a small popup window
+ */
+async function openSwitcherPopup(): Promise<void> {
+  try {
+    await browser.action.openPopup()
+  } catch (_openError) {
+    // Fallback: open as a popup window
+    const popupUrl = browser.runtime.getURL("/popup.html")
+    await browser.windows.create({
+      url: popupUrl,
+      type: "popup",
+      width: 360,
+      height: 480,
+    })
+  }
+}
+
+/**
+ * Whether the switcher is open as the toolbar popup (not the fallback popup window)
+ */
+async function isToolbarPopupOpen(): Promise<boolean> {
+  if (!browser.runtime.getContexts) return false
+  const contexts = await browser.runtime.getContexts({ contextTypes: [browser.runtime.ContextType.POPUP] })
+  return contexts.length > 0
+}
+
+/**
+ * Reopen the toolbar popup right after it closed. Chrome only opens it once the browser
+ * window is active again, which takes a moment, so retry briefly.
+ */
+async function reopenToolbarPopup(): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    try {
+      await browser.action.openPopup()
+      return
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 15))
+    }
+  }
+  popupStartIndex = null
 }
 
 /**

@@ -403,6 +403,21 @@ app.whenReady().then(() => {
     onEvent: handleEvent
   })
 
+  // The end-to-end tests (e2e/) launch the app with TAS_E2E=1 and read its state through this.
+  if (process.env.TAS_E2E === '1') {
+    Object.assign(globalThis, {
+      __tasE2E: {
+        sessions: () =>
+          getActiveSessions().map((s) => ({
+            browserType: s.browserType,
+            instanceId: s.instanceId,
+            tabCount: s.sessionTabs.length
+          })),
+        displayTabs: () => getDisplayTabs()
+      }
+    })
+  }
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })

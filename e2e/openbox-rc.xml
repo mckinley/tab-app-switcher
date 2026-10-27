@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Window manager config for the e2e display: no key bindings, so Alt+Tab reaches the apps. -->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <focus>
+    <focusNew>yes</focusNew>
+    <followMouse>no</followMouse>
+  </focus>
+  <keyboard></keyboard>
+  <mouse></mouse>
+</openbox_config>

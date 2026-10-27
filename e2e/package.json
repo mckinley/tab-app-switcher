@@ -1,0 +1,15 @@
+{
+  "name": "@tab-app-switcher/e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests: the real extension in Chromium and the real native app, driven with real key presses",
+  "scripts": {
+    "test": "./run.sh",
+    "tc": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/chrome": "^0.1.32",
+    "ws": "^8.18.3"
+  }
+}

@@ -199,10 +199,14 @@ export function createTasOverlay(): void {
 
   tasWindow.on('blur', () => {
     // Only hide on blur if we're taking focus (non-macOS or if user clicks elsewhere)
-    // On macOS with showInactive, blur may not fire, so we rely on Escape/Enter
-    if (process.platform !== 'darwin') {
+    // On macOS with showInactive, blur may not fire, so we rely on Escape/Enter.
+    // Ignore the blur that comes from hiding the overlay ourselves, and check again when the
+    // timer fires: a quick second Alt+Tab may have shown the overlay again by then.
+    if (process.platform !== 'darwin' && tasOverlayActive) {
       setTimeout(() => {
-        hideTasOverlay()
+        if (tasWindow && !tasWindow.isDestroyed() && !tasWindow.isFocused()) {
+          hideTasOverlay()
+        }
       }, 100)
     }
   })

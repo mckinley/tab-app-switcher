@@ -10,6 +10,8 @@ function WelcomeContent() {
   const [nativeAppConnected, setNativeAppConnected] = useState(false)
   const { browserType, openShortcutsPage } = useBrowser()
   const isChromium = browserType === "chrome" || browserType === "edge"
+  const browserName = browserType === "edge" ? "Edge" : "Chrome"
+  const shortcut = useActivateShortcut(isChromium ? "Alt+Tab" : "Alt+1")
 
   useEffect(() => {
     // Check if native app is connected
@@ -47,14 +49,14 @@ function WelcomeContent() {
                 <CheckCircle2 className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
                 <div>
                   <CardTitle>Extension Installed!</CardTitle>
-                  <CardDescription>You can now switch tabs with Alt+Tab</CardDescription>
+                  <CardDescription>You can now switch tabs with {shortcut}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                The extension is ready to use. Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Alt+Tab</kbd>{" "}
-                to open the tab switcher.
+                The extension is ready to use. Press{" "}
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">{shortcut}</kbd> to open the tab switcher.
               </p>
             </CardContent>
           </Card>
@@ -65,30 +67,24 @@ function WelcomeContent() {
                 <div className="flex items-start gap-3">
                   <Keyboard className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
                   <div>
-                    <CardTitle>Recommended: Configure Keyboard Shortcut</CardTitle>
-                    <CardDescription>Set shortcut to "Global" scope for best experience</CardDescription>
+                    <CardTitle>Keyboard Shortcut</CardTitle>
+                    <CardDescription>Keep the shortcut's scope set to "In {browserName}"</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium">Why Global scope?</p>
                   <p className="text-sm text-muted-foreground">
-                    {browserType === "edge" ? "Edge" : "Chrome"}'s default "In{" "}
-                    {browserType === "edge" ? "Edge" : "Chrome"}" scope has a limitation: if you press Alt+Tab multiple
-                    times quickly, the modifier key release isn't always detected. Setting it to "Global" fixes this
-                    issue.
+                    With the default "In {browserName}" scope, every {browserName} profile gets its own {shortcut}, and
+                    pressing Tab several times while holding Alt works.
                   </p>
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <p className="font-medium">Steps:</p>
-                    <ol className="list-decimal list-inside space-y-1 ml-2">
-                      <li>Click the button below to open Keyboard Shortcuts</li>
-                      <li>Find "Tab Application Switcher"</li>
-                      <li>Change the dropdown from "In {browserType === "edge" ? "Edge" : "Chrome"}" to "Global"</li>
-                    </ol>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Avoid "Global": only one {browserName} profile can own a global shortcut, so {shortcut} would always
+                    open that profile's tabs, and it can clash with the native app's {shortcut}.
+                  </p>
+                  <p className="text-sm text-muted-foreground">You can change the key itself on the shortcuts page.</p>
                 </div>
-                <Button onClick={openShortcutsPage} className="gap-2">
+                <Button onClick={openShortcutsPage} variant="outline" className="gap-2">
                   <BrowserIcon browser={browserType} className="w-4 h-4" />
                   Open Keyboard Shortcuts
                   <ExternalLink className="w-4 h-4" />
@@ -143,11 +139,7 @@ function WelcomeContent() {
                     </ul>
                   </div>
                   <Button variant="outline" className="gap-2" asChild>
-                    <a
-                      href="https://github.com/yourusername/tab-app-switcher/releases"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href="https://tabappswitcher.com/downloads" target="_blank" rel="noopener noreferrer">
                       <Download className="w-4 h-4" />
                       Download Native App
                       <ExternalLink className="w-4 h-4" />
@@ -169,6 +161,23 @@ function WelcomeContent() {
       </div>
     </div>
   )
+}
+
+/**
+ * The key the extension's shortcut is set to, as the browser reports it
+ */
+function useActivateShortcut(fallback: string): string {
+  const [shortcut, setShortcut] = useState(fallback)
+  useEffect(() => {
+    browser.commands
+      .getAll()
+      .then((commands) => {
+        const key = commands.find((c) => c.name === "tas_activate")?.shortcut
+        if (key) setShortcut(key)
+      })
+      .catch(() => {})
+  }, [])
+  return shortcut
 }
 
 function App() {

@@ -34,3 +34,46 @@ jobs:
 
       - name: Run tests
         run: npm run test:all
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prepare WXT types for extension
+        run: npm run postinstall --workspace=extension
+
+      - name: Install Electron, Chromium and a virtual display
+        run: |
+          node node_modules/electron/install.js
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb xdotool openbox
+
+      - name: Build the extension and native app
+        run: npm run build:e2e
+
+      - name: Run end-to-end tests
+        run: npm run test --workspace=e2e
+
+      - name: Upload the test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7

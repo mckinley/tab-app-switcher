@@ -16,6 +16,7 @@ npm run dev:native       # electron-vite dev
 npm run tc               # build tas, then tsc + astro check + extension/native typechecks
 npm run lint:all         # tc + eslint everywhere (what CI runs)
 npm run test:all         # vitest in site, extension, tas, native (what CI runs)
+npm run test:e2e         # build extension + native, then Playwright e2e with real keys (e2e/README.md)
 npm run check            # prettier check + lint:all
 npm run prep             # format + lint:fix; run before committing
 npm run build:all        # tas, site, extension, native
@@ -52,6 +53,10 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   `site/lib/{platform,settings}` aren't imported anywhere right now. Server routes: `src/pages/api/auth/[...all].ts`
   (Better Auth with the bearer plugin, Google sign-in) and `src/pages/api/collections`
   (CRUD on the `collection` table in D1, binding `DB`).
+- `e2e/` (`@tab-app-switcher/e2e`): Playwright end-to-end tests. They run the built extension
+  in Chromium (several profiles in one browser) and the built native app, and press real keys
+  with xdotool under Xvfb + openbox (`e2e/run.sh`). The native app exposes its state to the
+  tests only when launched with `TAS_E2E=1`.
 - `extension-test/`: a standalone test extension that demonstrates Chrome's
   modifier-keyup behavior with commands. It isn't a workspace.
 - `resources/`: store listing copy and screenshots.
@@ -64,8 +69,8 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   `CLOUDFLARE_API_TOKEN`. Worker secrets: `BETTER_AUTH_SECRET`, `AUTH_GOOGLE_ID`,
   `AUTH_GOOGLE_SECRET`. For local dev, copy `site/.dev.vars.example` to `site/.dev.vars`
   (gitignored).
-- **CI:** `.github/workflows/ci.yml` runs `lint:all` and `test:all` on pushes and PRs to
-  `main`, with Node from `.tool-versions`.
+- **CI:** `.github/workflows/ci.yml` runs `lint:all` and `test:all`, and the e2e suite in a
+  second job, on pushes and PRs to `main`, with Node from `.tool-versions`.
 - **Extension and native:** `npm run release patch|minor|major` (`scripts/release.mjs`)
   bumps the version in every project, runs `prep`, commits with `git add -A`, tags, pushes
   `main`, publishes the macOS app to GitHub Releases and submits the extension to the
@@ -91,6 +96,11 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - Better Auth's `trustedOrigins` in `site/src/lib/auth.server.ts` lists the local dev
   origin (`http://localhost:4409`, from `site/.env.development`). If the dev port changes,
   update it there too.
+- Chrome shortcut scope: keep "In Chrome". Chrome gives a "Global" shortcut to one profile
+  only, so Alt+Tab in every other profile opens the first profile's tabs. In "In Chrome" scope
+  Chrome drops the popup's key-up events after a second shortcut press, so the background
+  closes and reopens the popup on repeated presses (see its command handler);
+  `e2e/tests/extension.spec.ts` covers both scopes.
 - Site URLs have no trailing slash (pjmgmt's url-format and canonical-urls standards):
   `build.format: "file"` makes `/about` the file `about.html`, the last rule in
   `site/public/_redirects` sends `/about/` there with a 301, and `Layout.astro` writes the

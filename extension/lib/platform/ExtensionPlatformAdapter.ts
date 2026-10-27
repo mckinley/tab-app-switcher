@@ -175,6 +175,12 @@ export class ExtensionPlatformAdapter extends BasePlatformAdapter<ExtensionSetti
   }
 
   openShortcutsPage(): void {
+    if (this.browserType === "firefox" || this.browserType === "safari") {
+      // Firefox 137+ can open its own shortcut settings; there's no extension API for it elsewhere
+      const commands = browser.commands as { openShortcutSettings?: () => Promise<void> }
+      commands.openShortcutSettings?.().catch(() => {})
+      return
+    }
     if (this.browserType === "edge") {
       browser.tabs.create({ url: "edge://extensions/shortcuts" })
     } else {

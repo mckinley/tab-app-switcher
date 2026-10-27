@@ -32,7 +32,7 @@ function getBrowserInstructions(browserType: BrowserType): {
       return {
         title: "Chrome Keyboard Shortcuts",
         description:
-          'For the best experience, configure your keyboard shortcut to use "Global" scope instead of "In Chrome". This fixes an issue where modifier key releases aren\'t always detected.',
+          'Keep the shortcut\'s scope set to "In Chrome" (the default) so every Chrome profile gets its own shortcut. "Global" only works in one profile and can clash with the native app.',
         buttonLabel: "Open Chrome Shortcuts",
         showButton: true,
       }
@@ -40,7 +40,7 @@ function getBrowserInstructions(browserType: BrowserType): {
       return {
         title: "Edge Keyboard Shortcuts",
         description:
-          'For the best experience, configure your keyboard shortcut to use "Global" scope instead of "In Edge". This fixes an issue where modifier key releases aren\'t always detected.',
+          'Keep the shortcut\'s scope set to "In Edge" (the default) so every Edge profile gets its own shortcut. "Global" only works in one profile and can clash with the native app.',
         buttonLabel: "Open Edge Shortcuts",
         showButton: true,
       }
@@ -48,7 +48,7 @@ function getBrowserInstructions(browserType: BrowserType): {
       return {
         title: "Firefox Keyboard Shortcuts",
         description:
-          "Firefox extension shortcuts work globally by default. You can customize the shortcut in the extension settings page.",
+          "Change the shortcut in Firefox's Add-ons Manager: open the gear menu and choose Manage Extension Shortcuts.",
         buttonLabel: "Manage Extension Shortcuts",
         showButton: true,
       }

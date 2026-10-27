@@ -19,6 +19,8 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
   return (
     <button
       onClick={onClick}
+      data-tab-id={tab.id}
+      data-selected={isSelected}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2 rounded-lg",
         "text-left group",
@@ -45,7 +47,9 @@ export const TabItem = ({ tab, isSelected, onClick, onClose, showBrowserIcon }: 
 
       {/* Title and URL */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground truncate">{tab.title || "Untitled"}</div>
+        <div className="text-sm font-medium text-foreground truncate" data-tab-title>
+          {tab.title || "Untitled"}
+        </div>
         <div className="text-xs text-muted-foreground truncate">{tab.url}</div>
       </div>
 

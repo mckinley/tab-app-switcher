@@ -138,8 +138,8 @@ export default function About() {
                 <div className="flex items-start gap-3">
                   <Keyboard className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
                   <div>
-                    <CardTitle>Recommended: Set Keyboard Shortcut to Global</CardTitle>
-                    <CardDescription>For the best extension-only experience</CardDescription>
+                    <CardTitle>Keep the Keyboard Shortcut Set to "In Chrome"</CardTitle>
+                    <CardDescription>Especially if you use more than one Chrome profile</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -149,25 +149,29 @@ export default function About() {
                     <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-                        Chrome has a keyboard shortcut limitation
+                        Avoid the "Global" scope
                       </p>
                       <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                        When using the default "In Chrome" scope, if you press Alt+Tab multiple times quickly, the
-                        modifier key release isn't always detected. Setting it to "Global" fixes this issue.
+                        Chrome gives a "Global" shortcut to only one profile. With it, Alt+Tab in any other profile
+                        opens the first profile's tabs and switches you there. It can also clash with the native app's
+                        Alt+Tab.
+                      </p>
+                      <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                        Older versions of the extension recommended "Global" because Chrome could miss the Alt release
+                        after you pressed Tab several times. The latest version handles that with "In Chrome".
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
-                  <p className="text-sm font-medium">Steps to configure:</p>
+                  <p className="text-sm font-medium">To check it:</p>
                   <ol className="text-sm text-muted-foreground space-y-2 ml-4 list-decimal">
                     <li>
                       Open <code className="px-2 py-1 bg-muted rounded text-xs">chrome://extensions/shortcuts</code> in
-                      Chrome
+                      Chrome (in each profile you use)
                     </li>
                     <li>Find "Tab Application Switcher" in the list</li>
-                    <li>Change the dropdown from "In Chrome" to "Global"</li>
-                    <li>Test by pressing Alt+Tab multiple times quickly</li>
+                    <li>Make sure the dropdown next to the shortcut says "In Chrome"</li>
                   </ol>
                 </div>
               </CardContent>
@@ -190,20 +194,30 @@ export default function About() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
+                  <p className="text-sm font-medium">Alt+Tab shows tabs from another Chrome profile</p>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                    <li>The shortcut is set to "Global" in one of your profiles</li>
+                    <li>Set it back to "In Chrome" on chrome://extensions/shortcuts in every profile</li>
+                    <li>The native app shows and switches between tabs from all your profiles at once</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
                   <p className="text-sm font-medium">Extension doesn't respond to Alt+Tab</p>
                   <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
                     <li>Make sure the extension is installed and enabled</li>
                     <li>Check that the keyboard shortcut is configured in chrome://extensions/shortcuts</li>
-                    <li>Try setting the shortcut scope to "Global" instead of "In Chrome"</li>
+                    <li>Make sure the shortcut scope is "In Chrome" in the profile you're using</li>
                     <li>Restart Chrome after making changes</li>
                   </ul>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Modifier key release not detected</p>
+                  <p className="text-sm font-medium">Releasing Alt doesn't switch tabs</p>
                   <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
-                    <li>This is a known Chrome limitation with "In Chrome" scope</li>
-                    <li>Change the keyboard shortcut scope to "Global" in chrome://extensions/shortcuts</li>
-                    <li>Alternatively, install the native app for OS-level keyboard handling</li>
+                    <li>Update the extension: older versions missed the release after several Tab presses</li>
+                    <li>
+                      If you let go of Alt before the switcher appears, it stays open; press Enter to switch, or Esc
+                    </li>
+                    <li>The native app handles keys at the OS level and doesn't have this limit</li>
                   </ul>
                 </div>
                 <div className="space-y-2">
