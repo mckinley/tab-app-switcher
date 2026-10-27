@@ -45,7 +45,9 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - `native/` (Electron, electron-vite): `src/main` (tray, global shortcuts, WebSocket server
   on port 48125, auth, auto-updater), `src/preload`, `src/renderer` (switcher overlay,
   settings, tab management). Auto-updates come from GitHub Releases on this repo. See
-  `native/CROSS_PLATFORM.md`.
+  `native/CROSS_PLATFORM.md`. The WebSocket server listens on 127.0.0.1 and ::1 only and
+  refuses any connection whose Origin isn't a `chrome-extension://`, `moz-extension://` or
+  `safari-web-extension://` URL, so web pages can't read tabs or send commands.
 - `site/` (Astro 5 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
   `site/src/pages/*.astro` mount `site/islands/*` with `client:only="react"`, which render
   `site/views/*`. The home-page demo (`site/views/Index.tsx`) runs the real `tas` switcher

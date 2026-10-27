@@ -8,6 +8,7 @@
  * - Clean session separation on browser restarts
  */
 
+import { createServer, type Server } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import type { BrowserType } from '@tas/types/tabs'
 import type { SortStrategy } from '@tas/sorting'
@@ -31,6 +32,17 @@ import {
 
 const PORT = 48125
 const SERVER_VERSION = '2.0.0'
+
+// Only this computer's browser extensions can connect: the server listens on the loopback
+// addresses (the extension connects to localhost, which can be either), and refuses a
+// connection unless its Origin is an extension. A web page's Origin is its site, so pages
+// can't read the tab list or send commands.
+const HOSTS = ['127.0.0.1', '::1']
+const EXTENSION_ORIGIN = /^(chrome-extension|moz-extension|safari-web-extension):\/\/[^/]+$/
+
+export function isAllowedOrigin(origin: string | undefined): boolean {
+  return !!origin && EXTENSION_ORIGIN.test(origin)
+}
 
 // Session key: instanceId:runtimeSessionId
 export type SessionKey = string
@@ -74,6 +86,7 @@ const sessions: Map<SessionKey, Session> = new Map()
 const wsToSession: Map<WebSocket, { sessionKey: SessionKey; connectionId: string }> = new Map()
 
 let wss: WebSocketServer | null = null
+let httpServers: Server[] = []
 let connectionChangeCallback: (() => void) | null = null
 let snapshotCallback: ((sessionKey: SessionKey, session: Session) => void) | null = null
 let eventCallback:
@@ -97,6 +110,8 @@ export function startWebSocketServer(options?: {
   onConnectionChange?: () => void
   onSnapshot?: (sessionKey: SessionKey, session: Session) => void
   onEvent?: (sessionKey: SessionKey, session: Session, event: EventPayload) => void
+  /** For tests; the extension always connects to 48125 */
+  port?: number
 }): void {
   if (wss) {
     console.log('[TAS Server] WebSocket server already running')
@@ -107,13 +122,42 @@ export function startWebSocketServer(options?: {
   snapshotCallback = options?.onSnapshot || null
   eventCallback = options?.onEvent || null
 
-  wss = new WebSocketServer({ port: PORT })
+  const port = options?.port ?? PORT
+  const server = new WebSocketServer({ noServer: true })
+  wss = server
 
-  wss.on('listening', () => {
-    console.log(`[TAS Server] WebSocket server listening on port ${PORT}`)
+  httpServers = HOSTS.map((host) => {
+    const http = createServer((_request, response) => {
+      response.writeHead(426, { Connection: 'close' }).end()
+    })
+
+    http.on('upgrade', (request, socket, head) => {
+      if (!isAllowedOrigin(request.headers.origin)) {
+        console.warn(
+          `[TAS Server] Refused a connection from origin ${request.headers.origin ?? '(none)'}`
+        )
+        socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+        return
+      }
+      server.handleUpgrade(request, socket, head, (ws) => server.emit('connection', ws, request))
+    })
+
+    http.on('listening', () => {
+      console.log(`[TAS Server] WebSocket server listening on ${host} port ${port}`)
+    })
+
+    http.on('error', (error: NodeJS.ErrnoException) => {
+      // Some computers have IPv6 turned off; 127.0.0.1 is enough there
+      if (host === '::1' && (error.code === 'EADDRNOTAVAIL' || error.code === 'EAFNOSUPPORT'))
+        return
+      console.error(`[TAS Server] Server error on ${host}:`, error)
+    })
+
+    http.listen(port, host)
+    return http
   })
 
-  wss.on('connection', (ws: WebSocket) => {
+  server.on('connection', (ws: WebSocket) => {
     ws.on('message', (data: Buffer) => {
       try {
         const msg = JSON.parse(data.toString())
@@ -143,7 +187,7 @@ export function startWebSocketServer(options?: {
     })
   })
 
-  wss.on('error', (error) => {
+  server.on('error', (error) => {
     console.error('[TAS Server] Server error:', error)
   })
 }
@@ -507,8 +551,11 @@ export function getConnectedBrowsers(): BrowserType[] {
  */
 export function stopWebSocketServer(): void {
   if (wss) {
+    wss.clients.forEach((ws) => ws.terminate())
     wss.close()
     wss = null
+    httpServers.forEach((http) => http.close())
+    httpServers = []
     sessions.clear()
     wsToSession.clear()
     console.log('[TAS Server] WebSocket server stopped')

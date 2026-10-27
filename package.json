@@ -28,7 +28,7 @@
     "test:tas": "npm run test:run --workspace=tas",
     "test:native": "npm run test:run --workspace=native",
     "test:all": "npm run test:run --workspace=site && npm run test:run --workspace=extension && npm run test:run --workspace=tas && npm run test:run --workspace=native",
-    "build:e2e": "npm run build --workspace=extension && npm run build --workspace=native",
+    "build:e2e": "npm run build --workspace=tas && npm run build --workspace=extension && npm run build --workspace=native",
     "test:e2e": "npm run build:e2e && npm run test --workspace=e2e",
     "tc": "npm run build --workspace=tas && tsc --noEmit && npm run tc --workspace=site && npm run tc --workspace=extension && npm run typecheck --workspace=native && npm run tc --workspace=e2e",
     "lint:eslint": "eslint .",
