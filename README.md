@@ -62,7 +62,7 @@ tests), bumps the version in every project, commits, tags `vX.Y.Z` and pushes. T
 `node scripts/check-release-credentials.mjs` runs the credential checks on their own.
 
 Safari is still published by hand: `npm run publish:safari` in `extension/` on a Mac, then submit
-the build for review in App Store Connect (see [extension/CROSS_BROWSER.md](extension/CROSS_BROWSER.md)).
+the build for review in App Store Connect, following [resources/app-store-connect.md](resources/app-store-connect.md).
 
 To try the pipeline without publishing anything, run the Release workflow by hand from the Actions
 tab: it builds everything unsigned and attaches the packages to the run.

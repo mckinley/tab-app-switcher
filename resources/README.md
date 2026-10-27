@@ -6,6 +6,7 @@ Assets and descriptions for app store listings.
 
 ```
 resources/
+├── app-store-connect.md  # Submitting each Safari version for review: every field, with text to paste
 ├── descriptions/       # Store listing text
 │   ├── extension.md    # Chrome/Firefox/Edge/Safari extension descriptions
 │   └── native-app.md   # macOS/Windows app store descriptions

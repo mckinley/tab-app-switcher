@@ -117,6 +117,7 @@ if [ "$SAFARI_STATUS" = "✅ Uploaded" ]; then
   echo ""
   echo "  https://appstoreconnect.apple.com/"
   echo "  → Tab Application Switcher → + Version → select build → Submit for Review"
+  echo "  Every field it asks for, with text to paste: resources/app-store-connect.md"
   echo ""
 fi
 

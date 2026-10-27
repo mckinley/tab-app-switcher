@@ -250,7 +250,8 @@ async function main() {
   console.log(`   Chrome Web Store: https://chrome.google.com/webstore/detail/mfcjanplaceclfoipcengelejgfngcan`)
   console.log(`   Firefox Add-ons: https://addons.mozilla.org/firefox/addon/tab-application-switcher/`)
   console.log(`   Edge Add-ons: https://microsoftedge.microsoft.com/addons/detail/epfinbjjhhlpbfcdmdhnddbjebmbkjck`)
-  console.log(`\n   Safari: run \`npm run publish:safari\` in extension/, then submit the build in App Store Connect.`)
+  console.log(`\n   Safari: run \`npm run publish:safari\` in extension/, then submit the build in App Store Connect`)
+  console.log(`   (every field it asks for: resources/app-store-connect.md).`)
 }
 
 main().catch((error) => {

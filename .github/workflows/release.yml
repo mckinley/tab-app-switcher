@@ -314,7 +314,7 @@ jobs:
             echo ""
             echo "- Mac app: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG (installed apps update from here)"
             echo "- Chrome, Firefox and Edge: see each extension job above; store review takes a day or two"
-            echo "- Safari: run \`npm run publish:safari\` in extension/ on a Mac, then submit the build in App Store Connect"
+            echo "- Safari: run \`npm run publish:safari\` in extension/ on a Mac, then submit the build in App Store Connect ([checklist](https://github.com/$GITHUB_REPOSITORY/blob/main/resources/app-store-connect.md))"
           } >> "$GITHUB_STEP_SUMMARY"
 
   site:
