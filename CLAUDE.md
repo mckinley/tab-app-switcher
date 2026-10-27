@@ -87,9 +87,11 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   project, commits, tags `vX.Y.Z` and pushes both. The tag runs `.github/workflows/release.yml`:
   CI, then the Mac app built, signed and notarized on macOS into a draft GitHub release, and
   Chrome, Firefox and Edge store submissions in parallel; then it publishes the release and
-  redeploys the site. Run that workflow by hand for a dry run that publishes nothing. Its
-  secrets are listed in README.md → Releasing. `npm run release -- patch --local` publishes from
-  a Mac with `extension/.env` and `native/.env` instead. Safari is separate
+  redeploys the site. Run that workflow by hand for a dry run that publishes nothing; its summary
+  lists any missing secrets, which `npm run release:secrets` (`scripts/release-secrets.sh`) copies
+  to GitHub from the Mac with the `.env` files and the Developer ID certificate.
+  `npm run release -- patch --local` publishes from a Mac with `extension/.env` and `native/.env`
+  instead, and its tag ("Published locally") makes the workflow only run CI. Safari is separate
   (`npm run publish:safari` in `extension/`).
 
 ## Rules and gotchas

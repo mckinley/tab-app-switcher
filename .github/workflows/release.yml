@@ -8,7 +8,10 @@ name: Release
 # (`npm run publish:safari` in extension/, on a Mac).
 #
 # Run it by hand (Actions → Release → Run workflow) for a dry run: everything is built, nothing
-# is signed or published, and the packages are attached to the run.
+# is signed or published, and the packages are attached to the run. Its summary says which
+# secrets a real release would still be missing (`npm run release:secrets` copies them from a Mac).
+#
+# A tag from `npm run release -- --local` was already published from a Mac, so it only runs CI.
 on:
   push:
     tags:
@@ -29,6 +32,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       publish: ${{ steps.version.outputs.publish }}
+      local: ${{ steps.version.outputs.local }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,20 +52,78 @@ jobs:
               echo "::error::Tag $GITHUB_REF_NAME doesn't match the version in the code ($version)"
               exit 1
             fi
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            # Checkout keeps only the commit, so fetch the annotated tag to read its message
+            git fetch --quiet --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+            if git tag --list --format='%(contents)' "$GITHUB_REF_NAME" | grep -q "Published locally"; then
+              echo "::notice::$GITHUB_REF_NAME was published from a Mac (npm run release -- --local), so this run only runs CI"
+              echo "local=true" >> "$GITHUB_OUTPUT"
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "::notice::Dry run of v$version: building everything, publishing nothing"
             echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      # Before anything is built, so a release never goes out half done for want of a secret
+      - name: Check the secrets
+        if: steps.version.outputs.local != 'true'
+        env:
+          PUBLISH: ${{ steps.version.outputs.publish }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
+          FIREFOX_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+        run: |
+          missing() {
+            for name in "$@"; do
+              [ -n "${!name}" ] || printf ' %s' "$name"
+            done
+          }
+          mac=$(missing CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID)
+          {
+            echo "### What a release publishes"
+            echo ""
+            echo "| | Status |"
+            echo "| --- | --- |"
+            for part in "Mac app:$mac" \
+              "Chrome:$(missing CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN)" \
+              "Firefox:$(missing FIREFOX_API_KEY FIREFOX_API_SECRET)" \
+              "Edge:$(missing EDGE_CLIENT_ID EDGE_API_KEY EDGE_PRODUCT_ID)"; do
+              names=${part#*:}
+              if [ -n "$names" ]; then status="❌ Missing secrets:$names"; else status="✅ Ready"; fi
+              echo "| ${part%%:*} | $status |"
+            done
+            echo "| Safari | By hand: \`npm run publish:safari\` in extension/ on a Mac |"
+            echo ""
+            echo "\`npm run release:secrets\` on the Mac with the certificate and the .env files adds missing secrets."
+          } >> "$GITHUB_STEP_SUMMARY"
+          # An unsigned app can't be opened or auto-updated, so never publish one
+          if [ "$PUBLISH" = "true" ] && [ -n "$mac" ]; then
+            echo "::error::Add these repository secrets to sign and notarize the Mac app:$mac (npm run release:secrets on the Mac, or README.md → Releasing). Nothing was published."
+            exit 1
+          fi
+
   checks:
     name: CI
+    needs: version
     uses: ./.github/workflows/ci.yml
 
   mac:
     name: Mac app
     needs: [version, checks]
+    if: needs.version.outputs.local != 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     env:
@@ -72,31 +134,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # The release notes list the commits since the last release
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".tool-versions"
           cache: "npm"
-
-      # An unsigned app can't be opened or auto-updated, so never publish one
-      - name: Check signing and notarization secrets
-        if: env.PUBLISH == 'true'
-        env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          missing=""
-          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Add these repository secrets to sign and notarize the Mac app:$missing (see README.md → Releasing)"
-            exit 1
-          fi
 
       # Native modules come prebuilt (npmRebuild is off), and electron-builder fetches Electron itself
       - name: Install dependencies
@@ -108,8 +154,9 @@ jobs:
       - name: Draft the GitHub release
         if: env.PUBLISH == 'true'
         run: |
+          ./scripts/release-notes.sh "$TAG" > "$RUNNER_TEMP/notes.md"
           gh release view "$TAG" > /dev/null 2>&1 ||
-            gh release create "$TAG" --draft --verify-tag --generate-notes --title "$TAG"
+            gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
 
       - name: Package, sign, notarize and upload to the draft release
         if: env.PUBLISH == 'true'
@@ -144,6 +191,7 @@ jobs:
   extension:
     name: ${{ matrix.store }} extension
     needs: [version, checks]
+    if: needs.version.outputs.local != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:

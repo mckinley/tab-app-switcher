@@ -52,6 +52,7 @@
     "ci": "npm run check && npm run test:all",
     "prep": "npm run format:all && npm run lint:fix",
     "release": "node scripts/release.mjs",
+    "release:secrets": "./scripts/release-secrets.sh",
     "preview": "npm run preview --workspace=site",
     "publish:native": "npm run publish --workspace=native",
     "publish:native:mac": "npm run publish:mac --workspace=native",

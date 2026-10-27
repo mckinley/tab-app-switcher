@@ -14,14 +14,18 @@
  * GitHub release and submits the extension to the Chrome, Firefox and Edge stores. Safari is
  * still separate: `npm run publish:safari` in extension/, on a Mac.
  *
+ * The workflow needs the signing and store credentials as repository secrets; `npm run
+ * release:secrets` copies them there from a Mac (scripts/release-secrets.sh).
+ *
  * Flags (after `--`, as in `npm run release -- patch --local`):
  *   --local            Publish from this computer instead, with native/.env and extension/.env
- *                      (--extension-only or --native-only to do half)
+ *                      (--extension-only or --native-only to do half). The tag says so, and the
+ *                      release workflow then only runs CI for it.
  *   --skip-checks      Don't run the checks first (the release workflow runs them anyway)
  */
 
 import { execSync } from "child_process"
-import { readFileSync, writeFileSync } from "fs"
+import { readFileSync, rmSync, writeFileSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
 import dotenv from "dotenv"
@@ -128,7 +132,7 @@ function repoSecretNames() {
   }
 }
 
-function publishLocally({ extensionOnly, nativeOnly }) {
+function publishLocally(version, { extensionOnly, nativeOnly }) {
   if (!extensionOnly) {
     console.log(`\n🖥️  Publishing native app to GitHub...`)
     const nativeEnv = dotenv.config({ path: join(rootDir, "native/.env") })
@@ -136,6 +140,14 @@ function publishLocally({ extensionOnly, nativeOnly }) {
       throw new Error(`Failed to load native/.env: ${nativeEnv.error.message}`)
     }
     run("npm run publish:mac", { cwd: join(rootDir, "native") })
+    try {
+      run(`./scripts/release-notes.sh v${version} > .release-notes.md`)
+      run(`gh release edit v${version} --repo ${REPO} --notes-file .release-notes.md`)
+    } catch {
+      console.log(`   Couldn't add the release notes: https://github.com/${REPO}/releases/tag/v${version}`)
+    } finally {
+      rmSync(join(rootDir, ".release-notes.md"), { force: true })
+    }
     // The site links to the latest published release, so deploy it again now there's a new one
     try {
       run(`gh workflow run deploy.yml --repo ${REPO} --ref main`)
@@ -182,7 +194,7 @@ async function main() {
     if (missing?.length) {
       fail(
         `The release workflow needs these repository secrets to sign the Mac app: ${missing.join(", ")}.\n` +
-          `   Add them (README.md → Releasing), or publish from this Mac with --local.`,
+          `   Copy them from this Mac with \`npm run release:secrets\`, or publish from it with --local.`,
       )
     }
   }
@@ -209,12 +221,13 @@ async function main() {
   console.log(`\n📤 Committing, tagging and pushing...`)
   run(`git add ${FILES_TO_UPDATE.map((file) => file.path).join(" ")}`)
   run(`git commit -m "Release v${newVersion}"`)
-  run(`git tag -a v${newVersion} -m "Release v${newVersion}"`)
+  // The release workflow reads "Published locally" to leave the release to this computer
+  run(`git tag -a v${newVersion} -m "Release v${newVersion}"${local ? ' -m "Published locally"' : ""}`)
   // Both or neither, so a tag never points at a commit main doesn't have
   run(`git push --atomic origin main v${newVersion}`)
 
   if (local) {
-    publishLocally({ extensionOnly, nativeOnly })
+    publishLocally(newVersion, { extensionOnly, nativeOnly })
     console.log(`\n✅ Release v${newVersion} published from this computer.`)
   } else {
     console.log(`\n✅ v${newVersion} is tagged. GitHub Actions is publishing it:`)

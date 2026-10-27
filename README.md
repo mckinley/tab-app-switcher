@@ -65,26 +65,29 @@ To try the pipeline without publishing anything, run the Release workflow by han
 tab: it builds everything unsigned and attaches the packages to the run.
 
 `npm run release -- patch --local` publishes from your Mac instead, with the credentials in
-`extension/.env` and `native/.env`, as before.
+`extension/.env` and `native/.env`, Safari included. Its tag says so, and the Release workflow
+then only runs CI for it.
 
 ### One-time setup: repository secrets
 
 The workflow reads the same credentials as the `.env` files, as
-[repository secrets](https://github.com/mckinley/tab-app-switcher/settings/secrets/actions). With
-the [GitHub CLI](https://cli.github.com):
+[repository secrets](https://github.com/mckinley/tab-app-switcher/settings/secrets/actions). On
+the Mac that has `extension/.env`, `native/.env` and the Developer ID Application certificate in
+its keychain, with the [GitHub CLI](https://cli.github.com) signed in:
 
 ```bash
-gh secret set -f extension/.env   # Chrome, Firefox and Edge store credentials
-gh secret set -f native/.env      # APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
-
-# The Developer ID Application certificate: in Keychain Access, export it with its private key as
-# a .p12 with a password, then
-base64 -i DeveloperID.p12 | gh secret set CSC_LINK
-gh secret set CSC_KEY_PASSWORD    # the .p12's password
+npm run release:secrets
 ```
 
-The Mac app isn't published without the signing and notarization secrets. A store whose secrets
-are missing is skipped with a warning, and the others still go out.
+It sets the Chrome, Firefox and Edge store credentials from `extension/.env`, `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` from `native/.env`, and `CSC_LINK` and
+`CSC_KEY_PASSWORD` from the certificate (macOS asks for the keychain password to export it). Run
+it again when any of them changes, such as a renewed certificate. A dry run of the Release
+workflow lists anything still missing in its summary.
+
+The Mac app isn't published without the signing and notarization secrets, and a release that's
+missing them stops before anything is built. A store whose secrets are missing is skipped with a
+warning, and the others still go out.
 
 The site deploys to Cloudflare Workers from `main` once lint, typechecks and unit tests pass
 (`.github/workflows/ci.yml` → `deploy.yml`).

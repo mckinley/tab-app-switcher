@@ -8,7 +8,9 @@
 #   APPLE_TEAM_ID               - Your Apple Developer Team ID
 #
 # Prerequisites:
-#   - Xcode installed
+#   - Xcode installed, signed in to the Apple Developer account (Xcode → Settings → Accounts).
+#     -allowProvisioningUpdates lets it create or download the distribution certificates and
+#     profiles it signs with, so they don't need to be in the keychain beforehand.
 #   - Apple Developer Program membership
 #   - Run 'npm run build:safari && npm run convert:safari' first
 
@@ -73,6 +75,7 @@ xcodebuild -project "$XCODE_PROJECT" \
   -configuration Release \
   -archivePath "$ARCHIVE_PATH" \
   archive \
+  -allowProvisioningUpdates \
   CODE_SIGN_STYLE=Automatic \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
   2>&1 | grep -E "error:|warning:|ARCHIVE SUCCEEDED|ARCHIVE FAILED" || true
@@ -108,6 +111,7 @@ xcodebuild -exportArchive \
   -archivePath "$ARCHIVE_PATH" \
   -exportPath "$EXPORT_PATH" \
   -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
+  -allowProvisioningUpdates \
   2>&1 | grep -E "error:|EXPORT SUCCEEDED|EXPORT FAILED" || true
 
 PKG_FILE="$EXPORT_PATH/$APP_NAME.pkg"
