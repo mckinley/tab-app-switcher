@@ -15,7 +15,7 @@ import {
 import './assets/tas.css'
 
 function TasContent(): JSX.Element {
-  const { tabs } = useTabs()
+  const { tabs, isLoading } = useTabs()
   const { activateTab, closeTab, refreshTabs } = useTabActions()
   const { openSettings, openTabManagement } = useWindowActions()
   // visibleTabs are the rows shown (after search); selectedIndex counts them
@@ -24,15 +24,17 @@ function TasContent(): JSX.Element {
   const { settings } = useSettings<NativeSettings>()
   const keyboard = settings?.keyboard ?? DEFAULT_KEYBOARD_SETTINGS
   const searchInputRef = useRef<HTMLInputElement>(null)
-  // Key to force TabSwitcher remount when window is shown
+  // Key to remount TabSwitcher (clearing its search and scrolling) each time it's hidden, so
+  // it's ready before it's shown again
   const [switcherKey, setSwitcherKey] = useState(0)
 
   // IPC handlers for global shortcuts from main process
   const ipcHandlers = useMemo(
     () => ({
-      onResetSelection: () => {
-        reset()
+      onResetSelection: reset,
+      onHidden: () => {
         setSwitcherKey((prev) => prev + 1)
+        reset()
       },
       onNavigate: navigate,
       onSelectCurrent: () => {
@@ -107,6 +109,7 @@ function TasContent(): JSX.Element {
           onOpenSettings={openSettings}
           onOpenTabManagement={openTabManagement}
           onRefresh={handleRefresh}
+          isLoading={isLoading}
           onVisibleTabsChange={onVisibleTabsChange}
           searchInputRef={searchInputRef}
         />

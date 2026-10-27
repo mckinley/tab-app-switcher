@@ -30,6 +30,8 @@ export interface Profile {
   switcherTitles(): Promise<string[]>
   /** Set the shortcut scope (what chrome://extensions/shortcuts sets). */
   setShortcutScope(scope: "CHROME" | "GLOBAL"): Promise<void>
+  /** Pin or unpin the extension's icon on the toolbar (what the Extensions menu's pin does). */
+  setPinned(pinned: boolean): Promise<void>
 }
 
 export interface TestBrowser {
@@ -222,31 +224,38 @@ function makeProfile(name: string, worker: Worker, context: BrowserContext, page
     },
 
     async setShortcutScope(scope) {
-      // chrome.developerPrivate is only available to chrome://extensions itself, and the page
-      // has to be opened from this profile, so open it through the extension.
-      const before = new Set(context.pages())
-      await worker.evaluate(() =>
-        chrome.tabs.create({ url: "chrome://extensions/shortcuts", active: false }).then(() => 1),
-      )
-      const page = await waitFor("chrome://extensions in " + name, async () =>
-        context.pages().find((p) => !before.has(p) && p.url().startsWith("chrome://extensions")),
-      )
-      try {
-        await page.waitForLoadState()
-        await page.evaluate(
-          ([id, s]) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (chrome as any).developerPrivate.updateExtensionCommand({
-              extensionId: id,
-              commandName: "tas_activate",
-              scope: s,
-            }),
-          [extensionId, scope] as const,
-        )
-      } finally {
-        await page.close()
-      }
+      await developerPrivate("updateExtensionCommand", { commandName: "tas_activate", scope })
+    },
+
+    async setPinned(pinned) {
+      await developerPrivate("updateExtensionConfiguration", { pinnedToToolbar: pinned })
     },
   }
+
+  /**
+   * Calls chrome.developerPrivate (what the browser's extension settings pages use) for this
+   * extension. It's only available to chrome://extensions itself, and the page has to be opened
+   * from this profile, so it's opened through the extension.
+   */
+  async function developerPrivate(method: string, params: Record<string, unknown>): Promise<void> {
+    const before = new Set(context.pages())
+    await worker.evaluate(() =>
+      chrome.tabs.create({ url: "chrome://extensions/shortcuts", active: false }).then(() => 1),
+    )
+    const page = await waitFor("chrome://extensions in " + name, async () =>
+      context.pages().find((p) => !before.has(p) && p.url().startsWith("chrome://extensions")),
+    )
+    try {
+      await page.waitForLoadState()
+      await page.evaluate(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ([m, args]) => (chrome as any).developerPrivate[m](args),
+        [method, { extensionId, ...params }] as const,
+      )
+    } finally {
+      await page.close()
+    }
+  }
+
   return profile
 }

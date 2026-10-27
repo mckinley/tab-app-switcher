@@ -32,6 +32,9 @@ const connectedPorts: Set<Port> = new Set()
 // Module state
 let tabTracker: TabTracker | null = null
 let transport: NativeAppTransport | null = null
+// Settles once the tracker has read the browser's tabs. The shortcut can wake this worker and
+// open the popup before then, and the popup should get the whole list, not an empty one.
+let tabTrackerReady: Promise<unknown> = Promise.resolve()
 
 // Where the popup's selection starts the next time it opens (set when the shortcut reopens it)
 let popupStartIndex: number | null = null
@@ -57,8 +60,9 @@ export default defineBackground(() => {
     // Create and initialize TabTracker. Keep going if reading the browser's state fails, so
     // the native app connection still starts and later tab events still arrive.
     tabTracker = createTabTracker()
+    tabTrackerReady = tabTracker.initialize()
     try {
-      await tabTracker.initialize()
+      await tabTrackerReady
     } catch (error) {
       console.error("[TAS] Failed to read tabs at startup:", error)
     }
@@ -434,6 +438,7 @@ async function getSortStrategy(): Promise<SortStrategy> {
  * Get tabs formatted for display (sorted, with favicons, with sections)
  */
 async function getTabsForDisplay(): Promise<Tab[]> {
+  await tabTrackerReady.catch(() => {})
   if (!tabTracker) return []
 
   const snapshot = tabTracker.getSnapshot()

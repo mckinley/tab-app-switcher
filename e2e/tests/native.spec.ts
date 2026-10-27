@@ -57,6 +57,34 @@ test("Alt+Tab opens the overlay with recent tabs first, and releasing Alt switch
   await expect.poll(() => profile.activeTitle()).toBe("Inbox")
 })
 
+test("the overlay is ready before the first Alt+Tab, and every Alt+Tab starts on the previous tab", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Calendar", "Docs"])
+  await profile.activate("Docs")
+
+  // Loaded at launch and kept up to date while hidden, so Alt+Tab only has to show it
+  await expect.poll(async () => (await native!.overlay()?.locator("[data-tab-id]").count()) ?? 0).toBeGreaterThan(2)
+  expect(await native.overlayVisible()).toBe(false)
+
+  for (const [from, to] of [
+    ["Docs", "Calendar"],
+    ["Calendar", "Docs"],
+    ["Docs", "Calendar"],
+  ]) {
+    expect(await profile.activeTitle()).toBe(from)
+    xdotool("keydown", "alt")
+    xdotool("key", "Tab")
+    await native.waitForOverlay()
+    expect(await native.overlaySelectedTitle()).toBe(to)
+    xdotool("keyup", "alt")
+    await expect.poll(() => profile.activeTitle()).toBe(to)
+    await expect.poll(() => native!.overlayVisible()).toBe(false)
+  }
+})
+
 test("lists every profile's tabs and switches to a tab in the other profile", async () => {
   native = await launchNative()
   browser = await launchBrowser(pages, ["P1", "P2"])
@@ -141,6 +169,16 @@ test("search: Alt+F, type, then Enter opens the highlighted match, not the row a
 
   await expect.poll(() => profile.activeTitle()).toBe("Team docs")
   await expect.poll(() => native!.overlayVisible()).toBe(false)
+
+  // The next Alt+Tab starts without the search
+  xdotool("keydown", "alt")
+  xdotool("key", "Tab")
+  const overlay = await native.waitForOverlay()
+  expect(await overlay.locator("input").inputValue()).toBe("")
+  expect(await native.overlayTitles()).toEqual(expect.arrayContaining(["Inbox", "Calendar", "Team docs"]))
+  expect(await native.overlaySelectedTitle()).toBe("Calendar")
+  xdotool("keyup", "alt")
+  await expect.poll(() => profile.activeTitle()).toBe("Calendar")
 })
 
 test("uses the modifier key from settings", async () => {

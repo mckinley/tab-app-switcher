@@ -4,6 +4,7 @@ import { SwitcherContainer } from "@tas/components/SwitcherContainer"
 import { DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 import { useTabNavigation } from "@tas/hooks/useTabNavigation"
 import { usePopupMessages } from "../../lib/hooks/usePopupMessages"
+import { pinInstructions, useToolbarPinned } from "../../lib/hooks/useToolbarPinned"
 import {
   ExtensionPlatformProvider,
   useTabs,
@@ -16,12 +17,12 @@ import type { ExtensionSettings } from "@tas/lib/settings"
 import "./globals.css"
 
 function PopupContent() {
-  const { tabs } = useTabs()
+  const { tabs, isLoading } = useTabs()
   const { activateTab, closeTab, refreshTabs } = useTabActions()
   const { settings } = useSettings<ExtensionSettings>()
   const { selectedIndex, setSelectedIndex, navigate, onVisibleTabsChange } = useTabNavigation(tabs)
   const { openSettings, openTabManagement } = useWindowActions()
-  const { openShortcutsPage } = useBrowser()
+  const { openShortcutsPage, browserType } = useBrowser()
 
   // Get keyboard config from settings, falling back to defaults
   const keyboard = settings?.keyboard ?? DEFAULT_KEYBOARD_SETTINGS
@@ -57,6 +58,18 @@ function PopupContent() {
       })
       .catch(() => {})
   }, [setSelectedIndex])
+
+  // Chrome opens an unpinned extension's popup only after animating its icon out of the
+  // Extensions menu, so suggest pinning it until it's pinned or the hint is dismissed
+  const pinned = useToolbarPinned()
+  const [pinHintDismissed, setPinHintDismissed] = useState(true)
+  useEffect(() => {
+    browser.storage.local
+      .get("hidePinHint")
+      .then(({ hidePinHint }) => setPinHintDismissed(Boolean(hidePinHint)))
+      .catch(() => {})
+  }, [])
+  const showPinHint = pinned === false && !pinHintDismissed && !showGlobalScopeHint
 
   // Focus management: ensure popup has focus. The toolbar popup closes by itself when it loses
   // focus; the fallback popup window (mode=window) has to close itself.
@@ -97,6 +110,15 @@ function PopupContent() {
             }}
           />
         )}
+        {showPinHint && (
+          <PinHint
+            browserType={browserType}
+            onDismiss={() => {
+              setPinHintDismissed(true)
+              browser.storage.local.set({ hidePinHint: true })
+            }}
+          />
+        )}
         <TabSwitcher
           tabs={tabs}
           selectedIndex={selectedIndex}
@@ -109,6 +131,7 @@ function PopupContent() {
           onOpenTabManagement={openTabManagement}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          isLoading={isLoading}
           onVisibleTabsChange={onVisibleTabsChange}
         />
       </SwitcherContainer>
@@ -136,6 +159,22 @@ function GlobalScopeHint({ onFix, onDismiss }: { onFix: () => void; onDismiss: (
           Don't show again
         </button>
       </div>
+    </div>
+  )
+}
+
+/** Shown while the extension's icon isn't pinned to the toolbar, which slows the popup down */
+function PinHint({ browserType, onDismiss }: { browserType: string; onDismiss: () => void }) {
+  const browserName = browserType === "edge" ? "Edge" : "Chrome"
+  return (
+    <div className="m-2 mb-0 p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-xs space-y-2">
+      <p className="text-foreground">
+        Pin this extension to make the switcher open instantly. While it's unpinned, {browserName} plays an animation
+        before it opens. {pinInstructions(browserType)}
+      </p>
+      <button onClick={onDismiss} className="px-2 py-1 rounded hover:bg-muted text-muted-foreground">
+        Don't show again
+      </button>
     </div>
   )
 }

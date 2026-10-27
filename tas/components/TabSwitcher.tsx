@@ -34,6 +34,8 @@ interface TabSwitcherProps {
   isEnabled?: boolean // Optional: Whether keyboard handling is enabled - defaults to true
   onRefresh?: () => void // Called when user clicks refresh button
   isRefreshing?: boolean // Whether a refresh is in progress
+  /** The tabs haven't arrived yet, so an empty list doesn't mean there are none */
+  isLoading?: boolean
   /**
    * Called with the rows shown, top to bottom, whenever they change (a search, or new tabs).
    * selectedIndex counts these rows; useTabNavigation's onVisibleTabsChange fits here.
@@ -56,6 +58,7 @@ export const TabSwitcher = ({
   isEnabled = true,
   onRefresh,
   isRefreshing = false,
+  isLoading = false,
   onVisibleTabsChange,
   searchInputRef: externalSearchInputRef,
 }: TabSwitcherProps) => {
@@ -218,7 +221,7 @@ export const TabSwitcher = ({
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="px-2 py-2">
           {visibleTabs.length === 0 ? (
-            searchQuery ? (
+            isLoading ? null : searchQuery ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No tabs match "{searchQuery}"</div>
             ) : (
               <div className="text-center py-12 space-y-4">

@@ -33,7 +33,8 @@ import { DEFAULT_KEYBOARD_SETTINGS, type KeyboardSettings } from '@tas/keyboard'
 // Import extracted modules
 import {
   initWindows,
-  createTasOverlay,
+  prepareTasOverlay,
+  showTasOverlay,
   createSettingsWindow,
   getTasWindow,
   getTabManagementWindow,
@@ -461,7 +462,6 @@ function startApp(): void {
 
   // Initialize windows module with dependencies
   initWindows({
-    getDisplayTabs,
     registerTasNavigationShortcuts,
     unregisterTasNavigationShortcuts,
     registerActivationShortcut,
@@ -514,6 +514,9 @@ function startApp(): void {
   // Create tray icon
   createTray()
 
+  // Load the switcher overlay now, hidden, so the first Alt+Tab shows it right away
+  prepareTasOverlay()
+
   // First-run experience: show Setup tab on first launch
   if (!appSettingsStore.get('hasCompletedFirstRun')) {
     appSettingsStore.set('hasCompletedFirstRun', true)
@@ -523,7 +526,7 @@ function startApp(): void {
   // Register the shortcut that opens the overlay (Alt+Tab unless changed in settings), and
   // say so if another app already has it, since the app does nothing without it
   initActivationShortcut({
-    onActivate: createTasOverlay,
+    onActivate: showTasOverlay,
     onUnavailable: (accelerator) => {
       if (!Notification.isSupported()) return
       new Notification({

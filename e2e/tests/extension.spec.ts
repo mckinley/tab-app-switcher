@@ -53,6 +53,20 @@ test("a recently closed tab reopens from the popup", async () => {
   await expect.poll(() => profile.activeTitle()).toBe("Old report")
 })
 
+test("the popup suggests pinning the extension until it's pinned", async () => {
+  // Chrome animates an unpinned extension's icon out of the Extensions menu before it opens
+  // the popup, which makes every Alt+Tab about 0.3 seconds slower
+  const [profile] = browser.profiles
+  const popup = await browser.context.newPage()
+  await popup.goto(`chrome-extension://${browser.extensionId}/popup.html`)
+  await expect(popup.getByText("Pin this extension")).toBeVisible()
+
+  await profile.setPinned(true)
+  await popup.reload()
+  await expect(popup.locator("[data-tab-id]").first()).toBeVisible()
+  await expect(popup.getByText("Pin this extension")).toHaveCount(0)
+})
+
 test.describe("real key presses", () => {
   test.skip(!hasXdotool(), "needs an X display and xdotool (run with e2e/run.sh)")
 

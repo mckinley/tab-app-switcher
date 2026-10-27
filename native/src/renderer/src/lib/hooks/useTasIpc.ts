@@ -3,6 +3,7 @@ import type { Tab } from '@tas/types/tabs'
 
 interface TasIpcHandlers {
   onResetSelection: () => void
+  onHidden: () => void
   onNavigate: (direction: 'next' | 'prev') => void
   onSelectCurrent: () => void
   onCloseSelected: () => void
@@ -15,6 +16,7 @@ interface TasIpcHandlers {
  *
  * Handles global keyboard shortcuts that arrive via IPC:
  * - reset-selection: Reset to second tab when overlay opens
+ * - overlay-hidden: The overlay was hidden (clear the search before it's shown again)
  * - navigate: Arrow key navigation from global shortcuts
  * - select-current: Enter key to activate selected tab
  * - close-selected-tab: Close the currently selected tab
@@ -24,7 +26,8 @@ interface TasIpcHandlers {
  *
  * @example
  * useTasIpc(tabs, selectedIndex, {
- *   onResetSelection: () => { reset(); setSwitcherKey(k => k + 1) },
+ *   onResetSelection: reset,
+ *   onHidden: () => setSwitcherKey(k => k + 1),
  *   onNavigate: navigate,
  *   onSelectCurrent: () => { activateTab(tabs[selectedIndex].id) },
  *   onCloseSelected: () => { closeTab(tabs[selectedIndex].id) }
@@ -79,6 +82,9 @@ export function useTasIpc(tabs: Tab[], selectedIndex: number, handlers: TasIpcHa
       'reset-selection',
       handleResetSelection
     )
+    const unsubscribeHidden = window.electron.ipcRenderer.on('overlay-hidden', () =>
+      handlersRef.current.onHidden()
+    )
     const unsubscribeNavigate = window.electron.ipcRenderer.on('navigate', handleNavigateFromMain)
     const unsubscribeSelectCurrent = window.electron.ipcRenderer.on(
       'select-current',
@@ -97,6 +103,7 @@ export function useTasIpc(tabs: Tab[], selectedIndex: number, handlers: TasIpcHa
 
     return () => {
       unsubscribeResetSelection()
+      unsubscribeHidden()
       unsubscribeNavigate()
       unsubscribeSelectCurrent()
       unsubscribeCloseSelectedTab()

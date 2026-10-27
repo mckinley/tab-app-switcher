@@ -11,13 +11,16 @@ import { BrowserWindow, screen, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import type { Tab } from '@tas/types/tabs'
 
 // Window references (singleton pattern)
 let tasWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let tabManagementWindow: BrowserWindow | null = null
 let aboutWindow: BrowserWindow | null = null
+
+// Whether the overlay's page has loaded, and whether to show it as soon as it has
+let tasReady = false
+let showWhenReady = false
 
 // Track if TAS overlay is actively shown (for Alt release detection)
 let tasOverlayActive = false
@@ -26,7 +29,6 @@ let tasSearchActive = false
 
 // Dependencies injected from main
 interface WindowDependencies {
-  getDisplayTabs: () => Tab[]
   registerTasNavigationShortcuts: () => void
   unregisterTasNavigationShortcuts: () => void
   registerActivationShortcut: () => void
@@ -94,8 +96,14 @@ function fitToCurrentDisplay(window: BrowserWindow): void {
 function enableOverlayShortcuts(): void {
   tasOverlayActive = true
   tasSearchActive = false
-  deps?.unregisterActivationShortcut()
-  deps?.registerTasNavigationShortcuts()
+  // Swap them once the key press that opened the overlay has been handled. Registering
+  // Alt+Tab for navigation from inside that Alt+Tab's handler made the same press move the
+  // selection too (seen on Linux), so the overlay opened on the third tab, not the second.
+  setImmediate(() => {
+    if (!tasOverlayActive) return
+    deps?.unregisterActivationShortcut()
+    deps?.registerTasNavigationShortcuts()
+  })
 }
 
 function enableActivationShortcut(): void {
@@ -134,36 +142,42 @@ export function hideTasOverlay(): void {
 }
 
 /**
- * Create or show the TAS overlay window
+ * Show the switcher overlay (the activation shortcut and the tray menu)
  */
-export function createTasOverlay(): void {
-  if (!deps) {
-    console.error('[Windows] Dependencies not initialized')
+export function showTasOverlay(): void {
+  if (!tasWindow) prepareTasOverlay()
+  if (!tasWindow) return
+
+  // Pressed in the moment after launch while the page is still loading: show it once loaded
+  if (!tasReady) {
+    showWhenReady = true
     return
   }
+  showWhenReady = false
 
-  const displayTabs = deps.getDisplayTabs()
+  // The hidden window already has the latest tabs (they're sent as they change), so showing
+  // it only needs the selection back on the second tab
+  tasWindow.webContents.send('reset-selection')
+  fitToCurrentDisplay(tasWindow)
 
-  if (tasWindow) {
-    // Send cached displayTabs immediately - should be fresh from event updates
-    if (displayTabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', displayTabs)
-    }
-    // Reset selection to second tab when reopening
-    tasWindow.webContents.send('reset-selection')
-    fitToCurrentDisplay(tasWindow)
-
-    // Show without stealing focus on macOS (like native app switcher)
-    if (process.platform === 'darwin') {
-      tasWindow.showInactive()
-    } else {
-      tasWindow.show()
-      tasWindow.focus()
-    }
-
-    enableOverlayShortcuts()
-    return
+  // Show without stealing focus on macOS (like native app switcher)
+  if (process.platform === 'darwin') {
+    tasWindow.showInactive()
+  } else {
+    tasWindow.show()
+    tasWindow.focus()
   }
+
+  enableOverlayShortcuts()
+}
+
+/**
+ * Build the overlay window, hidden, so the shortcut only has to show it. Building it on the
+ * first press meant starting a renderer and loading the page before anything appeared, which
+ * made the first Alt+Tab after launch slow.
+ */
+export function prepareTasOverlay(): void {
+  if (tasWindow || !deps) return
 
   // Full display size, not workArea, on the display the pointer is on
   const { x, y, width, height } = screen.getDisplayNearestPoint(
@@ -173,7 +187,7 @@ export function createTasOverlay(): void {
   // Create frameless, always-on-top, full-screen overlay window
   // Full-screen ensures we capture ALL clicks (like macOS app switcher)
   // The transparent background catches clicks and dismisses the overlay
-  tasWindow = new BrowserWindow({
+  const overlay = new BrowserWindow({
     width,
     height,
     x,
@@ -194,58 +208,61 @@ export function createTasOverlay(): void {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // Keep rendering while hidden, so tab changes are already drawn when it's shown
+      backgroundThrottling: false
     }
   })
+  tasWindow = overlay
+  tasReady = false
 
-  tasWindow.on('ready-to-show', () => {
-    enableOverlayShortcuts()
-
-    // Send cached displayTabs to the window
-    const tabs = deps?.getDisplayTabs() ?? []
-    if (tasWindow && tabs.length > 0) {
-      tasWindow.webContents.send('tabs-updated', tabs)
-    }
-
-    // Show without stealing focus on macOS (like native app switcher)
-    if (process.platform === 'darwin') {
-      tasWindow?.showInactive()
-    } else {
-      tasWindow?.show()
-      tasWindow?.focus()
-    }
+  overlay.once('ready-to-show', () => {
+    tasReady = true
+    if (showWhenReady) showTasOverlay()
   })
 
-  tasWindow.on('blur', () => {
+  overlay.on('blur', () => {
     // Only hide on blur if we're taking focus (non-macOS or if user clicks elsewhere)
     // On macOS with showInactive, blur may not fire, so we rely on Escape/Enter.
     // Ignore the blur that comes from hiding the overlay ourselves, and check again when the
     // timer fires: a quick second Alt+Tab may have shown the overlay again by then.
     if (process.platform !== 'darwin' && tasOverlayActive) {
       setTimeout(() => {
-        if (tasWindow && !tasWindow.isDestroyed() && !tasWindow.isFocused()) {
+        if (!overlay.isDestroyed() && !overlay.isFocused()) {
           hideTasOverlay()
         }
       }, 100)
     }
   })
 
-  tasWindow.on('hide', () => {
+  overlay.on('hide', () => {
     // Cleanup is handled by hideTasOverlay, but ensure shortcuts are correct
     enableActivationShortcut()
+    // Clear the search and scrolling now, while it's hidden, rather than when it's next shown
+    if (!overlay.webContents.isDestroyed()) overlay.webContents.send('overlay-hidden')
   })
 
-  tasWindow.on('closed', () => {
-    tasWindow = null
+  overlay.on('closed', () => {
+    if (tasWindow === overlay) {
+      tasWindow = null
+      tasReady = false
+    }
     tasOverlayActive = false
     enableActivationShortcut()
   })
 
+  // If the page's process dies, build a new window so the next Alt+Tab isn't a blank one
+  overlay.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit' || overlay.isDestroyed()) return
+    overlay.destroy()
+    prepareTasOverlay()
+  })
+
   // Load TAS UI
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    tasWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/tas.html`)
+    overlay.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/tas.html`)
   } else {
-    tasWindow.loadFile(join(__dirname, '../renderer/tas.html'))
+    overlay.loadFile(join(__dirname, '../renderer/tas.html'))
   }
 }
 

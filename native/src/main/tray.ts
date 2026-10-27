@@ -8,7 +8,7 @@ import icon from '../../resources/icon.png?asset'
 import trayIconPath from '../../resources/tas.png?asset'
 import { getActiveSessions, getConnectedBrowsers } from './websocketServer'
 import {
-  createTasOverlay,
+  showTasOverlay,
   createSettingsWindow,
   createTabManagementWindow,
   createAboutWindow
@@ -108,7 +108,7 @@ export function updateTrayMenu(): void {
       : []),
     {
       label: 'Tab Switcher',
-      click: () => createTasOverlay(),
+      click: () => showTasOverlay(),
       enabled: isConnected
     },
     {

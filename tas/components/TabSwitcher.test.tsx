@@ -91,6 +91,24 @@ describe("TabSwitcher with useTabNavigation", () => {
     expect(onSelect).toHaveBeenCalledWith("closed")
   })
 
+  it("says there are no tabs only once they've loaded", () => {
+    const props = {
+      tabs: [],
+      selectedIndex: 0,
+      onSelectTab: () => {},
+      onClose: () => {},
+      onNavigate: () => {},
+      onCloseTab: () => {},
+      keyboard: DEFAULT_KEYBOARD_SETTINGS,
+      onOpenSettings: () => {},
+      onOpenTabManagement: () => {},
+    }
+    const { rerender } = render(<TabSwitcher {...props} isLoading />)
+    expect(screen.queryByText("No tabs open")).toBeNull()
+    rerender(<TabSwitcher {...props} />)
+    expect(screen.getByText("No tabs open")).toBeTruthy()
+  })
+
   it("says when nothing matches", () => {
     render(<Switcher onSelect={() => {}} />)
     fireEvent.change(screen.getByPlaceholderText(/to search tabs/), { target: { value: "zzz" } })

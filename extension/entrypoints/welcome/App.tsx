@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tab-app-switcher/ui/components/card"
-import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe } from "lucide-react"
+import { CheckCircle2, Download, ExternalLink, Keyboard, Zap, Globe, Pin } from "lucide-react"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { ExtensionPlatformProvider, useBrowser } from "../../lib/platform"
+import { pinInstructions, useToolbarPinned } from "../../lib/hooks/useToolbarPinned"
 import "./globals.css"
 
 function WelcomeContent() {
@@ -12,6 +13,7 @@ function WelcomeContent() {
   const isChromium = browserType === "chrome" || browserType === "edge"
   const browserName = browserType === "edge" ? "Edge" : "Chrome"
   const shortcut = useActivateShortcut(isChromium ? "Alt+Tab" : "Alt+1")
+  const pinned = useToolbarPinned()
 
   useEffect(() => {
     // Check if native app is connected
@@ -60,6 +62,31 @@ function WelcomeContent() {
               </p>
             </CardContent>
           </Card>
+
+          {pinned !== undefined && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  {pinned ? (
+                    <CheckCircle2 className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+                  ) : (
+                    <Pin className="w-6 h-6 text-blue-500 mt-1 flex-shrink-0" />
+                  )}
+                  <div>
+                    <CardTitle>{pinned ? "Pinned to the Toolbar" : "Pin the Extension"}</CardTitle>
+                    <CardDescription>So the switcher opens the moment you press {shortcut}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {pinned
+                    ? "The switcher opens instantly."
+                    : `While the extension is hidden in the Extensions menu, ${browserName} plays a short animation before it opens the switcher. ${pinInstructions(browserType)}`}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {isChromium && (
             <Card>
