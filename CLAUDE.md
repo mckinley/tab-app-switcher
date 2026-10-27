@@ -74,8 +74,9 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - **Site:** pushing to `main` runs `.github/workflows/ci.yml`, whose `deploy-site` job (after
   lint, typechecks and unit tests pass) calls `deploy.yml`: it builds the site and runs
   `wrangler deploy` from `site/` to the `tab-app-switcher` Worker (custom domain
-  `tabappswitcher.com`). The Mac download link uses the latest published GitHub release
-  (`PUBLIC_MAC_APP_VERSION`, `site/lib/downloads.ts`). `site/wrangler.toml` pins `account_id`,
+  `tabappswitcher.com`). The Mac download link uses the latest published GitHub release and
+  its zip (`PUBLIC_MAC_APP_VERSION`, `PUBLIC_MAC_APP_ZIP`, `site/lib/downloads.ts`); from 1.2.5
+  the Mac app is one universal build for Apple Silicon and Intel. `site/wrangler.toml` pins `account_id`,
   so the deploy's only secret is `CLOUDFLARE_API_TOKEN`. Worker secrets: `BETTER_AUTH_SECRET`,
   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. For local dev, copy `site/.dev.vars.example` to
   `site/.dev.vars` (gitignored).
