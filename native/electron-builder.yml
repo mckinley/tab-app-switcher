@@ -23,18 +23,12 @@ mac:
     - dmg
     - zip
   entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: true
 linux:
   target:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
@@ -44,5 +38,3 @@ publish:
   owner: mckinley
   repo: tab-app-switcher
   releaseType: release
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/

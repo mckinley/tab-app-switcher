@@ -67,7 +67,7 @@ const Downloads = () => {
         "Download and extract the ZIP file",
         "Move the app to your Applications folder",
         "Double-click to open the app",
-        "Install the Chrome extension to connect",
+        "Install the extension for your browser to connect",
       ],
     },
     {
@@ -102,14 +102,7 @@ const Downloads = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             {(() => {
-              const storeUrl =
-                platform.browser === "chrome"
-                  ? CHROME_STORE_URL
-                  : platform.browser === "firefox"
-                    ? FIREFOX_STORE_URL
-                    : platform.browser === "edge"
-                      ? EDGE_STORE_URL
-                      : null
+              const storeUrl = browserExtensions.find((ext) => ext.browser === platform.browser)?.url ?? null
               const isAvailable = storeUrl !== null
 
               return (

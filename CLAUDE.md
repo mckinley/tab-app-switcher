@@ -51,8 +51,7 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - `site/` (Astro 5 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
   `site/src/pages/*.astro` mount `site/islands/*` with `client:only="react"`, which render
   `site/views/*`. The home-page demo (`site/views/Index.tsx`) runs the real `tas` switcher
-  on in-memory demo tabs. The demo adapters in `site/providers/` and
-  `site/lib/{platform,settings}` aren't imported anywhere right now. Server routes: `src/pages/api/auth/[...all].ts`
+  on in-memory demo tabs. Server routes: `src/pages/api/auth/[...all].ts`
   (Better Auth with the bearer plugin, Google sign-in) and `src/pages/api/collections`
   (CRUD on the `collection` table in D1, binding `DB`).
 - `e2e/` (`@tab-app-switcher/e2e`): Playwright end-to-end tests. They run the built extension

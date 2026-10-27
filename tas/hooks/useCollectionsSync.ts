@@ -1,12 +1,7 @@
 import { useEffect, useCallback, useRef } from "react"
 import type { AuthUser } from "./useAuth"
 import type { Collection } from "../types/collections"
-import {
-  syncCollections,
-  pushCollectionsToCloud,
-  deleteCloudCollection,
-  fetchCloudCollections,
-} from "../utils/collectionsSync"
+import { syncCollections, pushCollectionsToCloud, deleteCloudCollection } from "../utils/collectionsSync"
 import {
   saveCollections as saveToLocalStorage,
   trackDeletedCollection,
@@ -25,55 +20,60 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
   const previousCollectionsRef = useRef<Collection[]>(collections)
   const isSyncingRef = useRef(false)
 
-  // Sync on login - merge local and cloud collections
+  // The latest collections, for syncs started from callbacks
+  const collectionsRef = useRef(collections)
   useEffect(() => {
-    if (!user) return
+    collectionsRef.current = collections
+  }, [collections])
 
-    const performInitialSync = async () => {
-      if (isSyncingRef.current) return
-      isSyncingRef.current = true
+  // Merge local and cloud collections, then push and delete whatever the cloud is missing
+  const fullSync = useCallback(async () => {
+    if (isSyncingRef.current) return
+    isSyncingRef.current = true
 
-      try {
-        // Get locally tracked deleted collection IDs
-        const deletedIds = getDeletedCollectionIds()
+    try {
+      // Get locally tracked deleted collection IDs
+      const deletedIds = getDeletedCollectionIds()
 
-        const { merged, needsPush, needsCloudDelete } = await syncCollections(collections, deletedIds)
+      const { merged, needsPush, needsCloudDelete } = await syncCollections(collectionsRef.current, deletedIds)
 
-        // Update local state with merged collections
-        setCollections(merged)
-        saveToLocalStorage(merged)
+      // Update local state with merged collections
+      setCollections(merged)
+      saveToLocalStorage(merged)
 
-        // IMPORTANT: Update previousCollectionsRef so future deletions are detected correctly
-        // Without this, collections added from cloud during merge won't be tracked
-        // when the user deletes them later
-        previousCollectionsRef.current = merged
+      // IMPORTANT: Update previousCollectionsRef so future deletions are detected correctly
+      // Without this, collections added from cloud during merge won't be tracked
+      // when the user deletes them later
+      previousCollectionsRef.current = merged
 
-        // Push any local-only or newer collections to cloud
-        if (needsPush.length > 0) {
-          await pushCollectionsToCloud(needsPush)
-        }
-
-        // Delete any collections from cloud that were deleted locally
-        if (needsCloudDelete.length > 0) {
-          await Promise.all(
-            needsCloudDelete.map(async (id) => {
-              await deleteCloudCollection(id)
-              clearDeletedCollectionId(id)
-            }),
-          )
-        }
-
-        // Clear any remaining deleted IDs that weren't in cloud
-        // (they were already deleted or never synced)
-        clearAllDeletedCollectionIds()
-      } catch (error) {
-        console.error("Failed to sync collections:", error)
-      } finally {
-        isSyncingRef.current = false
+      // Push any local-only or newer collections to cloud
+      if (needsPush.length > 0) {
+        await pushCollectionsToCloud(needsPush)
       }
-    }
 
-    performInitialSync()
+      // Delete any collections from cloud that were deleted locally
+      if (needsCloudDelete.length > 0) {
+        await Promise.all(
+          needsCloudDelete.map(async (id) => {
+            await deleteCloudCollection(id)
+            clearDeletedCollectionId(id)
+          }),
+        )
+      }
+
+      // Clear any remaining deleted IDs that weren't in cloud
+      // (they were already deleted or never synced)
+      clearAllDeletedCollectionIds()
+    } catch (error) {
+      console.error("Failed to sync collections:", error)
+    } finally {
+      isSyncingRef.current = false
+    }
+  }, [setCollections])
+
+  // Sync on login
+  useEffect(() => {
+    if (user) fullSync()
   }, [user]) // Only run when user changes (login/logout)
 
   // Sync changes to cloud when collections change
@@ -119,21 +119,11 @@ export function useCollectionsSync({ user, collections, setCollections }: UseCol
     [user],
   )
 
-  // Refresh from cloud (manual sync)
+  // Sync Now: the same merge as on sign-in, so local changes that never reached the cloud
+  // are pushed instead of being replaced by the cloud copy
   const refreshFromCloud = useCallback(async () => {
-    if (!user) return
-
-    try {
-      const cloudCollections = await fetchCloudCollections()
-      // Filter out any collections that are marked as deleted locally
-      const deletedIds = new Set(getDeletedCollectionIds())
-      const filteredCollections = cloudCollections.filter((c) => !deletedIds.has(c.id))
-      setCollections(filteredCollections)
-      saveToLocalStorage(filteredCollections)
-    } catch (error) {
-      console.error("Failed to refresh from cloud:", error)
-    }
-  }, [user, setCollections])
+    if (user) await fullSync()
+  }, [user, fullSync])
 
   return { syncToCloud, refreshFromCloud }
 }

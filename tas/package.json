@@ -19,7 +19,7 @@
     ".": "./components/TabSwitcher.tsx",
     "./TabSwitcher": "./components/TabSwitcher.tsx",
     "./TabManagement": "./components/TabManagement.tsx",
-    "./TasSettings": "./components/TasSettings.tsx",
+    "./settings": "./components/settings/index.ts",
     "./TabItem": "./components/TabItem.tsx",
     "./types": "./types/tabs.ts",
     "./types/collections": "./types/collections.ts",
