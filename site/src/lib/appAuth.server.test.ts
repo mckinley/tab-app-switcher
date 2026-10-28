@@ -12,6 +12,7 @@ import {
   redeemAppCode,
   startAppSignIn,
   withAppCors,
+  withSignOutBody,
 } from "./appAuth.server"
 import { NATIVE_SIGN_IN_REDIRECT as NATIVE_REDIRECT } from "@tas/utils/appAuth"
 
@@ -158,6 +159,24 @@ describe("app sign-in", () => {
     await auth.handler(
       new Request(`${SITE}/api/auth/sign-out`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
     )
+    expect(await sessionUser(token)).toBeNull()
+    expect((await sessionUser(siteToken))?.id).toBe(userId)
+  })
+
+  it("ends the session when an older app signs out without a content type", async () => {
+    const { verifier, challenge } = pkce()
+    const { token } = (await (await redeem({ code: await getCode(CHROME_REDIRECT, challenge), verifier })).json()) as {
+      token: string
+    }
+    // Apps up to 1.2.5 send a bare POST, which reaches the Worker with an empty body
+    const bare = () =>
+      new Request(`${SITE}/api/auth/sign-out`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, Origin: "chrome-extension://abc" },
+        body: new Uint8Array(0),
+      })
+    expect((await auth.handler(bare())).status).toBe(415)
+    expect((await auth.handler(withSignOutBody(bare()))).status).toBe(200)
     expect(await sessionUser(token)).toBeNull()
     expect((await sessionUser(siteToken))?.id).toBe(userId)
   })

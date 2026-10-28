@@ -226,6 +226,20 @@ export function appSignInDonePage(request: Request): Response {
   return htmlPage(`<p>${message}</p>`)
 }
 
+/**
+ * Apps up to 1.2.5 sign out with a POST that has no content type. Workers give it an empty body,
+ * which Better Auth refuses (415), so the session outlived signing out. Give it the JSON it wants.
+ */
+export function withSignOutBody(request: Request): Request {
+  const { pathname } = new URL(request.url)
+  if (request.method !== "POST" || pathname !== "/api/auth/sign-out" || request.headers.has("content-type")) {
+    return request
+  }
+  const headers = new Headers(request.headers)
+  headers.set("Content-Type", "application/json")
+  return new Request(request.url, { method: "POST", headers, body: "{}" })
+}
+
 /** Let the apps call the bearer endpoints of /api/auth from other origins */
 export function withAppCors(request: Request, response: Response): Response {
   if (!BEARER_PATHS.has(new URL(request.url).pathname)) return response
