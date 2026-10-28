@@ -120,6 +120,10 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
 - Better Auth's `trustedOrigins` in `site/src/lib/auth.server.ts` lists the local dev
   origin (`http://localhost:4409`, from `site/.env.development`). If the dev port changes,
   update it there too.
+- Astro's `security.checkOrigin` is off: `site/src/middleware.ts` makes the same cross-site form
+  check, except for Sign in with Apple's callback (Apple posts it from appleid.apple.com) and
+  bearer-token requests from the apps. Apps up to 1.2.5 sign out with a bare POST, which the auth
+  route fills in (`withSignOutBody`); keep that while those versions are around.
 - Chrome shortcut scope: keep "In Chrome". Chrome gives a "Global" shortcut to one profile
   only, so Alt+Tab in every other profile opens the first profile's tabs. In "In Chrome" scope
   Chrome drops the popup's key-up events after a second shortcut press, so the background
