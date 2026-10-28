@@ -25,6 +25,9 @@ export default defineConfig({
   // and public/_redirects sends /about/ there with a 301.
   trailingSlash: "never",
   build: { format: "file" },
+  // src/middleware.ts makes the same check, except for Sign in with Apple's callback, which
+  // appleid.apple.com posts to
+  security: { checkOrigin: false },
   integrations: [
     react(),
     // Signed-in pages are left out (they are noindex)
