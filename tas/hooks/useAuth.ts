@@ -116,9 +116,11 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     setUser(null)
     if (token) {
       // End the session on the server too; it doesn't matter if this fails
+      // (Better Auth refuses a POST without a content type)
       await fetch(`${getApiBase()}/api/auth/sign-out`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: "{}",
         credentials: "omit",
       }).catch(() => {})
     }

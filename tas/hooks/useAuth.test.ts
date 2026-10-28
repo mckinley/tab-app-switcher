@@ -43,6 +43,8 @@ describe("useAuth in the extension and the Mac app", () => {
         if (url === `${API}/api/auth/get-session`)
           return new Response(JSON.stringify(sessions[bearer] ? { user: sessions[bearer] } : null))
         if (url === `${API}/api/auth/sign-out`) {
+          // Better Auth refuses a POST without a content type
+          if (!new Headers(init.headers).has("Content-Type")) return new Response("", { status: 415 })
           delete sessions[bearer]
           return new Response("{}")
         }
