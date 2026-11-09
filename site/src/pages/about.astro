@@ -1,8 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import AboutIsland from "../../islands/AboutIsland";
+// Rendered at build time and hydrated (client:load), so the HTML has the page's text for search engines
 ---
 
-<Layout title="About - Tab Application Switcher">
-  <AboutIsland client:only="react" />
+<Layout
+  title="About - Tab Application Switcher"
+  description="Getting started with Tab Application Switcher, the free, open source Alt+Tab for browser tabs: setup, troubleshooting, how it compares with Chrome's tab search and other tab extensions, privacy policy, terms and support."
+>
+  <AboutIsland client:load />
 </Layout>

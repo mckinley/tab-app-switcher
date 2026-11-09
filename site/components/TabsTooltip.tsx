@@ -11,11 +11,12 @@ interface TabsTooltipProps {
 export const TabsTooltip = ({ hideTooltip = false }: TabsTooltipProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
   const [fadingOut, setFadingOut] = useState(false)
-  const [isTooltipActive, setIsTooltipActive] = useState(() => {
-    // Check localStorage on mount - default to true (active) for first-time visitors
-    const saved = localStorage.getItem(TOOLTIP_ACTIVE_KEY)
-    return saved === null ? true : saved === "true"
-  })
+  const [isTooltipActive, setIsTooltipActive] = useState(false)
+
+  // Check localStorage on mount (the page is built without it) - active for first-time visitors
+  useEffect(() => {
+    setIsTooltipActive(localStorage.getItem(TOOLTIP_ACTIVE_KEY) !== "false")
+  }, [])
 
   // Show tooltip after 2 seconds if active
   useEffect(() => {

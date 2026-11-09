@@ -53,8 +53,12 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   `http://127.0.0.1:48125/auth/callback` on that server, and keeps the bearer token encrypted
   with `safeStorage`.
 - `site/` (Astro 5 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
-  `site/src/pages/*.astro` mount `site/islands/*` with `client:only="react"`, which render
-  `site/views/*`. The home-page demo (`site/views/Index.tsx`) runs the real `tas` switcher
+  `site/src/pages/*.astro` mount `site/islands/*`, which render `site/views/*`. The public pages
+  (home, About, Downloads) use `client:load`, so they're rendered to HTML at build time and search
+  engines get their text: their first render can't touch the browser and must match that HTML, so
+  the platform, address and localStorage wait for hydration (`site/lib/hydration.ts`,
+  `site/islands/serverRender.test.tsx`). The signed-in pages, login and 404 use
+  `client:only="react"`. The home-page demo (`site/views/Index.tsx`) runs the real `tas` switcher
   on in-memory demo tabs. Server routes: `src/pages/api/auth/[...all].ts`
   (Better Auth with the bearer plugin, Google sign-in), `src/pages/api/app-auth/[action].ts`
   (sign-in for the extension and native app: a one-time code with PKCE, traded for a bearer

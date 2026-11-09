@@ -1,5 +1,6 @@
 import { forwardRef, type AnchorHTMLAttributes } from "react"
 import { cn } from "@tab-app-switcher/ui/lib/utils"
+import { usePathname } from "@/lib/hydration"
 
 interface NavLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string
@@ -11,7 +12,7 @@ interface NavLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
   ({ className, activeClassName, end, href, ...props }, ref) => {
-    const pathname = typeof window !== "undefined" ? window.location.pathname : ""
+    const pathname = usePathname()
     const isActive = end ? pathname === href : pathname.startsWith(href)
 
     return <a ref={ref} href={href} className={cn(className, isActive && activeClassName)} {...props} />

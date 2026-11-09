@@ -3,6 +3,7 @@ import "../styles/global.css";
 
 interface Props {
   title: string;
+  /** A page's own summary for search results; the home page's when left out */
   description?: string;
   /** Signed-in pages: kept out of search results and the sitemap */
   noindex?: boolean;
@@ -16,6 +17,7 @@ const {
 // With build.format "file" the pathname is /about.html; the page's address is /about
 const path = Astro.url.pathname.replace(/(\/index)?\.html$/, "").replace(/\/$/, "") || "/";
 const canonical = new URL(path, Astro.site).href;
+const image = new URL("/icon-512x512.png", Astro.site).href;
 ---
 
 <!doctype html>
@@ -36,10 +38,10 @@ const canonical = new URL(path, Astro.site).href;
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content="/icon-512x512.png" />
+    <meta property="og:image" content={image} />
 
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:image" content="/icon-512x512.png" />
+    <meta name="twitter:image" content={image} />
   </head>
 
   <body>

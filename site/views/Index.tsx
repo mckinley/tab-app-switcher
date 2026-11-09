@@ -6,6 +6,7 @@ import { TabManagement } from "@tas/components/TabManagement"
 import { type Tab, type KeyboardSettings as KeyboardSettingsType, DEFAULT_KEYBOARD_SETTINGS } from "@tas/types/tabs"
 import type { Collection } from "@tas/types/collections"
 import { DEMO_TAB_POOL, getShuffledDemoTabs } from "@tas/utils/demoTabs"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
 import { ChromeTabsPreview } from "@/components/ChromeTabsPreview"
 import { TabsTooltip } from "@/components/TabsTooltip"
 import { useTheme } from "next-themes"
@@ -15,7 +16,8 @@ import { Button } from "@tab-app-switcher/ui/components/button"
 import { Container } from "@/components/Container"
 
 import { Download, Zap, Search, Keyboard, Clock, ArrowUpDown, X } from "lucide-react"
-import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import { getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import { useHydrated, usePlatform } from "@/lib/hydration"
 import {
   CHROME_STORE_URL,
   EDGE_STORE_URL,
@@ -30,14 +32,24 @@ import logo from "@/assets/logo.jpg"
  * This simulates the extension's tab management API for the demo site
  */
 const useDemoTabs = () => {
-  // Start with the demo tabs in a random order, most recently used first
-  const [tabs, setTabs] = useState<Tab[]>(getShuffledDemoTabs)
+  // The page is built with the demo tabs in a fixed order, so it hydrates with them in that order
+  const [tabs, setTabs] = useState<Tab[]>(DEMO_TAB_POOL)
 
   // Track the active tab (simulates browser's active tab)
-  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id || "")
+  const [activeTabId, setActiveTabId] = useState(DEMO_TAB_POOL[0]?.id || "")
 
   // MRU order - tracks tab IDs in most-recently-used order
-  const [mruOrder, setMruOrder] = useState<string[]>(tabs.map((t) => t.id))
+  const [mruOrder, setMruOrder] = useState<string[]>(() => DEMO_TAB_POOL.map((t) => t.id))
+
+  // Then they start out in a random order, most recently used first (the tab strip is hidden until then)
+  const [isShuffled, setIsShuffled] = useState(false)
+  useEffect(() => {
+    const shuffled = getShuffledDemoTabs()
+    setTabs(shuffled)
+    setActiveTabId(shuffled[0]?.id || "")
+    setMruOrder(shuffled.map((t) => t.id))
+    setIsShuffled(true)
+  }, [])
 
   // Get tabs in MRU order (similar to GET_TABS message in extension)
   const getTabsInMruOrder = (): Tab[] => {
@@ -96,6 +108,7 @@ const useDemoTabs = () => {
 
   return {
     tabs,
+    isShuffled,
     activeTabId,
     mruOrder,
     getTabsInMruOrder,
@@ -106,29 +119,30 @@ const useDemoTabs = () => {
 }
 
 const Index = () => {
-  const [platform] = useState(() => detectPlatform())
+  const platform = usePlatform()
+  // The page is built without knowing the visitor's platform: the download buttons show once it's known
+  const hydrated = useHydrated()
   const { theme, setTheme } = useTheme()
 
   // Use the demo tab management hook
-  const { tabs, activeTabId, getTabsInMruOrder, activateTab, closeTab, addTab } = useDemoTabs()
+  const { tabs, isShuffled, activeTabId, getTabsInMruOrder, activateTab, closeTab, addTab } = useDemoTabs()
 
-  // Load keyboard settings from localStorage or use defaults
-  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(() => {
-    const saved = localStorage.getItem("tas-keyboard")
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error("Failed to parse keyboard settings from localStorage", e)
-      }
-    }
-    return DEFAULT_KEYBOARD_SETTINGS
-  })
-
-  // Save keyboard settings to localStorage when they change
+  // Keyboard settings: the defaults, then the ones saved in localStorage once the page is running
+  const [keyboard, setKeyboard] = useState<KeyboardSettingsType>(DEFAULT_KEYBOARD_SETTINGS)
   useEffect(() => {
-    localStorage.setItem("tas-keyboard", JSON.stringify(keyboard))
-  }, [keyboard])
+    const saved = localStorage.getItem("tas-keyboard")
+    if (!saved) return
+    try {
+      setKeyboard(JSON.parse(saved))
+    } catch (e) {
+      console.error("Failed to parse keyboard settings from localStorage", e)
+    }
+  }, [])
+
+  const changeKeyboard = (settings: KeyboardSettingsType) => {
+    setKeyboard(settings)
+    localStorage.setItem("tas-keyboard", JSON.stringify(settings))
+  }
 
   const [isSwitcherActive, setIsSwitcherActive] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -194,14 +208,16 @@ const Index = () => {
   }, [isSwitcherActive, isPanelOpen, keyboard, handleNavigate, reset])
 
   const demoTabsSlot = (
-    <ChromeTabsPreview
-      tabs={tabs}
-      activeTabId={activeTabId}
-      onTabClick={handleTabClick}
-      onCloseTab={handleCloseTab}
-      onAddTab={handleAddTab}
-      canAddTab={tabs.length < 8}
-    />
+    <div className={cn(!isShuffled && "invisible")}>
+      <ChromeTabsPreview
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onTabClick={handleTabClick}
+        onCloseTab={handleCloseTab}
+        onAddTab={handleAddTab}
+        canAddTab={tabs.length < 8}
+      />
+    </div>
   )
 
   const helpButtonSlot = <TabsTooltip hideTooltip={isSwitcherActive} />
@@ -226,7 +242,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className={cn("flex flex-col sm:flex-row gap-4 justify-center items-center", !hydrated && "invisible")}>
             {(() => {
               const storeUrl =
                 platform.browser === "chrome"
@@ -420,7 +436,7 @@ const Index = () => {
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Install the browser extension and native UI to get started
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className={cn("flex flex-col sm:flex-row gap-4 justify-center items-center", !hydrated && "invisible")}>
             {(() => {
               const storeUrl =
                 platform.browser === "chrome"
@@ -526,7 +542,7 @@ const Index = () => {
             <h3 className="text-sm font-medium mb-3">Theme</h3>
             <ThemeSettings value={(theme as "light" | "dark" | "system") ?? "system"} onChange={setTheme} />
           </div>
-          <KeyboardSettings keyboard={keyboard} onKeyboardChange={setKeyboard} />
+          <KeyboardSettings keyboard={keyboard} onKeyboardChange={changeKeyboard} />
         </div>
       </Container>
 

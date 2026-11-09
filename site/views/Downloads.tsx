@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react"
 import { Button } from "@tab-app-switcher/ui/components/button"
 import { Download, Monitor, Info } from "lucide-react"
 import { SiApple } from "@icons-pack/react-simple-icons"
 import { BrowserIcon } from "@tas/components/BrowserIcon"
 import { type BrowserType } from "@tas/types/tabs"
-import { detectPlatform, getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import { cn } from "@tab-app-switcher/ui/lib/utils"
+import { getBrowserDisplayName, getOSDisplayName } from "@/lib/detectPlatform"
+import { useHydrated, usePlatform } from "@/lib/hydration"
 import {
   CHROME_STORE_URL,
   EDGE_STORE_URL,
@@ -17,11 +18,9 @@ import { Navigation } from "@/components/Navigation"
 import { Footer } from "@/components/Footer"
 
 const Downloads = () => {
-  const [platform, setPlatform] = useState(() => detectPlatform())
-
-  useEffect(() => {
-    setPlatform(detectPlatform())
-  }, [])
+  const platform = usePlatform()
+  // The page is built without knowing the visitor's platform: its buttons show once it's known
+  const hydrated = useHydrated()
 
   const browserExtensions: { name: string; browser: BrowserType; url: string; available: boolean }[] = [
     {
@@ -90,11 +89,11 @@ const Downloads = () => {
         {/* Detected Platform Section */}
         <div className="text-center mb-12 sm:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">Download TAS</h1>
-          <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8">
+          <p className={cn("text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8", !hydrated && "invisible")}>
             Detected: {getBrowserDisplayName(platform.browser)} on {getOSDisplayName(platform.os)}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className={cn("flex flex-col sm:flex-row gap-4 justify-center items-center", !hydrated && "invisible")}>
             {(() => {
               const storeUrl = browserExtensions.find((ext) => ext.browser === platform.browser)?.url ?? null
               const isAvailable = storeUrl !== null
