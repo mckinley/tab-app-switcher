@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      # The site's build (Vite) reads every workspace's tsconfig, and the extension's extends the
+      # one `wxt prepare` writes, which is the extension's postinstall script (skipped above)
+      - name: Generate the extension's tsconfig
+        working-directory: extension
+        run: npx wxt prepare
+
       # native/package.json is ahead of the published app while a release is building, so the
       # download link uses the latest published GitHub release instead
       - name: Find the latest Mac app release
