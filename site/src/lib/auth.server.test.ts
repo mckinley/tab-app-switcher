@@ -98,11 +98,14 @@ describe("deleting an account", () => {
   async function signedInUser() {
     const { sqlite, auth } = createTestAuth()
     const context = await auth.$context
-    const user = await context.internalAdapter.createUser({
-      email: "alice@example.com",
-      name: "Alice",
-      emailVerified: true,
-    })
+    const user = await context.internalAdapter.createUser(
+      {
+        email: "alice@example.com",
+        name: "Alice",
+        emailVerified: true,
+      },
+      { method: "admin" },
+    )
     const { token } = await context.internalAdapter.createSession(user.id)
     sqlite.prepare(`INSERT INTO "collection" (id, "userId", name) VALUES (?, ?, ?)`).run("c1", user.id, "Reading")
     const count = (table: string) =>

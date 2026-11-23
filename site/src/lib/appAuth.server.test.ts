@@ -5,6 +5,7 @@ import { createRequire } from "node:module"
 import { createHash, randomBytes } from "node:crypto"
 import path from "node:path"
 import { createAuth } from "./auth.server"
+import { getAuthStateVerificationIdentifier } from "better-auth"
 import {
   appCorsPreflight,
   finishAppSignIn,
@@ -81,11 +82,14 @@ describe("app sign-in", () => {
   beforeEach(async () => {
     auth = createTestAuth()
     const context = await auth.$context
-    const user = await context.internalAdapter.createUser({
-      email: "alice@example.com",
-      name: "Alice",
-      emailVerified: true,
-    })
+    const user = await context.internalAdapter.createUser(
+      {
+        email: "alice@example.com",
+        name: "Alice",
+        emailVerified: true,
+      },
+      { method: "admin" },
+    )
     userId = user.id
     siteToken = (await context.internalAdapter.createSession(user.id)).token
   })
@@ -127,7 +131,9 @@ describe("app sign-in", () => {
     expect(response.headers.getSetCookie().some((cookie) => cookie.includes("state="))).toBe(true)
 
     const context = await auth.$context
-    const state = await context.internalAdapter.findVerificationValue(google.searchParams.get("state")!)
+    const state = await context.internalAdapter.findVerificationValue(
+      getAuthStateVerificationIdentifier(google.searchParams.get("state")!),
+    )
     expect(JSON.parse(state!.value).callbackURL).toBe(
       `/api/app-auth/finish?${new URLSearchParams({ redirect: CHROME_REDIRECT, challenge })}`,
     )
@@ -175,7 +181,7 @@ describe("app sign-in", () => {
         headers: { Authorization: `Bearer ${token}`, Origin: "chrome-extension://abc" },
         body: new Uint8Array(0),
       })
-    expect((await auth.handler(bare())).status).toBe(415)
+    // Better Auth up to 1.6 refused it (415); withSignOutBody gives it JSON either way
     expect((await auth.handler(withSignOutBody(bare()))).status).toBe(200)
     expect(await sessionUser(token)).toBeNull()
     expect((await sessionUser(siteToken))?.id).toBe(userId)

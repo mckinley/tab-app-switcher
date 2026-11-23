@@ -228,7 +228,7 @@ export function appSignInDonePage(request: Request): Response {
 
 /**
  * Apps up to 1.2.5 sign out with a POST that has no content type. Workers give it an empty body,
- * which Better Auth refuses (415), so the session outlived signing out. Give it the JSON it wants.
+ * which Better Auth up to 1.6 refused (415), so the session outlived signing out. Give it JSON.
  */
 export function withSignOutBody(request: Request): Request {
   const { pathname } = new URL(request.url)
