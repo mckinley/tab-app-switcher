@@ -18,9 +18,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   server: { port: __devPort },
-  adapter: cloudflare({
-    platformProxy: { enabled: true },
-  }),
+  // No Cloudflare Images binding: the site has no images to transform
+  adapter: cloudflare({ imageService: "compile" }),
+  // No sessions: keeps the adapter from adding (and provisioning) a KV binding
+  session: false,
+  // Astro 7 defaults to JSX whitespace rules; keep HTML's (the Astro 6 default)
+  compressHTML: true,
   // No trailing slash (pjmgmt's url-format standard): /about is about.html, served as it is,
   // and public/_redirects sends /about/ there with a 301.
   trailingSlash: "never",
@@ -34,7 +37,6 @@ export default defineConfig({
     sitemap({ filter: (page) => !/\/(account|collections|login)$/.test(new URL(page).pathname) }),
   ],
   vite: {
-    // @ts-expect-error - tailwind v4 vite plugin type incompatibility with astro's bundled vite
     plugins: [tailwindcss()],
     resolve: {
       alias: {

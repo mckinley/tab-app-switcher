@@ -9,4 +9,6 @@ node_modules
 # Generated files
 *.d.ts
 .astro
+# Where the build points wrangler deploy at dist/server/wrangler.json
+.wrangler
 

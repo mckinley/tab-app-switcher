@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers"
 import type { APIRoute } from "astro"
 import { appleClientSecret, createAuth, signInProviders } from "../../../lib/auth.server"
 import {
@@ -13,7 +14,7 @@ export const prerender = false
 
 // Sign-in for the browser extension and the Mac app; see lib/appAuth.server.ts
 
-function appAuthOptions(env: App.Locals["runtime"]["env"]): AppAuthOptions {
+function appAuthOptions(env: Cloudflare.Env): AppAuthOptions {
   return {
     siteOrigin: env.BETTER_AUTH_URL,
     extraExtensionIds: (env.APP_AUTH_EXTENSION_IDS ?? "")
@@ -24,8 +25,7 @@ function appAuthOptions(env: App.Locals["runtime"]["env"]): AppAuthOptions {
   }
 }
 
-export const GET: APIRoute = async ({ params, request, locals }) => {
-  const env = locals.runtime.env
+export const GET: APIRoute = async ({ params, request }) => {
   if (params.action === "start") {
     const auth = createAuth(env.DB, env, { appleClientSecret: await appleClientSecret(env) })
     return startAppSignIn(request, auth, appAuthOptions(env))
@@ -35,8 +35,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   return new Response("Not found", { status: 404 })
 }
 
-export const POST: APIRoute = async ({ params, request, locals }) => {
-  const env = locals.runtime.env
+export const POST: APIRoute = async ({ params, request }) => {
   if (params.action === "token") return redeemAppCode(request, createAuth(env.DB, env))
   return new Response("Not found", { status: 404 })
 }

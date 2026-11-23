@@ -1,12 +1,11 @@
+import { env } from "cloudflare:workers"
 import type { APIRoute } from "astro"
 import { appleClientSecret, createAuth } from "../../../lib/auth.server"
 import { appCorsPreflight, withAppCors, withSignOutBody } from "../../../lib/appAuth.server"
 
 export const prerender = false
 
-const handleAuth: APIRoute = async ({ request, locals }) => {
-  const runtime = locals.runtime
-  const env = runtime.env
+const handleAuth: APIRoute = async ({ request }) => {
   const auth = createAuth(env.DB, env, { appleClientSecret: await appleClientSecret(env) })
   // The extension and the Mac app check and end their sessions from other origins
   return withAppCors(request, await auth.handler(withSignOutBody(request)))

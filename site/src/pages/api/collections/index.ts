@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers"
 import type { APIRoute } from "astro"
 import { getSession } from "../../../lib/auth.server"
 import {
@@ -24,8 +25,7 @@ function json(body: unknown, status = 200) {
 }
 
 // GET /api/collections — list user's collections
-export const GET: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime.env
+export const GET: APIRoute = async ({ request }) => {
   const session = await getSession(request, env.DB, env)
   if (!session) return json({ error: "Unauthorized" }, 401)
 
@@ -33,8 +33,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 }
 
 // POST /api/collections — create collection
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime.env
+export const POST: APIRoute = async ({ request }) => {
   const session = await getSession(request, env.DB, env)
   if (!session) return json({ error: "Unauthorized" }, 401)
 

@@ -12,24 +12,21 @@ declare module "*.jpg" {
   export default src;
 }
 
-declare namespace App {
-  interface Locals {
-    runtime: {
-      env: {
-        DB: D1Database;
-        BETTER_AUTH_URL: string;
-        BETTER_AUTH_SECRET: string;
-        AUTH_GOOGLE_ID: string;
-        AUTH_GOOGLE_SECRET: string;
-        /** Sign in with Apple, offered once all four are set (lib/auth.server.ts) */
-        AUTH_APPLE_ID?: string;
-        AUTH_APPLE_TEAM_ID?: string;
-        AUTH_APPLE_KEY_ID?: string;
-        AUTH_APPLE_PRIVATE_KEY?: string;
-        /** Optional: more Chromium extension ids allowed to sign in, comma-separated (unpacked dev builds) */
-        APP_AUTH_EXTENSION_IDS?: string;
-      };
-    };
+// The Worker's bindings, vars and secrets: `import { env } from "cloudflare:workers"`
+declare namespace Cloudflare {
+  interface Env {
+    DB: D1Database;
+    BETTER_AUTH_URL: string;
+    BETTER_AUTH_SECRET: string;
+    AUTH_GOOGLE_ID: string;
+    AUTH_GOOGLE_SECRET: string;
+    /** Sign in with Apple, offered once all four are set (lib/auth.server.ts) */
+    AUTH_APPLE_ID?: string;
+    AUTH_APPLE_TEAM_ID?: string;
+    AUTH_APPLE_KEY_ID?: string;
+    AUTH_APPLE_PRIVATE_KEY?: string;
+    /** Optional: more Chromium extension ids allowed to sign in, comma-separated (unpacked dev builds) */
+    APP_AUTH_EXTENSION_IDS?: string;
   }
 }
 

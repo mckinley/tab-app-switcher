@@ -52,7 +52,7 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   `src/main/auth.ts` signs in through the person's browser, which comes back to
   `http://127.0.0.1:48125/auth/callback` on that server, and keeps the bearer token encrypted
   with `safeStorage`.
-- `site/` (Astro 5 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
+- `site/` (Astro 7 + `@astrojs/cloudflare`, React islands, Tailwind v4): pages in
   `site/src/pages/*.astro` mount `site/islands/*`, which render `site/views/*`. The public pages
   (home, About, Downloads) use `client:load`, so they're rendered to HTML at build time and search
   engines get their text: their first render can't touch the browser and must match that HTML, so

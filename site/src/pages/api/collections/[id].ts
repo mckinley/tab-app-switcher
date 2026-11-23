@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers"
 import type { APIRoute } from "astro"
 import { getSession } from "../../../lib/auth.server"
 import {
@@ -24,8 +25,7 @@ function json(body: unknown, status = 200) {
 }
 
 // PUT /api/collections/:id — upsert collection
-export const PUT: APIRoute = async ({ params, request, locals }) => {
-  const env = locals.runtime.env
+export const PUT: APIRoute = async ({ params, request }) => {
   const session = await getSession(request, env.DB, env)
   if (!session) return json({ error: "Unauthorized" }, 401)
   if (!isValidCollectionId(params.id)) return json({ error: "Invalid id" }, 400)
@@ -45,8 +45,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 }
 
 // DELETE /api/collections/:id — delete collection
-export const DELETE: APIRoute = async ({ params, request, locals }) => {
-  const env = locals.runtime.env
+export const DELETE: APIRoute = async ({ params, request }) => {
   const session = await getSession(request, env.DB, env)
   if (!session) return json({ error: "Unauthorized" }, 401)
   if (!isValidCollectionId(params.id)) return json({ error: "Invalid id" }, 400)
