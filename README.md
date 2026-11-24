@@ -1,6 +1,9 @@
 # Tab Application Switcher
 
-Like your system's Application Switcher, but for your browser tabs.
+Like your system's application switcher (Alt+Tab), but for your browser tabs, in
+most-recently-used order. It ships as an extension for Chrome, Firefox, Edge and Safari, and a
+native Mac menu bar app that gets a true global Alt+Tab. Saved tab collections sync across devices
+when you sign in. Live demo and downloads at https://tabappswitcher.com.
 
 ## Monorepo Structure
 
