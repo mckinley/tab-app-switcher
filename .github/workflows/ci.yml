@@ -31,6 +31,11 @@ jobs:
       - name: Prepare WXT types for extension
         run: npm run postinstall --workspace=extension
 
+      # The native app loads these at runtime. A lockfile that leaves one out (as the
+      # Electron 39.8 upgrade did) crashes the app at launch, which e2e only shows as timeouts.
+      - name: Check the native app's dependency tree
+        run: npm ls --omit=dev --all --workspace=native > /dev/null
+
       - name: Run linting
         run: npm run lint:all
 
