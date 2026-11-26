@@ -92,8 +92,7 @@ let httpServers: Server[] = []
 let connectionChangeCallback: (() => void) | null = null
 let snapshotCallback: ((sessionKey: SessionKey, session: Session) => void) | null = null
 let eventCallback:
-  | ((sessionKey: SessionKey, session: Session, event: EventPayload) => void)
-  | null = null
+  ((sessionKey: SessionKey, session: Session, event: EventPayload) => void) | null = null
 
 function makeSessionKey(instanceId: string, runtimeSessionId: string): SessionKey {
   return `${instanceId}:${runtimeSessionId}`

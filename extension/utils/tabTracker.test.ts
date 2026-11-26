@@ -40,7 +40,8 @@ function createMockTab(id: number, overrides: Partial<Browser.tabs.Tab> = {}): B
     autoDiscardable: true,
     groupId: -1,
     ...overrides,
-  }
+    // The browser's types make lastAccessed required; mock tabs leave it out unless a test sets it.
+  } as Browser.tabs.Tab
 }
 
 describe("TabTracker", () => {

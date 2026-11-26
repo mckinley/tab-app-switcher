@@ -1,6 +1,9 @@
 {
   "extends": ["../tsconfig.base.json", "./.wxt/tsconfig.json"],
   "compilerOptions": {
+    // WXT 0.21 turns these on in .wxt/tsconfig.json; the code was written without them.
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
