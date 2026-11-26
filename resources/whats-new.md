@@ -4,6 +4,13 @@ The changes people notice, for the App Store's "What's New" (Safari) and the top
 release (the Mac app). Add a section for the next version before releasing it. Without one, the
 release lists the commit subjects instead, which read less well.
 
+## 1.2.6
+
+- Delete your account and the collections synced to it, from the account panel
+- Signing out now ends your session on the server too
+- Security updates, including Electron 45 in the Mac app
+- Dropdowns show a single arrow
+
 ## 1.2.5
 
 - The switcher now appears right away on the first Alt+Tab
