@@ -102,6 +102,9 @@ Per-browser extension builds and zips: `npm run build:firefox|edge|safari` and
   `npm run release -- patch --local` publishes from a Mac with `extension/.env` and `native/.env`
   instead, and its tag ("Published locally") makes the workflow only run CI. Without the API
   key, Safari is `npm run publish:safari` in `extension/` plus `resources/app-store-connect.md`.
+  If only the Safari job of a release fails, fix the cause on `main` and run Actions → Publish
+  Safari (`.github/workflows/publish-safari.yml`): it sends that released version's Safari build
+  for review, and refuses a version that wasn't released or whose extension code has changed.
 
 ## Rules and gotchas
 

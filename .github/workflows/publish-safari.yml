@@ -1,0 +1,79 @@
+name: Publish Safari
+
+# Sends a released version's Safari extension to App Store Connect and App Review, for when the
+# Release workflow's Safari job failed after the rest of that version went out. Run it by hand
+# (Actions → Publish Safari → Run workflow) on main once the cause is fixed there.
+#
+# It refuses a version with no published GitHub release, and one whose extension differs from
+# that release's tag: only extension/scripts may differ, so a fix to the publish script is used.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-safari
+  cancel-in-progress: false
+
+jobs:
+  safari:
+    name: Safari extension
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      # A runner has no development certificate to archive with
+      SAFARI_ARCHIVE_SIGNING: adhoc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # The release's tag, and What's New falls back to the commits since the last release
+          fetch-depth: 0
+
+      - name: Check that this version was released
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./extension/package.json').version")
+          tag="v$version"
+          if [ "$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)" != "false" ]; then
+            echo "::error::$tag has no published GitHub release. Release it with npm run release first."
+            exit 1
+          fi
+          paths=(extension tas packages package-lock.json ':(exclude)extension/scripts')
+          if ! git diff --quiet "$tag" HEAD -- "${paths[@]}"; then
+            echo "::error::The extension here differs from $tag, so it isn't the released version:"
+            git diff --stat "$tag" HEAD -- "${paths[@]}"
+            exit 1
+          fi
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "::error::There's no App Store Connect API key in the repository secrets (npm run release:secrets on the Mac)."
+            exit 1
+          fi
+          echo "::notice::Publishing Safari $tag"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prepare WXT types for extension
+        run: npm run postinstall --workspace=extension
+
+      - name: Build the extension and its Xcode project
+        working-directory: extension
+        run: npm run build:safari && npm run convert:safari
+
+      - name: Sign, upload and submit for App Review
+        working-directory: extension
+        run: ./scripts/publish-safari.sh
