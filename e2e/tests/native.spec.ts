@@ -85,6 +85,32 @@ test("the overlay is ready before the first Alt+Tab, and every Alt+Tab starts on
   }
 })
 
+test("an Alt+Tab right after releasing Alt stays open", async () => {
+  native = await launchNative()
+  browser = await launchBrowser(pages, ["P1"])
+  const [profile] = browser.profiles
+  await native.waitForSessions(1)
+  await profile.openTabs(["Inbox", "Calendar", "Docs"])
+  await profile.activate("Docs")
+
+  xdotool("keydown", "alt")
+  xdotool("key", "Tab")
+  await native.waitForOverlay()
+  xdotool("keyup", "alt")
+  for (let i = 0; i < 200 && (await native.overlayVisible()); i++) await sleep(5)
+
+  // Within the moment the app used to wait before hiding the first one, which then hid this one
+  xdotool("keydown", "alt", "key", "Tab")
+  await native.waitForOverlay()
+  await sleep(300)
+  expect(await native.overlayVisible()).toBe(true)
+  // Docs, or Calendar if the first switch hadn't come back from the browser yet
+  const selected = await native.overlaySelectedTitle()
+  expect(["Docs", "Calendar"]).toContain(selected)
+  xdotool("keyup", "alt")
+  await expect.poll(() => profile.activeTitle()).toBe(selected)
+})
+
 test("lists every profile's tabs and switches to a tab in the other profile", async () => {
   native = await launchNative()
   browser = await launchBrowser(pages, ["P1", "P2"])

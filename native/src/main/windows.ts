@@ -26,6 +26,8 @@ let showWhenReady = false
 let tasOverlayActive = false
 // The search box has focus, so releasing the modifier doesn't pick a tab
 let tasSearchActive = false
+// The hide that follows releasing the modifier, cancelled when the overlay is shown again first
+let pendingHide: ReturnType<typeof setTimeout> | null = null
 
 // Dependencies injected from main
 interface WindowDependencies {
@@ -124,16 +126,25 @@ export function selectCurrentTabAndHide(): void {
   if (tasWindow && !tasWindow.isDestroyed()) {
     tasWindow.webContents.send('select-current')
   }
-  // Small delay to let the select-current message be processed
-  setTimeout(() => {
+  // The page usually hides it at once (hide-tas); this is in case it doesn't. A quick next
+  // Alt+Tab can show the overlay within the delay, and this mustn't hide that one.
+  cancelPendingHide()
+  pendingHide = setTimeout(() => {
+    pendingHide = null
     hideTasOverlay()
   }, 50)
+}
+
+function cancelPendingHide(): void {
+  if (pendingHide) clearTimeout(pendingHide)
+  pendingHide = null
 }
 
 /**
  * Hide TAS overlay and cleanup shortcuts
  */
 export function hideTasOverlay(): void {
+  cancelPendingHide()
   if (tasWindow && !tasWindow.isDestroyed()) {
     tasOverlayActive = false
     tasWindow.hide()
@@ -145,6 +156,7 @@ export function hideTasOverlay(): void {
  * Show the switcher overlay (the activation shortcut and the tray menu)
  */
 export function showTasOverlay(): void {
+  cancelPendingHide()
   if (!tasWindow) prepareTasOverlay()
   if (!tasWindow) return
 
