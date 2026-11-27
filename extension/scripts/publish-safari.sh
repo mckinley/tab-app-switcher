@@ -82,6 +82,8 @@ fi
 VERSION=$(node -p "require('$EXTENSION_DIR/package.json').version")
 BUILD_NUMBER=$(node -p "require('$EXTENSION_DIR/package.json').build || 0")
 BUNDLE_ID="app.tabswitcher.tab-application-switcher"
+# The app's Apple ID in App Store Connect (App Information), also in its App Store address
+APP_APPLE_ID="6756280616"
 
 echo "Publishing Safari extension v$VERSION (build $BUILD_NUMBER) to Mac App Store..."
 
@@ -168,6 +170,7 @@ fi
   --type macos \
   "${CREDENTIALS[@]}" \
   --team-id "$APPLE_TEAM_ID" \
+  --apple-id "$APP_APPLE_ID" \
   --bundle-id "$BUNDLE_ID" \
   --bundle-version "$BUILD_NUMBER" \
   --bundle-short-version-string "$VERSION" \
