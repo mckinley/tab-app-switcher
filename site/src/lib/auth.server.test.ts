@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest"
+import { getIP } from "better-auth/api"
 import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { createHash, generateKeyPairSync, randomBytes, verify } from "node:crypto"
@@ -146,5 +147,17 @@ describe("deleting an account", () => {
     expect(response.status).toBe(400)
     expect(await response.json()).toMatchObject({ code: "SESSION_EXPIRED" })
     expect(count("user")).toBe(1)
+  })
+})
+
+describe("the visitor's address", () => {
+  // A Worker's request carries cf-connecting-ip and x-real-ip, never x-forwarded-for (Workers
+  // Logs, 2026-11-21: "Rate limiting skipped: could not determine client IP address")
+  it("is read from the header Cloudflare sets", () => {
+    const { auth } = createTestAuth()
+    const request = new Request(`${SITE}/api/auth/get-session`, {
+      headers: { "cf-connecting-ip": "203.0.113.7", "x-real-ip": "203.0.113.7" },
+    })
+    expect(getIP(request, auth.options)).toBe("203.0.113.7")
   })
 })

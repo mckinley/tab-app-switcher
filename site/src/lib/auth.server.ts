@@ -94,6 +94,14 @@ export function createAuth(db: D1Database, env: AuthEnv, options: { appleClientS
       expiresIn: 60 * 60 * 24 * 30, // 30 days
       updateAge: 60 * 60 * 24, // refresh when < 1 day remaining
     },
+    // Cloudflare hands a Worker the visitor's address in cf-connecting-ip (it sets it itself, so
+    // a visitor can't fake it), never x-forwarded-for, which is all Better Auth reads by default.
+    // Without this it knows no visitor's address: sessions keep none, and its rate limits would
+    // put everyone in one bucket per path ("Rate limiting skipped: could not determine client IP
+    // address" in the Worker's logs, 2026-11-21 and 11-22).
+    advanced: {
+      ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
+    },
     // Local dev server port comes from site/.env.development (PORT=4409). Apple posts its
     // sign-in result back from its own origin.
     trustedOrigins: ["http://localhost:4409", "https://tabappswitcher.com", "https://appleid.apple.com"],
